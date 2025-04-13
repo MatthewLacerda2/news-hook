@@ -31,6 +31,8 @@ docker-compose up -d
 uvicorn main:app --reload
 ```
 
+For checking build-and-test-ing, you can just run the build-and-test.bat on Windows
+
 # What's the infrastructure
 
 - We get the POST request for an alert

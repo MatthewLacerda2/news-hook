@@ -47,3 +47,17 @@ uvicorn main:app --reload
     - We check metadata for quick validity
     - We use LLM to finalize the validation
 - If it checks out, we process the data to send the appropriate alert
+
+# Types of alerts
+
+- **Base**: includes data from webscraping only
+    - Data from webscraping
+
+- **Pro**:
+    - Data from webscraping, webhooks, apis
+    - Includes an LLM output response
+
+- **Reasoning**:
+    - Data from webscraping, webhooks, apis
+    - Includes an LLM output response
+    - Reasons on the intent of the alert'

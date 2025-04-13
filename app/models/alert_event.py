@@ -6,6 +6,7 @@ from sqlalchemy.orm import relationship
 
 from app.models.base import Base
 
+#TODO: check out for base, pro, reasoning
 class AlertEvent(Base):
     __tablename__ = "alert_events"
     __table_args__ = (

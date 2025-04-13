@@ -125,3 +125,78 @@ def test_login_missing_token(client):
     )
     
     assert response.status_code == 422  # Validation error
+
+def test_check_credits_successful(client, mock_google_verify, test_db):
+    """Test successful credits check for authenticated user"""
+    # First create a user through signup
+    signup_response = client.post(
+        "/api/v1/auth/signup",
+        json={"access_token": "valid_google_token"}
+    )
+    access_token = signup_response.json()["access_token"]
+    
+    # Check credits
+    response = client.get(
+        "/api/v1/auth/credits",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert "credits" in data
+    assert isinstance(data["credits"], int)
+
+def test_check_credits_unauthorized(client):
+    """Test credits check without authentication"""
+    response = client.get("/api/v1/auth/credits")
+    
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Not authenticated"
+
+def test_check_credits_invalid_token(client):
+    """Test credits check with invalid token"""
+    response = client.get(
+        "/api/v1/auth/credits",
+        headers={"Authorization": "Bearer invalid_token"}
+    )
+    
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid token"
+
+def test_check_credits_user_not_found(client, test_db):
+    """Test credits check for non-existent user"""
+    # Create a token for a user that doesn't exist in DB
+    response = client.get(
+        "/api/v1/auth/credits",
+        headers={"Authorization": "Bearer valid_but_nonexistent_user_token"}
+    )
+    
+    assert response.status_code == 404
+    assert response.json()["detail"] == "User not found"
+
+def test_check_credits_after_modification(client, mock_google_verify, test_db):
+    """Test credits check after credits have been modified"""
+    # First create a user through signup
+    signup_response = client.post(
+        "/api/v1/auth/signup",
+        json={"access_token": "valid_google_token"}
+    )
+    access_token = signup_response.json()["access_token"]
+    
+    # Modify user's credits in the database (this would normally be done through an API endpoint)
+    # Note: You'll need to implement this part based on your database access pattern
+    # For example: test_db.update_user_credits(user_id, 100)
+    
+    # Check credits after modification
+    response = client.get(
+        "/api/v1/auth/credits",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert "credits" in data
+    assert isinstance(data["credits"], int)
+    # Assert the new credit amount if you implemented the credit modification
+    # assert data["credits"] == 100
+

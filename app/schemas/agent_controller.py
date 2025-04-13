@@ -15,7 +15,6 @@ class AgentControllerResponse(AgentControllerBase):
     google_id: str
     api_key: str
     credits: int
-    is_active: bool
 
     class Config:
         from_attributes = True

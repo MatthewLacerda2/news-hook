@@ -8,9 +8,6 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Create all database tables
-Base.metadata.create_all(bind=engine)
-
 @app.get("/")
 async def root():
     return {"message": "Welcome to News Hook API"}

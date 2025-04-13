@@ -13,7 +13,7 @@ class HttpMethod(str, Enum):
     PATCH = "PATCH"
 
 #TODO: check out for base, pro, reasoning
-class AlertPromptCreateBase(BaseModel):
+class AlertPromptCreateRequestBase(BaseModel):
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     http_method: HttpMethod = Field(..., description="HTTP method to alert at")
     http_url: HttpUrl = Field(..., description="The URL to alert at")
@@ -23,7 +23,7 @@ class AlertPromptCreateBase(BaseModel):
     example_response: Optional[Dict[str, Any]] = Field(None, description="Example of expected response")
     max_datetime: Optional[datetime] = Field(None, description="End of monitoring window")
 
-class AlertPromptCreateResponse(BaseModel):
+class AlertPromptCreateSuccessResponse(BaseModel):
     id: UUID
     prompt: str
     understood_intent: str
@@ -69,3 +69,14 @@ class AlertPromptListResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class AlertMode(str, Enum):
+    base = "base"
+    pro = "pro"
+    reasoning = "reasoning"
+
+class AlertPromptPriceCheckRequest(BaseModel):
+    price_in_credits: int
+    mode: AlertMode
+    prompt: str
+    output_intent: str  #What did the LLM understand from the prompt?

@@ -2,7 +2,7 @@
 
 The service uses a pay-as-you-go model since each alert can be processed at different levels (Base/Pro/Reasoning):
 
-## Alert Types
+## Alert Modes
 - **Base Alert**
   - Data from webscraping only
   

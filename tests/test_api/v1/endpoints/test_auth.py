@@ -1,4 +1,5 @@
 import pytest
+from app.schemas.agent_controller import TokenResponse, AgentControllerResponse
 
 def test_signup_successful(client, mock_google_verify, test_db):
     """Test successful signup with valid Google token"""
@@ -8,22 +9,16 @@ def test_signup_successful(client, mock_google_verify, test_db):
     )
     
     assert response.status_code == 201
-    data = response.json()
+    # This will validate that the response matches the TokenResponse schema
+    token_response = TokenResponse.model_validate(response.json())
     
-    # Check response structure
-    assert "access_token" in data
-    assert "token_type" in data
-    assert data["token_type"] == "bearer"
-    assert "expires_in" in data
-    
-    # Check user data
-    assert "agent_controller" in data
-    user = data["agent_controller"]
-    assert user["email"] == "test@example.com"
-    assert user["name"] == "Test User"
-    assert user["google_id"] == "12345"
-    assert "api_key" in user
-    assert user["credits"] == 0
+    # Now we can use the validated object for assertions
+    assert token_response.token_type == "bearer"
+    assert token_response.agent_controller.email == "test@example.com"
+    assert token_response.agent_controller.name == "Test User"
+    assert token_response.agent_controller.google_id == "12345"
+    assert token_response.agent_controller.credits == 0
+    assert token_response.agent_controller.api_key is not None
 
 def test_signup_invalid_token(client, mock_google_verify):
     """Test signup with invalid Google token"""
@@ -77,23 +72,17 @@ def test_login_successful(client, mock_google_verify, test_db):
         json={"access_token": "valid_google_token"}
     )
     
-    assert response.status_code == 200  # 200 for login vs 201 for signup
-    data = response.json()
+    assert response.status_code == 200
+    # This will validate that the response matches the TokenResponse schema
+    token_response = TokenResponse.model_validate(response.json())
     
-    # Check response structure
-    assert "access_token" in data
-    assert "token_type" in data
-    assert data["token_type"] == "bearer"
-    assert "expires_in" in data
-    
-    # Check user data
-    assert "agent_controller" in data
-    user = data["agent_controller"]
-    assert user["email"] == "test@example.com"
-    assert user["name"] == "Test User"
-    assert user["google_id"] == "12345"
-    assert "api_key" in user
-    assert user["credits"] == 0
+    # Now we can use the validated object for assertions
+    assert token_response.token_type == "bearer"
+    assert token_response.agent_controller.email == "test@example.com"
+    assert token_response.agent_controller.name == "Test User"
+    assert token_response.agent_controller.google_id == "12345"
+    assert token_response.agent_controller.credits == 0
+    assert token_response.agent_controller.api_key is not None
 
 def test_login_nonexistent_user(client, mock_google_verify, test_db):
     """Test login attempt with Google account that hasn't signed up"""
@@ -199,4 +188,87 @@ def test_check_credits_after_modification(client, mock_google_verify, test_db):
     assert isinstance(data["credits"], int)
     # Assert the new credit amount if you implemented the credit modification
     # assert data["credits"] == 100
+
+def test_delete_account_successful(client, mock_google_verify, test_db):
+    """Test successful account deletion with valid token"""
+    # First create a user through signup
+    signup_response = client.post(
+        "/api/v1/auth/signup",
+        json={"access_token": "valid_google_token"}
+    )
+    access_token = signup_response.json()["access_token"]
+    user_id = signup_response.json()["agent_controller"]["id"]
+    
+    # Create some alert prompts for this user
+    test_prompts = [
+        {
+            "prompt": "Test prompt 1",
+            "http_method": "GET",
+            "http_url": "http://test1.com"
+        },
+        {
+            "prompt": "Test prompt 2",
+            "http_method": "POST",
+            "http_url": "http://test2.com"
+        }
+    ]
+    
+    # Add test prompts to database
+    for prompt in test_prompts:
+        client.post(
+            "/api/v1/alerts/",
+            headers={"Authorization": f"Bearer {access_token}"},
+            json=prompt
+        )
+    
+    # Delete the account
+    response = client.delete(
+        "/api/v1/auth/account",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+    
+    assert response.status_code == 200
+    assert response.json()["message"] == "Account successfully deleted"
+    
+    # Verify user can't login anymore
+    login_response = client.post(
+        "/api/v1/auth/login",
+        json={"access_token": "valid_google_token"}
+    )
+    assert login_response.status_code == 404
+    
+    # Verify all alert prompts were deleted
+    # Try to get alerts (should fail as user doesn't exist)
+    alerts_response = client.get(
+        "/api/v1/alerts/",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+    assert alerts_response.status_code == 401
+
+def test_delete_account_unauthorized(client):
+    """Test account deletion without authentication"""
+    response = client.delete("/api/v1/auth/account")
+    
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Not authenticated"
+
+def test_delete_account_invalid_token(client):
+    """Test account deletion with invalid token"""
+    response = client.delete(
+        "/api/v1/auth/account",
+        headers={"Authorization": "Bearer invalid_token"}
+    )
+    
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid token"
+
+def test_delete_account_nonexistent_user(client, test_db):
+    """Test deletion attempt for non-existent user"""
+    response = client.delete(
+        "/api/v1/auth/account",
+        headers={"Authorization": "Bearer valid_but_nonexistent_user_token"}
+    )
+    
+    assert response.status_code == 404
+    assert response.json()["detail"] == "User not found"
 

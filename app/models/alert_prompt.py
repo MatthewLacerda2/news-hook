@@ -31,16 +31,17 @@ class AlertPrompt(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey('agent_controllers.id'), nullable=False)
     prompt = Column(String, nullable=False)
+    http_method = Column(SQLEnum(HttpMethod), nullable=True)
+    http_url = Column(String, nullable=True)
+    
+    parsed_intent = Column(JSON, nullable=True)
+    example_response = Column(JSON, nullable=True)
+    max_datetime = Column(DateTime, nullable=True)
+    
+    tags = Column(ARRAY(String), nullable=True)
     prompt_embedding = Column(ARRAY(float), nullable=True)
     status = Column(SQLEnum(AlertStatus), nullable=False, default=AlertStatus.ACTIVE)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    parsed_intent = Column(JSON, nullable=True)
-    example_response = Column(JSON, nullable=True)
-    min_datetime = Column(DateTime, nullable=True)
-    max_datetime = Column(DateTime, nullable=True)
-    http_method = Column(SQLEnum(HttpMethod), nullable=True)
-    http_url = Column(String, nullable=True)
-    tags = Column(ARRAY(String), nullable=True)
 
     # Relationships
     user = relationship("AgentController", back_populates="alert_prompts")

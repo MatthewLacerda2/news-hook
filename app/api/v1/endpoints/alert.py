@@ -2,6 +2,4 @@
 
 #check alert price
 
-#update alert
-
-#delete alert
+#cancel alert (they cannot be 'deleted' because creating them costed credits, thus we must keep track)

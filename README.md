@@ -31,6 +31,8 @@ docker-compose up -d
 uvicorn main:app --reload
 ```
 
+For checking build-and-test-ing, you can just run the build-and-test.bat on Windows
+
 # What's the infrastructure
 
 - We get the POST request for an alert
@@ -47,3 +49,17 @@ uvicorn main:app --reload
     - We check metadata for quick validity
     - We use LLM to finalize the validation
 - If it checks out, we process the data to send the appropriate alert
+
+# Types of alerts
+
+- **Base**: includes data from webscraping only
+    - Data from webscraping
+
+- **Pro**:
+    - Data from webscraping, webhooks, apis
+    - Includes an LLM output response
+
+- **Reasoning**:
+    - Data from webscraping, webhooks, apis
+    - Includes an LLM output response
+    - Reasons on the intent of the alert'

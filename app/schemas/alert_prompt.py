@@ -82,7 +82,7 @@ class AlertPromptPriceCheckRequest(BaseModel):
     parsed_intent: Optional[Dict[str, Any]] = Field(None, description="Parsed interpretation of the prompt")
     example_response: Optional[Dict[str, Any]] = Field(None, description="Example of expected response")
 
-class AlertPromptPriceCheckResponse(BaseModel):
+class AlertPromptPriceCheckSuccessResponse(BaseModel):
     price_in_credits: int
     mode: AlertMode = Field(..., description="The mode of the alert. Used for pricing")
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")

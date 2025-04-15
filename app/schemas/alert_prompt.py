@@ -14,6 +14,8 @@ class HttpMethod(str, Enum):
 
 #TODO: check out for base, pro, reasoning
 class AlertPromptCreateRequestBase(BaseModel):
+    api_key: str = Field(..., description="API key of the agent controller requesting their alerts")
+    user_id: UUID = Field(..., description="ID of the agent controller requesting their alerts")
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     http_method: HttpMethod = Field(..., description="HTTP method to alert at")
     http_url: HttpUrl = Field(..., description="The URL to alert at")

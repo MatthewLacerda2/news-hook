@@ -1,7 +1,7 @@
 import pytest
-from app.schemas.agent_controller import TokenResponse, AgentControllerResponse
+from app.schemas.agent_controller import TokenResponse
 
-def test_signup_successful(client, mock_google_verify, test_db):
+def test_signup_successful(client):
     """Test successful signup with valid Google token"""
     response = client.post(
         "/api/v1/auth/signup",
@@ -32,7 +32,7 @@ def test_signup_invalid_token(client, mock_google_verify):
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid Google token"
 
-def test_signup_existing_user(client, mock_google_verify, test_db):
+def test_signup_existing_user(client):
     """Test signup attempt with existing Google account"""
     # First signup
     client.post(
@@ -58,7 +58,7 @@ def test_signup_missing_token(client):
     
     assert response.status_code == 422  # Validation error
 
-def test_login_successful(client, mock_google_verify, test_db):
+def test_login_successful(client):
     """Test successful login with valid Google token for existing user"""
     # First create a user through signup
     client.post(
@@ -84,7 +84,7 @@ def test_login_successful(client, mock_google_verify, test_db):
     assert token_response.agent_controller.credits == 0
     assert token_response.agent_controller.api_key is not None
 
-def test_login_nonexistent_user(client, mock_google_verify, test_db):
+def test_login_nonexistent_user(client):
     """Test login attempt with Google account that hasn't signed up"""
     response = client.post(
         "/api/v1/auth/login",
@@ -115,7 +115,7 @@ def test_login_missing_token(client):
     
     assert response.status_code == 422  # Validation error
 
-def test_check_credits_successful(client, mock_google_verify, test_db):
+def test_check_credits_successful(client):
     """Test successful credits check for authenticated user"""
     # First create a user through signup
     signup_response = client.post(
@@ -152,7 +152,7 @@ def test_check_credits_invalid_token(client):
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid token"
 
-def test_check_credits_user_not_found(client, test_db):
+def test_check_credits_user_not_found(client):
     """Test credits check for non-existent user"""
     # Create a token for a user that doesn't exist in DB
     response = client.get(
@@ -163,7 +163,7 @@ def test_check_credits_user_not_found(client, test_db):
     assert response.status_code == 404
     assert response.json()["detail"] == "User not found"
 
-def test_check_credits_after_modification(client, mock_google_verify, test_db):
+def test_check_credits_after_modification(client):
     """Test credits check after credits have been modified"""
     # First create a user through signup
     signup_response = client.post(
@@ -189,7 +189,7 @@ def test_check_credits_after_modification(client, mock_google_verify, test_db):
     # Assert the new credit amount if you implemented the credit modification
     # assert data["credits"] == 100
 
-def test_delete_account_successful(client, mock_google_verify, test_db):
+def test_delete_account_successful(client):
     """Test successful account deletion with valid token"""
     # First create a user through signup
     signup_response = client.post(
@@ -262,7 +262,7 @@ def test_delete_account_invalid_token(client):
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid token"
 
-def test_delete_account_nonexistent_user(client, test_db):
+def test_delete_account_nonexistent_user(client):
     """Test deletion attempt for non-existent user"""
     response = client.delete(
         "/api/v1/auth/account",

@@ -1,9 +1,7 @@
-import pytest
 from datetime import datetime, timedelta
 from uuid import uuid4
-from app.schemas.alert_prompt import AlertPromptCreateRequestBase, HttpMethod
 
-def test_create_alert_successful(client, test_db):
+def test_create_alert_successful(client):
     """Test successful alert creation with valid data"""
     # First create a user and get their token (similar to auth tests)
     signup_response = client.post(
@@ -19,8 +17,8 @@ def test_create_alert_successful(client, test_db):
         "http_method": "POST",
         "http_url": "https://webhook.example.com/crypto-alert",
         "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
-        "example_response": {"price": 51000, "alert": True},
-        "max_datetime": (datetime.now() + timedelta(days=30)).isoformat()
+        "example_response": {"price": 50001, "alert": True},
+        "max_datetime": (datetime.now() + timedelta(days=300)).isoformat()
     }
     
     response = client.post("/api/v1/alerts/", json=alert_data)
@@ -32,7 +30,7 @@ def test_create_alert_successful(client, test_db):
     assert "understood_intent" in data
     assert "created_at" in data
 
-def test_create_alert_invalid_api_key(client, test_db):
+def test_create_alert_invalid_api_key(client):
     """Test alert creation with invalid API key"""
     alert_data = {
         "api_key": "invalid_api_key",
@@ -46,7 +44,7 @@ def test_create_alert_invalid_api_key(client, test_db):
     assert response.status_code == 401
     assert "Invalid API key" in response.json()["detail"]
 
-def test_create_alert_mismatched_user_api_key(client, test_db, mock_google_verify):
+def test_create_alert_mismatched_user_api_key(client, mock_google_verify):
     """Test alert creation with API key not owned by user"""
     # Create first user
     signup1 = client.post(
@@ -80,7 +78,7 @@ def test_create_alert_mismatched_user_api_key(client, test_db, mock_google_verif
     assert response.status_code == 400
     assert "API key does not match user" in response.json()["detail"]
 
-def test_create_alert_insufficient_credits(client, test_db):
+def test_create_alert_insufficient_credits(client):
     """Test alert creation with insufficient credits"""
     # Create user with 0 credits
     signup_response = client.post(
@@ -101,7 +99,7 @@ def test_create_alert_insufficient_credits(client, test_db):
     assert response.status_code == 401
     assert "Insufficient credits" in response.json()["detail"]
 
-def test_create_alert_invalid_url(client, test_db):
+def test_create_alert_invalid_url(client):
     """Test alert creation with invalid URL"""
     signup_response = client.post(
         "/api/v1/auth/signup",
@@ -121,7 +119,7 @@ def test_create_alert_invalid_url(client, test_db):
     assert response.status_code == 400
     assert "Invalid URL" in response.json()["detail"]
 
-def test_create_alert_invalid_parsed_intent(client, test_db):
+def test_create_alert_invalid_parsed_intent(client):
     """Test alert creation with invalid parsed_intent JSON"""
     signup_response = client.post(
         "/api/v1/auth/signup",
@@ -142,7 +140,7 @@ def test_create_alert_invalid_parsed_intent(client, test_db):
     assert response.status_code == 400
     assert "Invalid parsed_intent format" in response.json()["detail"]
 
-def test_create_alert_invalid_example_response(client, test_db):
+def test_create_alert_invalid_example_response(client):
     """Test alert creation with invalid example_response JSON"""
     signup_response = client.post(
         "/api/v1/auth/signup",
@@ -163,7 +161,7 @@ def test_create_alert_invalid_example_response(client, test_db):
     assert response.status_code == 400
     assert "Invalid example_response format" in response.json()["detail"]
 
-def test_create_alert_invalid_max_datetime(client, test_db):
+def test_create_alert_invalid_max_datetime(client):
     """Test alert creation with invalid max_datetime values"""
     signup_response = client.post(
         "/api/v1/auth/signup",

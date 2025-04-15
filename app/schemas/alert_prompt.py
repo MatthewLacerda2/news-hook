@@ -9,8 +9,8 @@ class HttpMethod(str, Enum):
     GET = "GET"
     POST = "POST"
     PUT = "PUT"
-    DELETE = "DELETE"
     PATCH = "PATCH"
+    DELETE = "DELETE"
 
 #TODO: check out for base, pro, reasoning
 class AlertPromptCreateRequestBase(BaseModel):
@@ -23,20 +23,17 @@ class AlertPromptCreateRequestBase(BaseModel):
     # Optional fields
     parsed_intent: Optional[Dict[str, Any]] = Field(None, description="Parsed interpretation of the prompt")
     example_response: Optional[Dict[str, Any]] = Field(None, description="Example of expected response")
-    max_datetime: Optional[datetime] = Field(None, description="End of monitoring window")
+    max_datetime: Optional[datetime] = Field(None, description="Monitoring window. Must be within the next 300 days")
 
 class AlertPromptCreateSuccessResponse(BaseModel):
-    id: UUID
-    prompt: str
-    understood_intent: str
+    id: UUID = Field(..., description="The ID of the alert")
+    prompt: str = Field(..., description="The natural language prompt describing what to monitor")
+    output_intent: str = Field(..., description="What the LLM understood from the prompt")
     created_at: datetime
-    tags: Optional[list[str]] = None
+    keywords: Optional[list[str]] = Field(None, description="Keywords that will be expected to be in the data that triggers the alert")
 
     class Config:
         from_attributes = True
-
-class AlertPromptCancelBase(BaseModel):
-    id: UUID
 
 class AlertPromptListRequest(BaseModel):
     user_id: UUID = Field(..., description="ID of the agent controller requesting their alerts")
@@ -54,12 +51,13 @@ class AlertPromptListRequest(BaseModel):
 
 class AlertPromptItem(BaseModel):
     id: UUID
-    prompt: str
+    prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     http_method: HttpMethod
     http_url: HttpUrl
     max_datetime: Optional[datetime]
     tags: list[str] = []
-    status: AlertStatus
+    keywords: list[str] = Field(default=[], description="List of keywords that will trigger the alert when found in monitored data")
+    status: AlertStatus 
     created_at: datetime
 
     class Config:
@@ -78,7 +76,14 @@ class AlertMode(str, Enum):
     reasoning = "reasoning"
 
 class AlertPromptPriceCheckRequest(BaseModel):
+    mode: AlertMode = Field(..., description="The mode of the alert. Used for pricing")
+    prompt: str = Field(..., description="The natural language prompt describing what to monitor")
+    # Optional fields
+    parsed_intent: Optional[Dict[str, Any]] = Field(None, description="Parsed interpretation of the prompt")
+    example_response: Optional[Dict[str, Any]] = Field(None, description="Example of expected response")
+
+class AlertPromptPriceCheckResponse(BaseModel):
     price_in_credits: int
-    mode: AlertMode
-    prompt: str
-    output_intent: str  #What did the LLM understand from the prompt?
+    mode: AlertMode = Field(..., description="The mode of the alert. Used for pricing")
+    prompt: str = Field(..., description="The natural language prompt describing what to monitor")
+    output_intent: str = Field(..., description="What LLM understood from the prompt")

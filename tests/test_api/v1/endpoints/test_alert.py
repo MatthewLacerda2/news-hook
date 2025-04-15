@@ -46,7 +46,7 @@ def test_create_alert_invalid_api_key(client, test_db):
     assert response.status_code == 401
     assert "Invalid API key" in response.json()["detail"]
 
-def test_create_alert_mismatched_user_api_key(client, test_db):
+def test_create_alert_mismatched_user_api_key(client, test_db, mock_google_verify):
     """Test alert creation with API key not owned by user"""
     # Create first user
     signup1 = client.post(

@@ -86,3 +86,8 @@ class AlertPromptPriceCheckSuccessResponse(BaseModel):
     mode: AlertMode = Field(..., description="The mode of the alert. Used for pricing")
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     output_intent: str = Field(..., description="What LLM understood from the prompt")
+    
+class AlertCancelRequest(BaseModel):
+    alert_id: UUID = Field(..., description="The ID of the alert to cancel")
+    user_id: UUID = Field(..., description="The ID of the agent controller requesting to cancel the alert")
+

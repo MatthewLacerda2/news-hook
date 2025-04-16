@@ -361,4 +361,128 @@ def test_list_alerts_minimal_parameters(client):
     # Validate response
     data = response.json()
     AlertPromptListResponse.model_validate(data)
+
+def test_cancel_alert_successful(client):
+    """Test successful alert cancellation"""
+    # First create a user
+    signup_response = client.post(
+        "/api/v1/auth/signup",
+        json={"access_token": "valid_google_token"}
+    )
+    user_data = signup_response.json()["agent_controller"]
+    
+    # Create an alert first
+    alert_data = {
+        "api_key": user_data["api_key"],
+        "user_id": user_data["id"],
+        "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
+        "http_method": "POST",
+        "http_url": "https://webhook.example.com/crypto-alert",
+        "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
+        "example_response": {"price": 50001, "alert": True},
+        "max_datetime": (datetime.now() + timedelta(days=30)).isoformat()
+    }
+    
+    create_response = client.post("/api/v1/alerts/", json=alert_data)
+    assert create_response.status_code == 201
+    alert_id = create_response.json()["id"]
+    
+    # Now cancel the alert
+    cancel_data = {
+        "alert_id": alert_id,
+        "user_id": user_data["id"]
+    }
+    
+    response = client.post("/api/v1/alerts/cancel", json=cancel_data)
+    assert response.status_code == 200
+    
+    # Verify the alert is now cancelled by getting it
+    list_params = {
+        "user_id": user_data["id"]
+    }
+    list_response = client.get("/api/v1/alerts/", params=list_params)
+    assert list_response.status_code == 200
+    alerts = list_response.json()["alerts"]
+    cancelled_alert = next(alert for alert in alerts if alert["id"] == alert_id)
+    assert cancelled_alert["status"] == "CANCELLED"
+
+def test_cancel_nonexistent_alert(client):
+    """Test attempting to cancel an alert that doesn't exist"""
+    # Create a user
+    signup_response = client.post(
+        "/api/v1/auth/signup",
+        json={"access_token": "valid_google_token"}
+    )
+    user_data = signup_response.json()["agent_controller"]
+    
+    cancel_data = {
+        "alert_id": str(uuid4()),  # Random non-existent UUID
+        "user_id": user_data["id"]
+    }
+    
+    response = client.post("/api/v1/alerts/cancel", json=cancel_data)
+    assert response.status_code == 400
+    assert "Alert not found" in response.json()["detail"]
+
+def test_cancel_alert_wrong_user(client, mock_google_verify):
+    """Test attempting to cancel an alert belonging to another user"""
+    # Create first user and their alert
+    signup1 = client.post(
+        "/api/v1/auth/signup",
+        json={"access_token": "valid_google_token_1"}
+    )
+    user1_data = signup1.json()["agent_controller"]
+    
+    alert_data = {
+        "api_key": user1_data["api_key"],
+        "user_id": user1_data["id"],
+        "prompt": "Test alert",
+        "http_method": "POST",
+        "http_url": "https://webhook.example.com/test",
+        "max_datetime": (datetime.now() + timedelta(days=30)).isoformat()
+    }
+    
+    create_response = client.post("/api/v1/alerts/", json=alert_data)
+    assert create_response.status_code == 201
+    alert_id = create_response.json()["id"]
+    
+    # Create second user
+    mock_google_verify.return_value = {
+        'email': 'test2@example.com',
+        'sub': '67890',
+        'name': 'Test User 2'
+    }
+    signup2 = client.post(
+        "/api/v1/auth/signup",
+        json={"access_token": "valid_google_token_2"}
+    )
+    user2_data = signup2.json()["agent_controller"]
+    
+    # Try to cancel first user's alert with second user's ID
+    cancel_data = {
+        "alert_id": alert_id,
+        "user_id": user2_data["id"]
+    }
+    
+    response = client.post("/api/v1/alerts/cancel", json=cancel_data)
+    assert response.status_code == 400
+    assert "Alert does not belong to user" in response.json()["detail"]
+
+def test_cancel_alert_invalid_uuid(client):
+    """Test attempting to cancel an alert with invalid UUID format"""
+    # Create a user
+    signup_response = client.post(
+        "/api/v1/auth/signup",
+        json={"access_token": "valid_google_token"}
+    )
+    user_data = signup_response.json()["agent_controller"]
+    
+    cancel_data = {
+        "alert_id": "not-a-valid-uuid",
+        "user_id": user_data["id"]
+    }
+    
+    response = client.post("/api/v1/alerts/cancel", json=cancel_data)
+    assert response.status_code == 400
+    assert "Invalid UUID format" in response.json()["detail"]
     

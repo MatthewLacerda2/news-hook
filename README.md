@@ -50,7 +50,7 @@ For checking build-and-test-ing, you can just run the build-and-test.bat on Wind
     - We use LLM to finalize the validation
 - If it checks out, we process the data to send the appropriate alert
 
-# Types of alerts
+# Alert modes
 
 - **Base**: includes data from webscraping only
     - Data from webscraping

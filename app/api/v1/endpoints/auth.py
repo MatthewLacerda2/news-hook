@@ -1,6 +1,6 @@
-#user oauth signup
+#user oauth2 signup
 
-#user oauth login
+#user oauth2 login
 
 #check credits
 

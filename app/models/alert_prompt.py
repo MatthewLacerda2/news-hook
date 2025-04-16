@@ -9,11 +9,11 @@ from pgvector.sqlalchemy import Vector
 from app.models.base import Base
 
 class AlertStatus(Enum):
-    ACTIVE = "active"
-    TRIGGERED = "triggered"
-    CANCELLED = "cancelled"
-    WARNED = "warned"
-    EXPIRED = "expired"
+    ACTIVE = "ACTIVE"
+    TRIGGERED = "TRIGGERED"
+    CANCELLED = "CANCELLED"
+    WARNED = "WARNED"
+    EXPIRED = "EXPIRED"
     
 class HttpMethod(Enum):
     GET = "GET"

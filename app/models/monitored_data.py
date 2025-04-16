@@ -9,9 +9,10 @@ from pgvector.sqlalchemy import Vector
 from app.models.base import Base
 
 class DataSource(Enum):
-    WEBHOOK = "webhook"
-    WEBSCRAPE = "webscrape"
-    API = "api"
+    WEBHOOK = "WEBHOOK"
+    WEBSCRAPE = "WEBSCRAPE"
+    API = "API"
+    YOUTUBE = "YOUTUBE"
 
 class MonitoredData(Base):
     __tablename__ = "monitored_data"

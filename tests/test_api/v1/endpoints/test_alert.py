@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from uuid import uuid4
-from app.schemas.alert_prompt import AlertPromptPriceCheckSuccessResponse, AlertPromptCreateSuccessResponse, AlertMode
+from app.schemas.alert_prompt import AlertPromptPriceCheckSuccessResponse, AlertPromptCreateSuccessResponse, AlertMode, AlertPromptListResponse
 
 def test_create_alert_successful(client):
     """Test successful alert creation with valid data"""
@@ -241,3 +241,124 @@ def test_check_alert_price_invalid_example_response(client):
     response = client.post("/api/v1/alerts/price-check", json=price_check_data)
     assert response.status_code == 400
     assert "Invalid example_response format" in response.json()["detail"]
+
+def test_list_alerts_successful(client):
+    """Test successful alert listing with valid parameters"""
+    # First create a user
+    signup_response = client.post(
+        "/api/v1/auth/signup",
+        json={"access_token": "valid_google_token"}
+    )
+    user_data = signup_response.json()["agent_controller"]
+    
+    # Valid request with all optional parameters
+    list_params = {
+        "user_id": user_data["id"],
+        "tags": ["crypto", "bitcoin"],
+        "offset": 0,
+        "limit": 50,
+        "prompt_contains": "bitcoin",
+        "http_method": "POST",
+        "base_url": "https://webhook.example.com",
+        "max_datetime": (datetime.now() + timedelta(days=30)).isoformat(),
+        "created_at": datetime.now().isoformat(),
+        "status": "ACTIVE"
+    }
+    
+    response = client.get("/api/v1/alerts/", params=list_params)
+    assert response.status_code == 200
+    
+    # Validate response matches AlertPromptListResponse schema
+    data = response.json()
+    AlertPromptListResponse.model_validate(data)
+
+def test_list_alerts_invalid_enum_values(client):
+    """Test alert listing with invalid enum values"""
+    signup_response = client.post(
+        "/api/v1/auth/signup",
+        json={"access_token": "valid_google_token"}
+    )
+    user_data = signup_response.json()["agent_controller"]
+    
+    # Test invalid HTTP method
+    invalid_method_params = {
+        "user_id": user_data["id"],
+        "http_method": "INVALID_METHOD"
+    }
+    response = client.get("/api/v1/alerts/", params=invalid_method_params)
+    assert response.status_code == 400
+    assert "Invalid http_method value" in response.json()["detail"]
+    
+    # Test invalid status
+    invalid_status_params = {
+        "user_id": user_data["id"],
+        "status": "INVALID_STATUS"
+    }
+    response = client.get("/api/v1/alerts/", params=invalid_status_params)
+    assert response.status_code == 400
+    assert "Invalid status value" in response.json()["detail"]
+
+def test_list_alerts_invalid_parameters(client):
+    """Test alert listing with invalid parameter types"""
+    signup_response = client.post(
+        "/api/v1/auth/signup",
+        json={"access_token": "valid_google_token"}
+    )
+    user_data = signup_response.json()["agent_controller"]
+    
+    # Test invalid UUID
+    invalid_uuid_params = {
+        "user_id": "not-a-uuid",
+    }
+    response = client.get("/api/v1/alerts/", params=invalid_uuid_params)
+    assert response.status_code == 400
+    assert "Invalid user_id format" in response.json()["detail"]
+    
+    # Test invalid offset/limit
+    invalid_pagination_params = {
+        "user_id": user_data["id"],
+        "offset": -1,
+        "limit": 101
+    }
+    response = client.get("/api/v1/alerts/", params=invalid_pagination_params)
+    assert response.status_code == 400
+    assert "Invalid pagination parameters" in response.json()["detail"]
+    
+    # Test invalid URL
+    invalid_url_params = {
+        "user_id": user_data["id"],
+        "base_url": "not-a-valid-url"
+    }
+    response = client.get("/api/v1/alerts/", params=invalid_url_params)
+    assert response.status_code == 400
+    assert "Invalid base_url format" in response.json()["detail"]
+    
+    # Test invalid datetime format
+    invalid_datetime_params = {
+        "user_id": user_data["id"],
+        "created_at": "not-a-datetime"
+    }
+    response = client.get("/api/v1/alerts/", params=invalid_datetime_params)
+    assert response.status_code == 400
+    assert "Invalid datetime format" in response.json()["detail"]
+
+def test_list_alerts_minimal_parameters(client):
+    """Test alert listing with only required parameters"""
+    signup_response = client.post(
+        "/api/v1/auth/signup",
+        json={"access_token": "valid_google_token"}
+    )
+    user_data = signup_response.json()["agent_controller"]
+    
+    # Only required user_id parameter
+    minimal_params = {
+        "user_id": user_data["id"]
+    }
+    
+    response = client.get("/api/v1/alerts/", params=minimal_params)
+    assert response.status_code == 200
+    
+    # Validate response
+    data = response.json()
+    AlertPromptListResponse.model_validate(data)
+    

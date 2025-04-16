@@ -13,7 +13,6 @@ class OAuth2Request(BaseModel):
 class AgentControllerResponse(AgentControllerBase):
     id: UUID
     google_id: str
-    api_key: str
     credits: int
 
     class Config:

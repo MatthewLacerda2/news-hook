@@ -14,7 +14,6 @@ class HttpMethod(str, Enum):
 
 #TODO: check out for base, pro, reasoning
 class AlertPromptCreateRequestBase(BaseModel):
-    api_key: str = Field(..., description="API key of the agent controller requesting their alerts")
     user_id: UUID = Field(..., description="ID of the agent controller requesting their alerts")
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     http_method: HttpMethod = Field(..., description="HTTP method to alert at")
@@ -38,8 +37,8 @@ class AlertPromptCreateSuccessResponse(BaseModel):
 class AlertPromptListRequest(BaseModel):
     user_id: UUID = Field(..., description="ID of the agent controller requesting their alerts")
     tags: list[str] = Field(default=[], description="List of tags to filter alerts by")
-    offset: int = Field(default=0, description="Offset for pagination")
-    limit: int = Field(default=50, description="Limit for pagination")
+    offset: int = Field(default=0, ge=0, description="Offset for pagination")
+    limit: int = Field(default=50, ge=1, le=100, description="Limit for pagination")
     
     # Optional filters
     prompt_contains: Optional[str] = Field(None, description="Substring to filter prompts by")
@@ -58,7 +57,7 @@ class AlertPromptItem(BaseModel):
     tags: list[str] = []
     keywords: list[str] = Field(default=[], description="List of keywords that will trigger the alert when found in monitored data")
     status: AlertStatus 
-    created_at: datetime
+    created_at: datetime = Field(..., lt=datetime.now(), description="The date and time the alert was created")
 
     class Config:
         from_attributes = True

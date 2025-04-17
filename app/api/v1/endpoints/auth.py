@@ -1,13 +1,14 @@
 from datetime import datetime, timedelta
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from app.core.config import settings
-from app.core.security import create_access_token, verify_google_token
+from app.core.security import create_access_token, verify_google_token, verify_token, get_current_user
 from app.core.database import get_db
 from app.schemas.agent_controller import OAuth2Request, TokenResponse
 from app.models.agent_controller import AgentController
+from jose import JWTError
 
 router = APIRouter()
 
@@ -118,6 +119,86 @@ async def login(
             detail="Invalid Google token"
         )
 
-#check credits
+@router.get("/credits")
+async def check_credits(
+    db: Session = Depends(get_db),
+    authorization: str = Header(None)
+):
+    """
+    Get the current user's credit balance.
+    """
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated"
+        )
+        
+    try:
+        # Extract token from Authorization header
+        scheme, token = authorization.split()
+        if scheme.lower() != 'bearer':
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication scheme"
+            )
+            
+        # Verify token and get user ID
+        payload = verify_token(token)
+        user_id = payload.get("sub")
+        
+        # Get user from database
+        user = db.query(AgentController).filter(
+            AgentController.id == user_id
+        ).first()
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+            
+        return {"credits": user.credits}
+        
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token format"
+        )
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        )
 
-#let user delete account
+@router.delete("/account", status_code=status.HTTP_200_OK)
+async def delete_account(
+    db: Session = Depends(get_db),
+    current_user: AgentController = Depends(get_current_user)
+):
+    """
+    Delete user account and all associated data (alert prompts)
+    """
+    try:
+        # Get user with their relationships
+        user = db.query(AgentController).filter(
+            AgentController.id == current_user.id
+        ).first()
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+            
+        # Delete user (this will cascade delete alert_prompts due to relationship)
+        db.delete(user)
+        db.commit()
+        
+        return {"message": "Account successfully deleted"}
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error deleting account"
+        )

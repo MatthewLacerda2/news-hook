@@ -1,8 +1,8 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional, Dict, Any
 from uuid import UUID
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 from app.models.alert_prompt import AlertStatus
 
 class HttpMethod(str, Enum):
@@ -14,7 +14,6 @@ class HttpMethod(str, Enum):
 
 #TODO: check out for base, pro, reasoning
 class AlertPromptCreateRequestBase(BaseModel):
-    user_id: UUID = Field(..., description="ID of the agent controller requesting their alerts")
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     http_method: HttpMethod = Field(..., description="HTTP method to alert at")
     http_url: HttpUrl = Field(..., description="The URL to alert at")
@@ -23,6 +22,19 @@ class AlertPromptCreateRequestBase(BaseModel):
     parsed_intent: Optional[Dict[str, Any]] = Field(None, description="Parsed interpretation of the prompt")
     example_response: Optional[Dict[str, Any]] = Field(None, description="Example of expected response")
     max_datetime: Optional[datetime] = Field(None, description="Monitoring window. Must be within the next 300 days")
+
+    @field_validator('max_datetime')
+    @classmethod
+    def validate_max_datetime(cls, v: Optional[datetime]) -> Optional[datetime]:
+        if v is None:
+            return v
+            
+        now = datetime.utcnow()
+        max_allowed = now + timedelta(days=365)
+        if v > max_allowed:
+            raise ValueError("max_datetime cannot be more than 1 year in the future")
+            
+        return v
 
 class AlertPromptCreateSuccessResponse(BaseModel):
     id: UUID = Field(..., description="The ID of the alert")
@@ -33,20 +45,6 @@ class AlertPromptCreateSuccessResponse(BaseModel):
 
     class Config:
         from_attributes = True
-
-class AlertPromptListRequest(BaseModel):
-    user_id: UUID = Field(..., description="ID of the agent controller requesting their alerts")
-    tags: list[str] = Field(default=[], description="List of tags to filter alerts by")
-    offset: int = Field(default=0, ge=0, description="Offset for pagination")
-    limit: int = Field(default=50, ge=1, le=100, description="Limit for pagination")
-    
-    # Optional filters
-    prompt_contains: Optional[str] = Field(None, description="Substring to filter prompts by")
-    http_method: Optional[HttpMethod] = Field(None, description="Filter by HTTP method")
-    base_url: Optional[HttpUrl] = Field(None, description="Filter by base URL")
-    max_datetime: Optional[datetime] = Field(None, description="Filter by max datetime")
-    created_at: Optional[datetime] = Field(None, description="Filter by creation date")
-    status: Optional[AlertStatus] = Field(None, description="Filter by alert status")
 
 class AlertPromptItem(BaseModel):
     id: UUID
@@ -90,4 +88,3 @@ class AlertPromptPriceCheckSuccessResponse(BaseModel):
 class AlertCancelRequest(BaseModel):
     alert_id: UUID = Field(..., description="The ID of the alert to cancel")
     user_id: UUID = Field(..., description="The ID of the agent controller requesting to cancel the alert")
-

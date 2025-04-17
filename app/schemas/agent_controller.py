@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 class AgentControllerBase(BaseModel):
     email: EmailStr
@@ -28,8 +28,9 @@ class TokenResponse(BaseModel):
     expires_in: datetime = Field(..., description="Token expiration time")
     agent_controller: AgentControllerResponse
 
-    @validator('token_type')
-    def validate_token_type(cls, v):
+    @field_validator('token_type')
+    @classmethod
+    def validate_token_type(cls, v: str) -> str:
         if v.lower() != 'bearer':
             raise ValueError('token_type must be bearer')
         return v.lower()

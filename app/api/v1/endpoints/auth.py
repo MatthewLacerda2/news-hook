@@ -74,8 +74,49 @@ async def signup(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid Google token"
         )
+
+@router.post("/login", response_model=TokenResponse)
+async def login(
+    oauth_data: OAuth2Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Login using Google OAuth2 token.
+    """
+    try:
+        # Verify Google token and get user info
+        user_info = verify_google_token(oauth_data.access_token)
         
-#user oauth2 login
+        # Check if user exists
+        user = db.query(AgentController).filter(
+            AgentController.google_id == user_info["sub"]
+        ).first()
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        # Create access token
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": str(user.id)},
+            expires_delta=access_token_expires
+        )
+        
+        return TokenResponse(
+            access_token=access_token,
+            token_type="bearer",
+            expires_in=datetime.utcnow() + access_token_expires,
+            agent_controller=user
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Google token"
+        )
 
 #check credits
 

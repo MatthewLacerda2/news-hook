@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional, Dict, Any
 from uuid import UUID
-from pydantic import BaseModel, Field, HttpUrl, validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 from app.models.alert_prompt import AlertStatus
 
 class HttpMethod(str, Enum):
@@ -23,7 +23,8 @@ class AlertPromptCreateRequestBase(BaseModel):
     example_response: Optional[Dict[str, Any]] = Field(None, description="Example of expected response")
     max_datetime: Optional[datetime] = Field(None, description="Monitoring window. Must be within the next 300 days")
 
-    @validator('max_datetime')
+    @field_validator('max_datetime')
+    @classmethod
     def validate_max_datetime(cls, v: Optional[datetime]) -> Optional[datetime]:
         if v is None:
             return v

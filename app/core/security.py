@@ -3,8 +3,12 @@ from typing import Optional
 from jose import jwt, JWTError
 from google.oauth2 import id_token
 from google.auth.transport import requests
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Depends, HTTPAuthorizationCredentials
+from fastapi.security import HTTPBearer
+from sqlalchemy.orm import Session
 from app.core.config import settings
+from app.core.database import get_db
+from app.models.agent_controller import AgentController
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """
@@ -86,4 +90,60 @@ def verify_token(token: str) -> dict:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token"
+        )
+
+# Create security scheme for JWT bearer token
+security = HTTPBearer()
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+) -> AgentController:
+    """
+    Get the current authenticated user from the JWT token.
+    
+    Args:
+        credentials: The HTTP Authorization credentials containing the JWT token
+        db: Database session
+        
+    Returns:
+        AgentController: The current authenticated user
+        
+    Raises:
+        HTTPException: If token is invalid or user not found
+    """
+    try:
+        # Verify the JWT token and get the payload
+        payload = verify_token(credentials.credentials)
+        
+        # Get user_id from token payload
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload"
+            )
+            
+        # Get user from database
+        user = db.query(AgentController).filter(
+            AgentController.id == user_id
+        ).first()
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+            
+        return user
+        
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials"
         )

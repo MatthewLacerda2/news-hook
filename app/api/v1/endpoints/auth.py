@@ -170,4 +170,37 @@ async def check_credits(
             detail="Invalid token"
         )
 
+@router.delete("/account", status_code=status.HTTP_200_OK)
+async def delete_account(
+    db: Session = Depends(get_db),
+    current_user: AgentController = Depends(get_current_user)
+):
+    """
+    Delete user account and all associated data (alert prompts)
+    """
+    try:
+        # Get user with their relationships
+        user = db.query(AgentController).filter(
+            AgentController.id == current_user.id
+        ).first()
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+            
+        # Delete user (this will cascade delete alert_prompts due to relationship)
+        db.delete(user)
+        db.commit()
+        
+        return {"message": "Account successfully deleted"}
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error deleting account"
+        )
+
 #let user delete account

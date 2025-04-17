@@ -3,8 +3,8 @@ from typing import Optional
 from jose import jwt, JWTError
 from google.oauth2 import id_token
 from google.auth.transport import requests
-from fastapi import HTTPException, status, Depends, HTTPAuthorizationCredentials
-from fastapi.security import HTTPBearer
+from fastapi import HTTPException, status, Depends, HTTPAuthorizationCredentials, Security
+from fastapi.security import HTTPBearer, APIKeyHeader
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
@@ -147,3 +147,25 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials"
         )
+
+# Define the API key header scheme
+api_key_header = APIKeyHeader(name="X-API-Key")
+
+async def get_user_by_api_key(
+    api_key: str = Security(api_key_header),
+    db: Session = Depends(get_db)
+) -> AgentController:
+    """
+    Get the current user based on their API key from the X-API-Key header.
+    """
+    user = db.query(AgentController).filter(
+        AgentController.api_key == api_key
+    ).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API key"
+        )
+        
+    return user

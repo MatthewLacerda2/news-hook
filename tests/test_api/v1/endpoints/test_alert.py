@@ -12,8 +12,6 @@ def test_create_alert_successful(client):
     user_data = signup_response.json()["agent_controller"]
     
     alert_data = {
-        "api_key": user_data["api_key"],
-        "user_id": user_data["id"],
         "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/crypto-alert",
@@ -22,7 +20,11 @@ def test_create_alert_successful(client):
         "max_datetime": (datetime.now() + timedelta(days=300)).isoformat()
     }
     
-    response = client.post("/api/v1/alerts/", json=alert_data)
+    response = client.post(
+        "/api/v1/alerts/",
+        headers={"X-API-Key": user_data["api_key"]},  # API key in header
+        json=alert_data
+    )
     
     assert response.status_code == 201
     # This will raise a validation error if the response doesn't match the schema
@@ -31,14 +33,16 @@ def test_create_alert_successful(client):
 def test_create_alert_invalid_api_key(client):
     """Test alert creation with invalid API key"""
     alert_data = {
-        "api_key": "invalid_api_key",
-        "user_id": str(uuid4()),
         "prompt": "Test prompt",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/test"
     }
     
-    response = client.post("/api/v1/alerts/", json=alert_data)
+    response = client.post(
+        "/api/v1/alerts/",
+        headers={"X-API-Key": "invalid_api_key"},  # Invalid API key in header
+        json=alert_data
+    )
     assert response.status_code == 401
     assert "Invalid API key" in response.json()["detail"]
 
@@ -370,11 +374,10 @@ def test_cancel_alert_successful(client):
         json={"access_token": "valid_google_token"}
     )
     user_data = signup_response.json()["agent_controller"]
+    api_key = user_data["api_key"]
     
     # Create an alert first
     alert_data = {
-        "api_key": user_data["api_key"],
-        "user_id": user_data["id"],
         "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/crypto-alert",
@@ -383,24 +386,31 @@ def test_cancel_alert_successful(client):
         "max_datetime": (datetime.now() + timedelta(days=30)).isoformat()
     }
     
-    create_response = client.post("/api/v1/alerts/", json=alert_data)
+    create_response = client.post(
+        "/api/v1/alerts/", 
+        headers={"X-API-Key": api_key},
+        json=alert_data
+    )
     assert create_response.status_code == 201
     alert_id = create_response.json()["id"]
     
     # Now cancel the alert
     cancel_data = {
-        "alert_id": alert_id,
-        "user_id": user_data["id"]
+        "alert_id": alert_id
     }
     
-    response = client.post("/api/v1/alerts/cancel", json=cancel_data)
+    response = client.post(
+        "/api/v1/alerts/cancel", 
+        headers={"X-API-Key": api_key},
+        json=cancel_data
+    )
     assert response.status_code == 200
     
     # Verify the alert is now cancelled by getting it
-    list_params = {
-        "user_id": user_data["id"]
-    }
-    list_response = client.get("/api/v1/alerts/", params=list_params)
+    list_response = client.get(
+        "/api/v1/alerts/",
+        headers={"X-API-Key": api_key}
+    )
     assert list_response.status_code == 200
     alerts = list_response.json()["alerts"]
     cancelled_alert = next(alert for alert in alerts if alert["id"] == alert_id)
@@ -414,13 +424,17 @@ def test_cancel_nonexistent_alert(client):
         json={"access_token": "valid_google_token"}
     )
     user_data = signup_response.json()["agent_controller"]
+    api_key = user_data["api_key"]
     
     cancel_data = {
-        "alert_id": str(uuid4()),  # Random non-existent UUID
-        "user_id": user_data["id"]
+        "alert_id": str(uuid4())  # Random non-existent UUID
     }
     
-    response = client.post("/api/v1/alerts/cancel", json=cancel_data)
+    response = client.post(
+        "/api/v1/alerts/cancel",
+        headers={"X-API-Key": api_key},
+        json=cancel_data
+    )
     assert response.status_code == 400
     assert "Alert not found" in response.json()["detail"]
 
@@ -432,17 +446,20 @@ def test_cancel_alert_wrong_user(client, mock_google_verify):
         json={"access_token": "valid_google_token_1"}
     )
     user1_data = signup1.json()["agent_controller"]
+    api_key1 = user1_data["api_key"]
     
     alert_data = {
-        "api_key": user1_data["api_key"],
-        "user_id": user1_data["id"],
         "prompt": "Test alert",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/test",
         "max_datetime": (datetime.now() + timedelta(days=30)).isoformat()
     }
     
-    create_response = client.post("/api/v1/alerts/", json=alert_data)
+    create_response = client.post(
+        "/api/v1/alerts/",
+        headers={"X-API-Key": api_key1},
+        json=alert_data
+    )
     assert create_response.status_code == 201
     alert_id = create_response.json()["id"]
     
@@ -457,14 +474,18 @@ def test_cancel_alert_wrong_user(client, mock_google_verify):
         json={"access_token": "valid_google_token_2"}
     )
     user2_data = signup2.json()["agent_controller"]
+    api_key2 = user2_data["api_key"]
     
-    # Try to cancel first user's alert with second user's ID
+    # Try to cancel first user's alert with second user's API key
     cancel_data = {
-        "alert_id": alert_id,
-        "user_id": user2_data["id"]
+        "alert_id": alert_id
     }
     
-    response = client.post("/api/v1/alerts/cancel", json=cancel_data)
+    response = client.post(
+        "/api/v1/alerts/cancel",
+        headers={"X-API-Key": api_key2},
+        json=cancel_data
+    )
     assert response.status_code == 400
     assert "Alert does not belong to user" in response.json()["detail"]
 
@@ -476,13 +497,16 @@ def test_cancel_alert_invalid_uuid(client):
         json={"access_token": "valid_google_token"}
     )
     user_data = signup_response.json()["agent_controller"]
+    api_key = user_data["api_key"]
     
     cancel_data = {
-        "alert_id": "not-a-valid-uuid",
-        "user_id": user_data["id"]
+        "alert_id": "not-a-valid-uuid"
     }
     
-    response = client.post("/api/v1/alerts/cancel", json=cancel_data)
+    response = client.post(
+        "/api/v1/alerts/cancel",
+        headers={"X-API-Key": api_key},
+        json=cancel_data
+    )
     assert response.status_code == 400
     assert "Invalid UUID format" in response.json()["detail"]
-    

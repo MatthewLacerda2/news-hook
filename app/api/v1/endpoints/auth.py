@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from app.core.config import settings
-from app.core.security import create_access_token, verify_google_token, verify_token
+from app.core.security import create_access_token, verify_google_token, verify_token, get_current_user
 from app.core.database import get_db
 from app.schemas.agent_controller import OAuth2Request, TokenResponse
 from app.models.agent_controller import AgentController
@@ -202,5 +202,3 @@ async def delete_account(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error deleting account"
         )
-
-#let user delete account

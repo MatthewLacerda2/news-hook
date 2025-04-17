@@ -1,9 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Header, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from uuid import UUID
-from sqlalchemy import and_
 
 from app.core.database import get_db
 from app.models.agent_controller import AgentController

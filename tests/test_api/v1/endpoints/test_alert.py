@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from uuid import uuid4
 from app.schemas.alert_prompt import AlertPromptPriceCheckSuccessResponse, AlertPromptCreateSuccessResponse, AlertMode, AlertPromptListResponse
+from app.models.alert_prompt import AlertStatus
 
 def test_create_alert_successful(client):
     """Test successful alert creation with valid data"""
@@ -386,15 +387,10 @@ def test_cancel_alert_successful(client):
     assert create_response.status_code == 201
     alert_id = create_response.json()["id"]
     
-    # Now cancel the alert
-    cancel_data = {
-        "alert_id": alert_id
-    }
-    
-    response = client.post(
-        "/api/v1/alerts/cancel", 
-        headers={"X-API-Key": api_key},
-        json=cancel_data
+    # Now cancel the alert using PATCH
+    response = client.patch(
+        f"/api/v1/alerts/{alert_id}/cancel",
+        headers={"X-API-Key": api_key}
     )
     assert response.status_code == 200
     
@@ -406,29 +402,16 @@ def test_cancel_alert_successful(client):
     assert list_response.status_code == 200
     alerts = list_response.json()["alerts"]
     cancelled_alert = next(alert for alert in alerts if alert["id"] == alert_id)
-    assert cancelled_alert["status"] == "CANCELLED"
+    assert cancelled_alert["status"] == AlertStatus.CANCELLED
 
-def test_cancel_nonexistent_alert(client):
-    """Test attempting to cancel an alert that doesn't exist"""
-    # Create a user
-    signup_response = client.post(
-        "/api/v1/auth/signup",
-        json={"access_token": "valid_google_token"}
+def test_cancel_alert_invalid_api_key(client):
+    """Test attempting to cancel an alert with invalid API key"""
+    response = client.patch(
+        f"/api/v1/alerts/{str(uuid4())}/cancel",
+        headers={"X-API-Key": "invalid_api_key"}
     )
-    user_data = signup_response.json()["agent_controller"]
-    api_key = user_data["api_key"]
-    
-    cancel_data = {
-        "alert_id": str(uuid4())  # Random non-existent UUID
-    }
-    
-    response = client.post(
-        "/api/v1/alerts/cancel",
-        headers={"X-API-Key": api_key},
-        json=cancel_data
-    )
-    assert response.status_code == 400
-    assert "Alert not found" in response.json()["detail"]
+    assert response.status_code == 403
+    assert "Unauthorized" in response.json()["detail"]
 
 def test_cancel_alert_wrong_user(client, mock_google_verify):
     """Test attempting to cancel an alert belonging to another user"""
@@ -469,20 +452,15 @@ def test_cancel_alert_wrong_user(client, mock_google_verify):
     api_key2 = user2_data["api_key"]
     
     # Try to cancel first user's alert with second user's API key
-    cancel_data = {
-        "alert_id": alert_id
-    }
-    
-    response = client.post(
-        "/api/v1/alerts/cancel",
-        headers={"X-API-Key": api_key2},
-        json=cancel_data
+    response = client.patch(
+        f"/api/v1/alerts/{alert_id}/cancel",
+        headers={"X-API-Key": api_key2}
     )
-    assert response.status_code == 400
-    assert "Alert does not belong to user" in response.json()["detail"]
+    assert response.status_code == 404
+    assert "Not found" in response.json()["detail"]
 
-def test_cancel_alert_invalid_uuid(client):
-    """Test attempting to cancel an alert with invalid UUID format"""
+def test_cancel_nonexistent_alert(client):
+    """Test attempting to cancel an alert that doesn't exist"""
     # Create a user
     signup_response = client.post(
         "/api/v1/auth/signup",
@@ -491,14 +469,9 @@ def test_cancel_alert_invalid_uuid(client):
     user_data = signup_response.json()["agent_controller"]
     api_key = user_data["api_key"]
     
-    cancel_data = {
-        "alert_id": "not-a-valid-uuid"
-    }
-    
-    response = client.post(
-        "/api/v1/alerts/cancel",
-        headers={"X-API-Key": api_key},
-        json=cancel_data
+    response = client.patch(
+        f"/api/v1/alerts/{str(uuid4())}/cancel",
+        headers={"X-API-Key": api_key}
     )
-    assert response.status_code == 400
-    assert "Invalid UUID format" in response.json()["detail"]
+    assert response.status_code == 404
+    assert "Not found" in response.json()["detail"]

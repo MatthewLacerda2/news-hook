@@ -88,4 +88,3 @@ class AlertPromptPriceCheckSuccessResponse(BaseModel):
 class AlertCancelRequest(BaseModel):
     alert_id: UUID = Field(..., description="The ID of the alert to cancel")
     user_id: UUID = Field(..., description="The ID of the agent controller requesting to cancel the alert")
-

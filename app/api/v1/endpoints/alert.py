@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from uuid import UUID
 
 from app.core.database import get_db
 from app.models.agent_controller import AgentController
@@ -112,3 +113,29 @@ async def list_alerts(
     )
 
 #cancel alert (they cannot be 'deleted' because creating them costed credits, thus we must keep track)
+
+@router.patch("/{alert_id}/cancel", status_code=status.HTTP_200_OK)
+async def cancel_alert(
+    alert_id: UUID,
+    db: Session = Depends(get_db),
+    user: AgentController = Depends(get_user_by_api_key)
+):
+    """Cancel an existing alert"""
+    
+    # Find the alert and verify ownership
+    alert = db.query(AlertPrompt).filter(
+        AlertPrompt.id == alert_id,
+        AlertPrompt.user_id == user.id
+    ).first()
+    
+    if not alert:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not found"
+        )
+    
+    # Update alert status to cancelled
+    alert.status = AlertStatus.CANCELLED
+    db.commit()
+    
+    return {"message": "Alert cancelled successfully"}

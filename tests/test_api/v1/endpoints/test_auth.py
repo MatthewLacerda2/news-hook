@@ -1,4 +1,3 @@
-import pytest
 from app.schemas.agent_controller import TokenResponse
 
 def test_signup_successful(client):

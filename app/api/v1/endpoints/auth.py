@@ -1,5 +1,80 @@
-#user oauth2 signup
+from datetime import datetime, timedelta
+import uuid
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+from app.core.config import settings
+from app.core.security import create_access_token, verify_google_token
+from app.core.database import get_db
+from app.schemas.agent_controller import OAuth2Request, TokenResponse
+from app.models.agent_controller import AgentController
 
+router = APIRouter()
+
+@router.post("/signup", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+async def signup(
+    oauth_data: OAuth2Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Sign up a new user using Google OAuth2 token.
+    """
+    try:
+        # Verify Google token and get user info
+        user_info = verify_google_token(oauth_data.access_token)
+        
+        # Check if user already exists
+        existing_user = db.query(AgentController).filter(
+            AgentController.google_id == user_info["sub"]
+        ).first()
+        
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="User already exists"
+            )
+        
+        # Create new user
+        user = AgentController(
+            id=uuid.uuid4(),
+            email=user_info["email"],
+            name=user_info.get("name"),
+            google_id=user_info["sub"],
+            api_key=str(uuid.uuid4()),  # Generate a unique API key
+            credits=0
+        )
+        
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        # Create access token
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": str(user.id)},
+            expires_delta=access_token_expires
+        )
+        
+        return TokenResponse(
+            access_token=access_token,
+            token_type="bearer",
+            expires_in=datetime.utcnow() + access_token_expires,
+            agent_controller=user
+        )
+        
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User already exists"
+        )
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Google token"
+        )
+        
 #user oauth2 login
 
 #check credits

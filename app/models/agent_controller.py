@@ -11,8 +11,8 @@ class AgentController(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String, nullable=False, unique=True)
-    api_key = Column(String, nullable=False, unique=True)
-    google_id = Column(String, unique=True, nullable=True)
+    api_key = Column(String, nullable=False, unique=True)   #TODO: users shall be able to create and delete many api keys
+    google_id = Column(String, unique=True, nullable=False)
     name = Column(String, nullable=True)
     credits = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)

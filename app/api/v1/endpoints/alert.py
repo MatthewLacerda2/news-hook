@@ -1,15 +1,18 @@
 from datetime import datetime, timedelta
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status, Header, Query
 from sqlalchemy.orm import Session
 from uuid import UUID
+from sqlalchemy import and_
 
 from app.core.database import get_db
 from app.models.agent_controller import AgentController
 from app.models.alert_prompt import AlertPrompt, AlertStatus, HttpMethod
 from app.schemas.alert_prompt import (
     AlertPromptCreateRequestBase,
-    AlertPromptCreateSuccessResponse
+    AlertPromptCreateSuccessResponse,
+    AlertPromptListResponse,
+    AlertPromptItem
 )
 from app.core.security import get_user_by_api_key
 
@@ -22,8 +25,7 @@ async def create_alert(
     user: AgentController = Depends(get_user_by_api_key)
 ):
     """Create a new alert for monitoring"""
-    
-    # Check if user has sufficient credits
+
     if user.credits <= 0:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -70,6 +72,45 @@ async def create_alert(
 
 #check alert price
 
-#get user' alerts
+@router.get("/", response_model=AlertPromptListResponse)
+async def list_alerts(
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=100),
+    prompt_contains: Optional[str] = None,
+    max_datetime: Optional[datetime] = None,
+    created_after: Optional[datetime] = None,
+    db: Session = Depends(get_db),
+    user: AgentController = Depends(get_user_by_api_key)
+):
+    """List alerts for the authenticated user with filtering and pagination"""
+    
+    # Validate created_after against max_datetime if both are provided
+    if created_after and max_datetime and created_after > max_datetime:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="created_after cannot be later than max_datetime"
+        )
+    
+    # Build the query
+    query = db.query(AlertPrompt).filter(AlertPrompt.user_id == user.id)
+    
+    # Apply filters if provided
+    if prompt_contains:
+        query = query.filter(AlertPrompt.prompt.ilike(f"%{prompt_contains}%"))
+    if max_datetime:
+        query = query.filter(AlertPrompt.max_datetime <= max_datetime)
+    if created_after:
+        query = query.filter(AlertPrompt.created_at >= created_after)
+    
+    # Apply pagination
+    total = query.count()
+    alerts = query.offset(offset).limit(limit).all()
+    
+    return AlertPromptListResponse(
+        alerts=[
+            AlertPromptItem.model_validate(alert) for alert in alerts
+        ],
+        total=total
+    )
 
 #cancel alert (they cannot be 'deleted' because creating them costed credits, thus we must keep track)

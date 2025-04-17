@@ -257,50 +257,23 @@ def test_list_alerts_successful(client):
     
     # Valid request with all optional parameters
     list_params = {
-        "user_id": user_data["id"],
-        "tags": ["crypto", "bitcoin"],
         "offset": 0,
         "limit": 50,
         "prompt_contains": "bitcoin",
-        "http_method": "POST",
-        "base_url": "https://webhook.example.com",
         "max_datetime": (datetime.now() + timedelta(days=30)).isoformat(),
-        "created_at": datetime.now().isoformat(),
-        "status": "ACTIVE"
+        "created_after": datetime.now().isoformat()
     }
     
-    response = client.get("/api/v1/alerts/", params=list_params)
+    response = client.get(
+        "/api/v1/alerts/",
+        params=list_params,
+        headers={"X-API-Key": user_data["api_key"]}
+    )
     assert response.status_code == 200
     
     # Validate response matches AlertPromptListResponse schema
     data = response.json()
     AlertPromptListResponse.model_validate(data)
-
-def test_list_alerts_invalid_enum_values(client):
-    """Test alert listing with invalid enum values"""
-    signup_response = client.post(
-        "/api/v1/auth/signup",
-        json={"access_token": "valid_google_token"}
-    )
-    user_data = signup_response.json()["agent_controller"]
-    
-    # Test invalid HTTP method
-    invalid_method_params = {
-        "user_id": user_data["id"],
-        "http_method": "INVALID_METHOD"
-    }
-    response = client.get("/api/v1/alerts/", params=invalid_method_params)
-    assert response.status_code == 400
-    assert "Invalid http_method value" in response.json()["detail"]
-    
-    # Test invalid status
-    invalid_status_params = {
-        "user_id": user_data["id"],
-        "status": "INVALID_STATUS"
-    }
-    response = client.get("/api/v1/alerts/", params=invalid_status_params)
-    assert response.status_code == 400
-    assert "Invalid status value" in response.json()["detail"]
 
 def test_list_alerts_invalid_parameters(client):
     """Test alert listing with invalid parameter types"""
@@ -309,62 +282,81 @@ def test_list_alerts_invalid_parameters(client):
         json={"access_token": "valid_google_token"}
     )
     user_data = signup_response.json()["agent_controller"]
-    
-    # Test invalid UUID
-    invalid_uuid_params = {
-        "user_id": "not-a-uuid",
-    }
-    response = client.get("/api/v1/alerts/", params=invalid_uuid_params)
-    assert response.status_code == 400
-    assert "Invalid user_id format" in response.json()["detail"]
+    api_key = user_data["api_key"]
     
     # Test invalid offset/limit
     invalid_pagination_params = {
-        "user_id": user_data["id"],
         "offset": -1,
         "limit": 101
     }
-    response = client.get("/api/v1/alerts/", params=invalid_pagination_params)
+    response = client.get(
+        "/api/v1/alerts/",
+        params=invalid_pagination_params,
+        headers={"X-API-Key": api_key}
+    )
     assert response.status_code == 400
     assert "Invalid pagination parameters" in response.json()["detail"]
     
-    # Test invalid URL
-    invalid_url_params = {
-        "user_id": user_data["id"],
-        "base_url": "not-a-valid-url"
-    }
-    response = client.get("/api/v1/alerts/", params=invalid_url_params)
-    assert response.status_code == 400
-    assert "Invalid base_url format" in response.json()["detail"]
-    
     # Test invalid datetime format
     invalid_datetime_params = {
-        "user_id": user_data["id"],
-        "created_at": "not-a-datetime"
+        "created_after": "not-a-datetime"
     }
-    response = client.get("/api/v1/alerts/", params=invalid_datetime_params)
+    response = client.get(
+        "/api/v1/alerts/",
+        params=invalid_datetime_params,
+        headers={"X-API-Key": api_key}
+    )
     assert response.status_code == 400
     assert "Invalid datetime format" in response.json()["detail"]
 
-def test_list_alerts_minimal_parameters(client):
-    """Test alert listing with only required parameters"""
+def test_list_alerts_datetime_validation(client):
+    """Test datetime validation between created_after and max_datetime"""
     signup_response = client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
     user_data = signup_response.json()["agent_controller"]
     
-    # Only required user_id parameter
-    minimal_params = {
-        "user_id": user_data["id"]
+    now = datetime.now()
+    params = {
+        "created_after": (now + timedelta(days=2)).isoformat(),
+        "max_datetime": (now + timedelta(days=1)).isoformat()
     }
     
-    response = client.get("/api/v1/alerts/", params=minimal_params)
+    response = client.get(
+        "/api/v1/alerts/",
+        params=params,
+        headers={"X-API-Key": user_data["api_key"]}
+    )
+    assert response.status_code == 400
+    assert "created_after cannot be later than max_datetime" in response.json()["detail"]
+
+def test_list_alerts_minimal_parameters(client):
+    """Test alert listing with no parameters (just authentication)"""
+    signup_response = client.post(
+        "/api/v1/auth/signup",
+        json={"access_token": "valid_google_token"}
+    )
+    user_data = signup_response.json()["agent_controller"]
+    
+    response = client.get(
+        "/api/v1/alerts/",
+        headers={"X-API-Key": user_data["api_key"]}
+    )
     assert response.status_code == 200
     
     # Validate response
     data = response.json()
     AlertPromptListResponse.model_validate(data)
+
+def test_list_alerts_invalid_api_key(client):
+    """Test alert listing with invalid API key"""
+    response = client.get(
+        "/api/v1/alerts/",
+        headers={"X-API-Key": "invalid_api_key"}
+    )
+    assert response.status_code == 401
+    assert "Invalid API key" in response.json()["detail"]
 
 def test_cancel_alert_successful(client):
     """Test successful alert cancellation"""

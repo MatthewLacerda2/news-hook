@@ -45,20 +45,6 @@ class AlertPromptCreateSuccessResponse(BaseModel):
     class Config:
         from_attributes = True
 
-class AlertPromptListRequest(BaseModel):
-    user_id: UUID = Field(..., description="ID of the agent controller requesting their alerts")
-    tags: list[str] = Field(default=[], description="List of tags to filter alerts by")
-    offset: int = Field(default=0, ge=0, description="Offset for pagination")
-    limit: int = Field(default=50, ge=1, le=100, description="Limit for pagination")
-    
-    # Optional filters
-    prompt_contains: Optional[str] = Field(None, description="Substring to filter prompts by")
-    http_method: Optional[HttpMethod] = Field(None, description="Filter by HTTP method")
-    base_url: Optional[HttpUrl] = Field(None, description="Filter by base URL")
-    max_datetime: Optional[datetime] = Field(None, description="Filter by max datetime")
-    created_at: Optional[datetime] = Field(None, description="Filter by creation date")
-    status: Optional[AlertStatus] = Field(None, description="Filter by alert status")
-
 class AlertPromptItem(BaseModel):
     id: UUID
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")

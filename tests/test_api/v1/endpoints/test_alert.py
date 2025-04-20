@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from uuid import uuid4
-from app.schemas.alert_prompt import AlertPromptPriceCheckSuccessResponse, AlertPromptCreateSuccessResponse, AlertPromptListResponse
+from app.schemas.alert_prompt import AlertPromptCreateSuccessResponse, AlertPromptListResponse
 from app.models.alert_prompt import AlertStatus
 
 def test_create_alert_successful(client):

@@ -18,13 +18,13 @@ class AlertPromptCreateRequestBase(BaseModel):
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     http_method: HttpMethod = Field(..., description="HTTP method to alert at")
     http_url: HttpUrl = Field(..., description="The URL to alert at")
+    llm_model: str = Field("gemini-2.5-pro", description="The LLM model to use for the alert")
     
     # Optional fields
     parsed_intent: Optional[Dict[str, JsonPrimitive]] = Field(None, description="Parsed interpretation of the prompt. MUST BE FLAT JSON AND NOT NESTED")
     example_response: Optional[Dict[str, JsonPrimitive]] = Field(None, description="Example of expected response. MUST BE FLAT JSON AND NOT NESTED")
     max_datetime: Optional[datetime] = Field(None, description="Monitoring window. Must be within the next 300 days")
     
-    llm_model: str = Field("gemini-2.5-pro", description="The LLM model to use for the alert")
 
     @field_validator('max_datetime')
     @classmethod
@@ -33,7 +33,7 @@ class AlertPromptCreateRequestBase(BaseModel):
             return v
             
         now = datetime.now()
-        max_allowed = now + timedelta(days=365)
+        max_allowed = now + timedelta(days=300)
         if v > max_allowed:
             raise ValueError("max_datetime cannot be more than 1 year in the future")
             

@@ -35,7 +35,6 @@ async def create_alert(
     try:
         now = datetime.now()
         
-        # Verify if the LLM model exists
         llm_model = db.query(LLMModel).filter(LLMModel.model_name == alert_data.llm_model).first()
         if not llm_model:
             raise HTTPException(

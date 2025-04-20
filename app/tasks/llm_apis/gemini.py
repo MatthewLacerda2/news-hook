@@ -5,7 +5,7 @@ from app.utils.llm_response_formats import LLMValidationFormat, LLMVerificationF
 
 client = genai.Client(api_key="YOUR_API_KEY") #TODO: Add API key
 
-def get_gemini_validation(alert_prompt: str, alert_parsed_intent: str):    
+def get_gemini_validation(alert_prompt: str, alert_parsed_intent: str) -> LLMValidationFormat:
     
     full_prompt = get_validation_prompt(alert_prompt, alert_parsed_intent)
     response = client.models.generate_content(
@@ -16,7 +16,7 @@ def get_gemini_validation(alert_prompt: str, alert_parsed_intent: str):
     
     return response.text
 
-def get_gemini_verification(alert_prompt: str, alert_parsed_intent: str, document: str):
+def get_gemini_verification(alert_prompt: str, alert_parsed_intent: str, document: str) -> LLMVerificationFormat:
     
     full_prompt = get_verification_prompt(alert_prompt, alert_parsed_intent, document)
     response = client.models.generate_content(
@@ -27,7 +27,7 @@ def get_gemini_verification(alert_prompt: str, alert_parsed_intent: str, documen
 
     return response.text
 
-def get_gemini_alert_generation(alert_parsed_intent: str, document: str, example_response: str):
+def get_gemini_alert_generation(alert_parsed_intent: str, document: str, example_response: str) -> LLMGenerationFormat:
     
     full_prompt = get_generation_prompt(alert_parsed_intent, document, example_response)
     response = client.models.generate_content(

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 validation_prompt = """
 You are a helpful assistant that validates if an alert's request is reasonable.
 
@@ -17,7 +19,7 @@ The alert's parsed intent is:
 As guidelines, the alert request must be:
 - Clear
 - Specific
-- Possible to happen
+- Have a plausible chance of happening
 - Unambiguous (not leave room for interpretation)
 - NOT vague
 - NOT subjective
@@ -26,6 +28,14 @@ As guidelines, the alert request must be:
 Your job is to validate if the alert's request is reasonable.
 Current date and time: {current_date_time}
 """
+
+def get_validation_prompt(alert_prompt: str, alert_parsed_intent: str):
+    current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return validation_prompt.format(
+        alert_prompt=alert_prompt,
+        alert_parsed_intent=alert_parsed_intent,
+        current_date_time=current_date_time
+    )
 
 verification_prompt = """
 You are a helpful assistant that verifies if a document matches an alert's request.
@@ -53,6 +63,15 @@ If so, we will trigger the alert and send a request to the alert's URL.
 
 Current date and time: {current_date_time}
 """
+
+def get_verification_prompt(alert_prompt: str, alert_parsed_intent: str, document: str):
+    current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return verification_prompt.format(
+        alert_prompt=alert_prompt,
+        alert_parsed_intent=alert_parsed_intent,
+        document=document,
+        current_date_time=current_date_time
+    )
 
 generation_prompt = """
 You are a helpful assistant that generates a payload for an http request, based on an alert's request.
@@ -83,3 +102,11 @@ Write in the language of the user's request.
 Current date and time: {current_date_time}
 """
 
+def get_generation_prompt(alert_parsed_intent: str, document: str, example_response: str):
+    current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return generation_prompt.format(
+        alert_parsed_intent=alert_parsed_intent,
+        document=document,
+        example_response=example_response,
+        current_date_time=current_date_time
+    )

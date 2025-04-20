@@ -1,6 +1,5 @@
 from openai import OpenAI
-from datetime import datetime
-from app.tasks.prompts import validation_prompt, verification_prompt, generation_prompt
+from app.tasks.prompts import get_validation_prompt, get_verification_prompt, get_generation_prompt
 
 client = OpenAI(
     base_url = 'http://localhost:11434/v1',
@@ -14,61 +13,40 @@ def get_nomic_embeddings(text: str):
     )
     return embeddings
 
-def get_ollama_validation(text: str, alert_prompt: str, alert_parsed_intent: str):    
-    current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+def get_ollama_validation(alert_prompt: str, alert_parsed_intent: str):
     
-    full_prompt = validation_prompt.format(
-        alert_prompt=alert_prompt,
-        alert_parsed_intent=alert_parsed_intent,
-        current_date_time=current_date_time
-    )
-    
+    full_prompt = get_validation_prompt(alert_prompt, alert_parsed_intent)    
     response = client.chat.completions.create(
         model="llama3.1",
         temperature=0.5,
         messages=[
-            {"role": "system", "content": full_prompt},
-            {"role": "user", "content": text}
+            {"role": "user", "content": full_prompt},
         ],
     )
+    
     return response.choices[0].message.content
 
-def get_ollama_verification(text: str, alert_prompt: str, alert_parsed_intent: str, document: str):
-    current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
-    full_prompt = verification_prompt.format(
-        alert_prompt=alert_prompt,
-        alert_parsed_intent=alert_parsed_intent,
-        document=document,
-        current_date_time=current_date_time
-    )
-    
+def get_ollama_verification(alert_prompt: str, alert_parsed_intent: str, document: str):
+        
+    full_prompt = get_verification_prompt(alert_prompt, alert_parsed_intent, document)    
     response = client.chat.completions.create(
         model="llama3.1",
         temperature=0.5,
         messages=[
-            {"role": "system", "content": full_prompt},
-            {"role": "user", "content": text}
+            {"role": "user", "content": full_prompt},
         ],
     )
+    
     return response.choices[0].message.content
 
-def get_ollama_alert_generation(text: str, alert_parsed_intent: str, document: str, example_response: str):
-    current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+def get_ollama_alert_generation(alert_parsed_intent: str, document: str, example_response: str):
     
-    full_prompt = generation_prompt.format(
-        alert_parsed_intent=alert_parsed_intent,
-        document=document,
-        example_response=example_response,
-        current_date_time=current_date_time
-    )
-    
+    full_prompt = get_generation_prompt(alert_parsed_intent, document, example_response)    
     response = client.chat.completions.create(
         model="llama3.1",
         temperature=0.5,
         messages=[
-            {"role": "system", "content": full_prompt},
-            {"role": "user", "content": text}
+            {"role": "user", "content": full_prompt},
         ],
     )
     

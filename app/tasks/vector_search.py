@@ -1,5 +1,4 @@
 from typing import Dict, Any, List
-import asyncio
 from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -8,6 +7,7 @@ import numpy as np
 from app.core.database import SessionLocal
 from app.models.alert_prompt import AlertPrompt, AlertStatus
 from app.tasks.llm_verification import verify_document_matches_alert
+from app.models.agent_controller import AgentController
 
 async def process_document_for_vector_search(md_document: Dict[str, Any], source_id: str):
     """
@@ -50,7 +50,7 @@ async def process_document_for_vector_search(md_document: Dict[str, Any], source
         db.close()
 
 async def find_matching_alerts(db: Session, document_keywords: set) -> List[AlertPrompt]:
-    """Find active alerts where all keywords are present in the document"""
+    """Find active alerts where all keywords are present in the document and user has sufficient credits"""
     active_alerts = db.execute(
         select(AlertPrompt).where(
             AlertPrompt.status == AlertStatus.ACTIVE,
@@ -58,12 +58,19 @@ async def find_matching_alerts(db: Session, document_keywords: set) -> List[Aler
         )
     ).scalars().all()
     
-    # Filter alerts where all keywords match
+    # Filter alerts where user has sufficient credits and all keywords match
     matching_alerts = []
     for alert in active_alerts:
-        alert_keywords = set(alert.keywords)
-        if alert_keywords.issubset(document_keywords):
-            matching_alerts.append(alert)
+        # Check user credits first - most common case
+        user = db.query(AgentController).filter(
+            AgentController.id == alert.user_id
+        ).first()
+        
+        if user and user.credits > 0:
+            # Only check keywords if user has credits
+            alert_keywords = set(alert.keywords)
+            if alert_keywords.issubset(document_keywords):
+                matching_alerts.append(alert)
             
     return matching_alerts
 

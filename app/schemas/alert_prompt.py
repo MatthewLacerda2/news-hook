@@ -50,9 +50,9 @@ class AlertPromptItem(BaseModel):
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     http_method: HttpMethod
     http_url: HttpUrl
-    max_datetime: Optional[datetime]
-    tags: list[str] = []
-    keywords: list[str] = Field(default=[], description="List of keywords that will trigger the alert when found in monitored data")
+    expire_datetime: Optional[datetime]
+    tags: list[str] = Field(default=[], description="Tags for hinting")
+    keywords: list[str] = Field(default=[], description="Mandatory keywords to be found in the monitored data")
     status: AlertStatus 
     created_at: datetime = Field(..., lt=datetime.now(), description="The date and time the alert was created")
 

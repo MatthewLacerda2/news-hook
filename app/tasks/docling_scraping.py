@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import requests
-from datetime import datetime
+from datetime import datetime, time
 from typing import List
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -74,11 +74,28 @@ async def check_and_process_sources():
     finally:
         db.close()
 
-async def run_periodic_check(interval_seconds: int = 60):
-    """Run the periodic check every interval_seconds"""
+def is_night_time() -> bool:
+    """Check if current time is between 11 PM and 7 AM"""
+    current_time = datetime.now().time()
+    night_start = time(23, 0)  # 11 PM
+    night_end = time(7, 0)    # 7 AM
+    
+    if night_start <= current_time or current_time <= night_end:
+        return True
+    return False
+
+async def run_periodic_check(day_interval: int = 60, night_interval: int = 600):
+    """
+    Run the periodic check every interval_seconds
+    
+    Args:
+        day_interval: Interval in seconds during day (7 AM - 11 PM)
+        night_interval: Interval in seconds during night (11 PM - 7 AM)
+    """
     while True:
         await check_and_process_sources()
-        await asyncio.sleep(interval_seconds)
+        interval = night_interval if is_night_time() else day_interval
+        await asyncio.sleep(interval)
 
 if __name__ == "__main__":
     asyncio.run(run_periodic_check())

@@ -1,6 +1,6 @@
 from openai import OpenAI
 from app.utils.prompts import get_validation_prompt, get_verification_prompt, get_generation_prompt
-from app.utils.llm_response_formats import LLMValidationFormat, LLMVerificationFormat
+from app.utils.llm_response_formats import LLMValidationFormat, LLMVerificationFormat, LLMGenerationFormat
 
 
 client = OpenAI(
@@ -52,6 +52,7 @@ def get_ollama_alert_generation(alert_parsed_intent: str, document: str, example
         messages=[
             {"role": "user", "content": full_prompt},
         ],
+        format=LLMGenerationFormat
     )
     
     return response.choices[0].message.content

@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Union
 from uuid import UUID
 from pydantic import BaseModel, Field, HttpUrl, field_validator
 from app.models.alert_prompt import AlertStatus
+
+JsonPrimitive = Union[str, int, float, bool, None]
 
 class HttpMethod(str, Enum):
     GET = "GET"
@@ -18,8 +20,8 @@ class AlertPromptCreateRequestBase(BaseModel):
     http_url: HttpUrl = Field(..., description="The URL to alert at")
     
     # Optional fields
-    parsed_intent: Optional[Dict[str, Any]] = Field(None, description="Parsed interpretation of the prompt")
-    example_response: Optional[Dict[str, Any]] = Field(None, description="Example of expected response")
+    parsed_intent: Optional[Dict[str, JsonPrimitive]] = Field(None, description="Parsed interpretation of the prompt. MUST BE FLAT JSON AND NOT NESTED")
+    example_response: Optional[Dict[str, JsonPrimitive]] = Field(None, description="Example of expected response. MUST BE FLAT JSON AND NOT NESTED")
     max_datetime: Optional[datetime] = Field(None, description="Monitoring window. Must be within the next 300 days")
 
     @field_validator('max_datetime')
@@ -69,8 +71,8 @@ class AlertPromptListResponse(BaseModel):
 class AlertPromptPriceCheckRequest(BaseModel):
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     # Optional fields
-    parsed_intent: Optional[Dict[str, Any]] = Field(None, description="Parsed interpretation of the prompt")
-    example_response: Optional[Dict[str, Any]] = Field(None, description="Example of expected response")
+    parsed_intent: Optional[Dict[str, JsonPrimitive]] = Field(None, description="Parsed interpretation of the prompt")
+    example_response: Optional[Dict[str, JsonPrimitive]] = Field(None, description="Example of expected response")
 
 class AlertPromptPriceCheckSuccessResponse(BaseModel):
     price_in_credits: int

@@ -1,4 +1,7 @@
 from pydantic import BaseModel, Field
+from typing import Dict, Union
+
+JsonPrimitive = Union[str, int, float, bool, None]
 
 class LLMValidationFormat(BaseModel):
     
@@ -18,3 +21,14 @@ class LLMVerificationFormat(BaseModel):
     def __init__(self, approval: bool, chance_score: float):
         self.approval = approval
         self.chance_score = chance_score
+        
+class LLMGenerationFormat(BaseModel):
+    
+    output: str = Field(description="The LLM output on the matter")
+    tags: list[str] = Field(description="The tags for the alert")
+    structured_data: Dict[str, JsonPrimitive] = Field(description="The structured JSON response as requested by the alert requester")
+    
+    def __init__(self, output: str, tags: list[str], structured_data: Dict[str, JsonPrimitive]):
+        self.output = output
+        self.tags = tags
+        self.structured_data = structured_data

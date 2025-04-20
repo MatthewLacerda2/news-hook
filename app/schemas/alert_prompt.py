@@ -12,7 +12,6 @@ class HttpMethod(str, Enum):
     PATCH = "PATCH"
     DELETE = "DELETE"
 
-#TODO: check out for base, pro, reasoning
 class AlertPromptCreateRequestBase(BaseModel):
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     http_method: HttpMethod = Field(..., description="HTTP method to alert at")
@@ -66,11 +65,6 @@ class AlertPromptListResponse(BaseModel):
 
     class Config:
         from_attributes = True
-
-class AlertMode(str, Enum):
-    base = "base"
-    pro = "pro"
-    reasoning = "reasoning"
 
 class AlertPromptPriceCheckRequest(BaseModel):
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")

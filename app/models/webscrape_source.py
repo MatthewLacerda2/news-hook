@@ -15,8 +15,8 @@ class WebscrapeSource(Base):
     scrape_seconds_interval = Column(Integer, nullable=False)
     last_scraped_at = Column(DateTime, nullable=True)
     headers = Column(JSON, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now())
+    updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
     num_scrapes = Column(Integer, nullable=False)
     is_active = Column(Boolean, default=True)
     

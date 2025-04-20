@@ -97,7 +97,7 @@ async def list_alerts(
     if prompt_contains:
         query = query.filter(AlertPrompt.prompt.ilike(f"%{prompt_contains}%"))
     if max_datetime:
-        query = query.filter(AlertPrompt.max_datetime <= max_datetime)
+        query = query.filter(AlertPrompt.expires_at <= max_datetime)
     if created_after:
         query = query.filter(AlertPrompt.created_at >= created_after)
     

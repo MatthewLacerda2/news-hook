@@ -1,4 +1,4 @@
-alert_validation_prompt = """
+validation_prompt = """
 You are a helpful assistant that validates if an alert's request is reasonable.
 
 We have an alert request, to monitor and inform when and if an event happens.

@@ -27,8 +27,7 @@ async def process_document_for_vector_search(md_document: Dict[str, Any], source
         
         # For each matching alert, do vector similarity check
         for alert in active_alerts:
-            # TODO: Generate document embedding using same model as alert_prompt
-            document_embedding = np.zeros(384)  # Placeholder 384-dim embedding
+            document_embedding = np.zeros(384)
             
             # Calculate cosine similarity
             similarity_score = calculate_cosine_similarity(

@@ -1,5 +1,7 @@
 from openai import OpenAI
-from app.tasks.prompts import get_validation_prompt, get_verification_prompt, get_generation_prompt
+from app.utils.prompts import get_validation_prompt, get_verification_prompt, get_generation_prompt
+from app.utils.llm_response_formats import LLMValidationFormat, LLMVerificationFormat
+
 
 client = OpenAI(
     base_url = 'http://localhost:11434/v1',
@@ -22,6 +24,7 @@ def get_ollama_validation(alert_prompt: str, alert_parsed_intent: str):
         messages=[
             {"role": "user", "content": full_prompt},
         ],
+        format=LLMValidationFormat
     )
     
     return response.choices[0].message.content
@@ -35,6 +38,7 @@ def get_ollama_verification(alert_prompt: str, alert_parsed_intent: str, documen
         messages=[
             {"role": "user", "content": full_prompt},
         ],
+        format=LLMVerificationFormat
     )
     
     return response.choices[0].message.content

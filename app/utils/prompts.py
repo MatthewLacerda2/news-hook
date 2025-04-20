@@ -21,6 +21,7 @@ As guidelines, the alert request must be:
 - Specific
 - Have a plausible chance of happening
 - Unambiguous (not leave room for interpretation)
+- Self-contained (not requiring multiple documents)
 - NOT vague
 - NOT subjective
 - NOT require external tools or APIs

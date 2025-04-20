@@ -1,6 +1,6 @@
 from openai import OpenAI
 from datetime import datetime
-from app.tasks.prompts import validation_prompt, verification_prompt, alert_verification_prompt
+from app.tasks.prompts import validation_prompt, verification_prompt, generation_prompt
 
 client = OpenAI(
     base_url = 'http://localhost:11434/v1',
@@ -14,7 +14,7 @@ def get_nomic_embeddings(text: str):
     )
     return embeddings
 
-def get_ollama_validation(text: str, alert_prompt: str, alert_parsed_intent: str, document: str):    
+def get_ollama_validation(text: str, alert_prompt: str, alert_parsed_intent: str):    
     current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     full_prompt = validation_prompt.format(
@@ -53,10 +53,10 @@ def get_ollama_verification(text: str, alert_prompt: str, alert_parsed_intent: s
     )
     return response.choices[0].message.content
 
-def get_ollama_alert_verification(text: str, alert_parsed_intent: str, document: str, example_response: str):
+def get_ollama_alert_generation(text: str, alert_parsed_intent: str, document: str, example_response: str):
     current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    full_prompt = alert_verification_prompt.format(
+    full_prompt = generation_prompt.format(
         alert_parsed_intent=alert_parsed_intent,
         document=document,
         example_response=example_response,
@@ -73,5 +73,3 @@ def get_ollama_alert_verification(text: str, alert_parsed_intent: str, document:
     )
     
     return response.choices[0].message.content
-
-

@@ -73,7 +73,6 @@ class AlertMode(str, Enum):
     reasoning = "reasoning"
 
 class AlertPromptPriceCheckRequest(BaseModel):
-    mode: AlertMode = Field(..., description="The mode of the alert. Used for pricing")
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     # Optional fields
     parsed_intent: Optional[Dict[str, Any]] = Field(None, description="Parsed interpretation of the prompt")
@@ -81,7 +80,6 @@ class AlertPromptPriceCheckRequest(BaseModel):
 
 class AlertPromptPriceCheckSuccessResponse(BaseModel):
     price_in_credits: int
-    mode: AlertMode = Field(..., description="The mode of the alert. Used for pricing")
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     output_intent: str = Field(..., description="What LLM understood from the prompt")
     

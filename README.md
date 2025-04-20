@@ -50,16 +50,10 @@ For checking build-and-test-ing, you can just run the build-and-test.bat on Wind
     - We use LLM to finalize the validation
 - If it checks out, we process the data to send the appropriate alert
 
-# Alert modes
+# Pricing model
 
-- **Base**: includes data from webscraping only
-    - Data from webscraping
+The cost for the alert-requests and events will be:
+- The api request
+- The input and output tokens
 
-- **Pro**:
-    - Data from webscraping, webhooks, apis
-    - Includes an LLM output response
-
-- **Reasoning**:
-    - Data from webscraping, webhooks, apis
-    - Includes an LLM output response
-    - Reasons on the intent of the alert'
+The agent can select the LLMs for the alert request and response separately

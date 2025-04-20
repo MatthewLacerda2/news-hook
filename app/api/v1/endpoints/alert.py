@@ -6,7 +6,7 @@ from uuid import UUID
 
 from app.core.database import get_db
 from app.models.agent_controller import AgentController
-from app.models.alert_prompt import AlertPrompt, AlertStatus, HttpMethod
+from app.models.alert_prompt import AlertPrompt, AlertStatus
 from app.schemas.alert_prompt import (
     AlertPromptCreateRequestBase,
     AlertPromptCreateSuccessResponse,

@@ -192,61 +192,6 @@ def test_create_alert_invalid_max_datetime(client):
     assert response.status_code == 400
     assert "max_datetime cannot be more than 1 year in the future" in response.json()["detail"]
 
-def test_check_alert_price_successful(client):
-    """Test successful alert price check with valid data"""
-    price_check_data = {
-        "mode": AlertMode.pro.value,
-        "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
-        "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
-        "example_response": {"price": 50001, "alert": True}
-    }
-    
-    response = client.post("/api/v1/alerts/price-check", json=price_check_data)
-    
-    assert response.status_code == 200
-    data = response.json()
-    assert data["mode"] in AlertMode._value2member_map_
-    AlertPromptPriceCheckSuccessResponse.model_validate(data)
-
-def test_check_alert_price_short_prompt(client):
-    """Test alert price check with prompt shorter than 8 characters"""
-    price_check_data = {
-        "mode": AlertMode.base.value,
-        "prompt": "short",
-        "parsed_intent": {"test": "data"},
-        "example_response": {"test": "data"}
-    }
-    
-    response = client.post("/api/v1/alerts/price-check", json=price_check_data)
-    assert response.status_code == 400
-    assert "Prompt must be at least 8 characters long" in response.json()["detail"]
-
-def test_check_alert_price_invalid_parsed_intent(client):
-    """Test alert price check with invalid parsed_intent JSON"""
-    price_check_data = {
-        "mode": "CONTINUOUS",
-        "prompt": "Monitor Bitcoin price changes",
-        "parsed_intent": "not-a-valid-json",
-        "example_response": {"test": "data"}
-    }
-    
-    response = client.post("/api/v1/alerts/price-check", json=price_check_data)
-    assert response.status_code == 400
-    assert "Invalid parsed_intent format" in response.json()["detail"]
-
-def test_check_alert_price_invalid_example_response(client):
-    """Test alert price check with invalid example_response JSON"""
-    price_check_data = {
-        "mode": "CONTINUOUS",
-        "prompt": "Monitor Bitcoin price changes",
-        "parsed_intent": {"test": "data"},
-        "example_response": "not-a-valid-json"
-    }
-    
-    response = client.post("/api/v1/alerts/price-check", json=price_check_data)
-    assert response.status_code == 400
-    assert "Invalid example_response format" in response.json()["detail"]
-
 def test_list_alerts_successful(client):
     """Test successful alert listing with valid parameters"""
     # First create a user

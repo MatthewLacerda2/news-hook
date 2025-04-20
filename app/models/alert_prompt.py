@@ -45,6 +45,7 @@ class AlertPrompt(Base):
     status = Column(SQLEnum(AlertStatus), nullable=False, default=AlertStatus.ACTIVE)
     created_at = Column(DateTime, nullable=False, default=datetime.now())
     expires_at = Column(DateTime, nullable=False)
+    llm_model = Column(String, nullable=False)
 
     # Relationships
     user = relationship("AgentController", back_populates="alert_prompts")

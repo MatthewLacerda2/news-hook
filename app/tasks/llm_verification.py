@@ -14,7 +14,6 @@ async def verify_document_matches_alert(
 ):
     """
     Use LLM to verify if a document actually matches an alert's intent.
-    This is a placeholder function that will be implemented later.
     
     Args:
         alert_id: The ID of the alert prompt to verify against

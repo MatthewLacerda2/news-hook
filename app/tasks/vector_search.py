@@ -35,11 +35,10 @@ async def process_document_for_vector_search(md_document: Dict[str, Any], source
                 alert.prompt_embedding
             )
             
-            if similarity_score > 0.85:
+            if similarity_score >= 0.85:
                 await verify_document_matches_alert(
                     alert_id=str(alert.id),
                     document=md_document,
-                    similarity_score=similarity_score
                 )
                 
     except Exception as e:

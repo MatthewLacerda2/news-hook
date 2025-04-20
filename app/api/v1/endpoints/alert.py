@@ -14,6 +14,7 @@ from app.schemas.alert_prompt import (
     AlertPromptItem
 )
 from app.core.security import get_user_by_api_key
+from app.models.llm_models import LLMModel
 
 router = APIRouter()
 
@@ -33,6 +34,15 @@ async def create_alert(
     
     try:
         now = datetime.now()
+        
+        # Verify if the LLM model exists
+        llm_model = db.query(LLMModel).filter(LLMModel.model_name == alert_data.llm_model).first()
+        if not llm_model:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"LLM model '{alert_data.llm_model}' not found"
+            )
+        
         # Create new alert
         new_alert = AlertPrompt(
             user_id=user.id,
@@ -42,6 +52,7 @@ async def create_alert(
             parsed_intent=alert_data.parsed_intent or {},
             example_response=alert_data.example_response or {},
             max_datetime=alert_data.max_datetime or (now + timedelta(days=300)),
+            llm_model=alert_data.llm_model,
             keywords=[],  # Will be populated by LLM processing
             status=AlertStatus.ACTIVE
         )

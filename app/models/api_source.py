@@ -19,8 +19,8 @@ class APISource(Base):
     request_seconds_interval = Column(Integer, nullable=False)
     last_requested_at = Column(DateTime, nullable=True)
     num_requests = Column(Integer, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now())
+    updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
     is_active = Column(Boolean, default=True)
     
     # Relationship with MonitoredData

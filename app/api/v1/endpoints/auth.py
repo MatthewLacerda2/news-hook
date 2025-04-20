@@ -60,7 +60,7 @@ async def signup(
         return TokenResponse(
             access_token=access_token,
             token_type="bearer",
-            expires_in=datetime.utcnow() + access_token_expires,
+            expires_in=datetime.now() + access_token_expires,
             agent_controller=user
         )
         
@@ -110,7 +110,7 @@ async def login(
         return TokenResponse(
             access_token=access_token,
             token_type="bearer",
-            expires_in=datetime.utcnow() + access_token_expires,
+            expires_in=datetime.now() + access_token_expires,
             agent_controller=user
         )
         

@@ -25,7 +25,7 @@ class MonitoredData(Base):
     source = Column(SQLEnum(DataSource), nullable=False)
     source_url = Column(String, nullable=False)
     content = Column(JSON, nullable=False)
-    scraped_datetime = Column(DateTime, nullable=False, default=datetime.utcnow)
+    scraped_datetime = Column(DateTime, nullable=False, default=datetime.now())
     
     #TODO: 384 is recommended for OpenAI embeddings. Find out which embedding you'll you and change accordingly
     #Same for alert_prompt.prompt_embedding

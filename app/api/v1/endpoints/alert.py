@@ -32,7 +32,7 @@ async def create_alert(
         )
     
     try:
-        now = datetime.utcnow()
+        now = datetime.now()
         # Create new alert
         new_alert = AlertPrompt(
             user_id=user.id,

@@ -28,7 +28,7 @@ class AlertPromptCreateRequestBase(BaseModel):
         if v is None:
             return v
             
-        now = datetime.utcnow()
+        now = datetime.now()
         max_allowed = now + timedelta(days=365)
         if v > max_allowed:
             raise ValueError("max_datetime cannot be more than 1 year in the future")

@@ -45,7 +45,6 @@ class AlertPrompt(Base):
     status = Column(SQLEnum(AlertStatus), nullable=False, default=AlertStatus.ACTIVE)
     created_at = Column(DateTime, nullable=False, default=datetime.now())
     expires_at = Column(DateTime, nullable=False)
-    triggered_at = Column(DateTime, nullable=True) #TODO: mark as triggered when the alert is triggered
 
     # Relationships
     user = relationship("AgentController", back_populates="alert_prompts")

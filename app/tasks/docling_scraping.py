@@ -38,7 +38,7 @@ async def process_webscrape_source(source: WebscrapeSource, db: Session):
         db.commit()
         
         await process_document_for_vector_search(
-            document=result.document.to_dict(),
+            md_document=result,
             source_id=str(source.id)
         )
         

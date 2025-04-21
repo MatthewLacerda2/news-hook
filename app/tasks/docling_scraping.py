@@ -10,6 +10,7 @@ from docling.document_converter import DocumentConverter
 from app.core.database import SessionLocal
 from app.models.webscrape_source import WebscrapeSource
 from app.tasks.vector_search import process_document_for_vector_search
+from app.models.alert_prompt import Alert, AlertStatus
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -84,6 +85,17 @@ def is_night_time() -> bool:
         return True
     return False
 
+async def mark_expired_alerts():
+    """Mark expired alerts as expired"""
+    db = SessionLocal()
+    try:
+        expired_alerts = db.query(Alert).filter(Alert.expires_at < datetime.now()).all()
+        for alert in expired_alerts:
+            alert.status = AlertStatus.EXPIRED
+        db.commit()
+    finally:
+        db.close()
+
 async def run_periodic_check(day_interval: int = 60 * 10, night_interval: int = 60 * 30):
     """
     Run the periodic check every interval_seconds
@@ -93,6 +105,7 @@ async def run_periodic_check(day_interval: int = 60 * 10, night_interval: int = 
         night_interval: Interval in seconds during night (11 PM - 7 AM)
     """
     while True:
+        await mark_expired_alerts()
         await check_and_process_sources()
         interval = night_interval if is_night_time() else day_interval
         await asyncio.sleep(interval)

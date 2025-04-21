@@ -36,15 +36,18 @@ async def create_alert(
     try:
         now = datetime.now()
         
-        llm_model = db.query(LLMModel).filter(LLMModel.model_name == alert_data.llm_model).first()
+        llm_model = db.query(LLMModel).filter(
+            LLMModel.model_name == alert_data.llm_model,
+            LLMModel.is_active == True
+        ).first()
         if not llm_model:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"LLM model '{alert_data.llm_model}' not found"
             )
-            
+
         llm_validation_response = llm_validation(alert_data, llm_model)
-        
+
         if not llm_validation_response.approval or llm_validation_response.chance_score < 0.85:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

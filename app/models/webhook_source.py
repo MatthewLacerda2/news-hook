@@ -15,8 +15,8 @@ class WebhookSource(Base):
     secret_key = Column(String, nullable=False)
     expected_format = Column(JSON, nullable=True)
     validation_rules = Column(JSON, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now())
+    updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
     num_events = Column(Integer, nullable=False)
     is_active = Column(Boolean, default=True)
     

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from enum import Enum
 from sqlalchemy import Column, String, DateTime, JSON, Enum as SQLEnum, ForeignKey, Index
-from sqlalchemy.dialects.postgresql import UUID, ARRAY
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
 
@@ -25,16 +25,15 @@ class MonitoredData(Base):
     source = Column(SQLEnum(DataSource), nullable=False)
     source_url = Column(String, nullable=False)
     content = Column(JSON, nullable=False)
-    scraped_datetime = Column(DateTime, nullable=False, default=datetime.utcnow)
+    scraped_datetime = Column(DateTime, nullable=False, default=datetime.now())
     
-    #TODO: 384 is recommended for OpenAI embeddings. Find out which embedding you'll you and change accordingly
-    #Same for alert_prompt.prompt_embedding
-    content_embedding = Column(Vector(384), nullable=True) 
+    content_embedding = Column(Vector(384), nullable=True)
     
     # Foreign keys for different source types
     webhook_source_id = Column(UUID(as_uuid=True), ForeignKey('webhook_sources.id'), nullable=True)
     api_source_id = Column(UUID(as_uuid=True), ForeignKey('api_sources.id'), nullable=True)
     webscrape_source_id = Column(UUID(as_uuid=True), ForeignKey('webscrape_sources.id'), nullable=True)
+    youtube_source_id = Column(UUID(as_uuid=True), ForeignKey('youtube_sources.id'), nullable=True)
     
     # Relationships
     webhook_source = relationship("WebhookSource", back_populates="monitored_data")

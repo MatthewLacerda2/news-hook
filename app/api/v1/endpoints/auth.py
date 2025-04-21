@@ -8,6 +8,7 @@ from app.core.security import create_access_token, verify_google_token, verify_t
 from app.core.database import get_db
 from app.schemas.agent_controller import OAuth2Request, TokenResponse
 from app.models.agent_controller import AgentController
+
 from jose import JWTError
 
 router = APIRouter()
@@ -59,7 +60,7 @@ async def signup(
         return TokenResponse(
             access_token=access_token,
             token_type="bearer",
-            expires_in=datetime.utcnow() + access_token_expires,
+            expires_in=datetime.now() + access_token_expires,
             agent_controller=user
         )
         
@@ -109,7 +110,7 @@ async def login(
         return TokenResponse(
             access_token=access_token,
             token_type="bearer",
-            expires_in=datetime.utcnow() + access_token_expires,
+            expires_in=datetime.now() + access_token_expires,
             agent_controller=user
         )
         

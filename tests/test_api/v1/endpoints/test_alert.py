@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from uuid import uuid4
-from app.schemas.alert_prompt import AlertPromptPriceCheckSuccessResponse, AlertPromptCreateSuccessResponse, AlertMode, AlertPromptListResponse
+from app.schemas.alert_prompt import AlertPromptCreateSuccessResponse, AlertPromptListResponse
 from app.models.alert_prompt import AlertStatus
 
 def test_create_alert_successful(client):
@@ -18,7 +18,8 @@ def test_create_alert_successful(client):
         "http_url": "https://webhook.example.com/crypto-alert",
         "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
         "example_response": {"price": 50001, "alert": True},
-        "max_datetime": (datetime.now() + timedelta(days=300)).isoformat()
+        "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
+        "llm_model": "gemini-2.5-pro"
     }
     
     response = client.post(
@@ -192,60 +193,30 @@ def test_create_alert_invalid_max_datetime(client):
     assert response.status_code == 400
     assert "max_datetime cannot be more than 1 year in the future" in response.json()["detail"]
 
-def test_check_alert_price_successful(client):
-    """Test successful alert price check with valid data"""
-    price_check_data = {
-        "mode": AlertMode.pro.value,
-        "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
-        "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
-        "example_response": {"price": 50001, "alert": True}
+def test_create_alert_invalid_llm_model(client):
+    """Test alert creation with invalid LLM model"""
+    # First create a user
+    signup_response = client.post(
+        "/api/v1/auth/signup",
+        json={"access_token": "valid_google_token"}
+    )
+    user_data = signup_response.json()["agent_controller"]
+    
+    alert_data = {
+        "prompt": "Test prompt",
+        "http_method": "POST",
+        "http_url": "https://webhook.example.com/test",
+        "llm_model": "nonexistent_model_name"
     }
     
-    response = client.post("/api/v1/alerts/price-check", json=price_check_data)
+    response = client.post(
+        "/api/v1/alerts/",
+        headers={"X-API-Key": user_data["api_key"]},
+        json=alert_data
+    )
     
-    assert response.status_code == 200
-    data = response.json()
-    assert data["mode"] in AlertMode._value2member_map_
-    AlertPromptPriceCheckSuccessResponse.model_validate(data)
-
-def test_check_alert_price_short_prompt(client):
-    """Test alert price check with prompt shorter than 8 characters"""
-    price_check_data = {
-        "mode": AlertMode.base.value,
-        "prompt": "short",
-        "parsed_intent": {"test": "data"},
-        "example_response": {"test": "data"}
-    }
-    
-    response = client.post("/api/v1/alerts/price-check", json=price_check_data)
     assert response.status_code == 400
-    assert "Prompt must be at least 8 characters long" in response.json()["detail"]
-
-def test_check_alert_price_invalid_parsed_intent(client):
-    """Test alert price check with invalid parsed_intent JSON"""
-    price_check_data = {
-        "mode": "CONTINUOUS",
-        "prompt": "Monitor Bitcoin price changes",
-        "parsed_intent": "not-a-valid-json",
-        "example_response": {"test": "data"}
-    }
-    
-    response = client.post("/api/v1/alerts/price-check", json=price_check_data)
-    assert response.status_code == 400
-    assert "Invalid parsed_intent format" in response.json()["detail"]
-
-def test_check_alert_price_invalid_example_response(client):
-    """Test alert price check with invalid example_response JSON"""
-    price_check_data = {
-        "mode": "CONTINUOUS",
-        "prompt": "Monitor Bitcoin price changes",
-        "parsed_intent": {"test": "data"},
-        "example_response": "not-a-valid-json"
-    }
-    
-    response = client.post("/api/v1/alerts/price-check", json=price_check_data)
-    assert response.status_code == 400
-    assert "Invalid example_response format" in response.json()["detail"]
+    assert "Invalid LLM model" in response.json()["detail"]
 
 def test_list_alerts_successful(client):
     """Test successful alert listing with valid parameters"""

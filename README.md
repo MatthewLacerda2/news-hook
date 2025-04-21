@@ -35,31 +35,33 @@ For checking build-and-test-ing, you can just run the build-and-test.bat on Wind
 
 # What's the infrastructure
 
+## Alert-Prompt/Alert-Request
+
 - We get the POST request for an alert
     - The request must obey rules (validity, possibility, unambiguity...)
 - Valid requests will get stored
     - We store the metadata
     - They have their prompt vector-embedded
 - We keep monitoring
-    - Webscraping with docling, and LLM on top of that
-    - Webhooks
-    - Periodic GET requests (e.g news-api)
+    - Webscrape the active webscrape sources at each's given interval
+    - Pgvector-search to see which alert-prompts are related to the scraped data
+    - The related ones will be sent to an LLM to confirm if the data fulfills the alert
+        - The prompt must not have been triggered nor expired, of course
+    - If the data does satisfy the alert:
+        - The LLM produces the alert in the alert-prompt's format
+    - We send the alert via HTTP request
+        - In the alert-prompt's http method and url
+        - And register the alert_event, of course
 - We check if the incoming data fits any alert
     - We check the embedding to quickly cull the alerts
     - We check metadata for quick validity
     - We use LLM to finalize the validation
 - If it checks out, we process the data to send the appropriate alert
 
-# Alert modes
+# Pricing model
 
-- **Base**: includes data from webscraping only
-    - Data from webscraping
+The cost for the alert-requests and events will be:
+- The api request
+- The input and output tokens
 
-- **Pro**:
-    - Data from webscraping, webhooks, apis
-    - Includes an LLM output response
-
-- **Reasoning**:
-    - Data from webscraping, webhooks, apis
-    - Includes an LLM output response
-    - Reasons on the intent of the alert'
+The agent can select the LLMs for the alert request and response separately

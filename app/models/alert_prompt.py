@@ -37,14 +37,16 @@ class AlertPrompt(Base):
     http_url = Column(String, nullable=False)
     
     parsed_intent = Column(JSON, nullable=False)
+    parsed_intent_embedding = Column(Vector(384), nullable=False)
     example_response = Column(JSON, nullable=False)
-    max_datetime = Column(DateTime, nullable=False)
     
     tags = Column(ARRAY(String), nullable=True)
     keywords = Column(ARRAY(String), nullable=False)
     prompt_embedding = Column(Vector(384), nullable=True)
     status = Column(SQLEnum(AlertStatus), nullable=False, default=AlertStatus.ACTIVE)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=datetime.now())
+    expires_at = Column(DateTime, nullable=False)
+    llm_model = Column(String, nullable=False)
 
     # Relationships
     user = relationship("AgentController", back_populates="alert_prompts")

@@ -6,7 +6,7 @@ from uuid import UUID
 
 from app.core.database import get_db
 from app.models.agent_controller import AgentController
-from app.models.alert_prompt import AlertPrompt, AlertStatus, HttpMethod
+from app.models.alert_prompt import AlertPrompt, AlertStatus
 from app.schemas.alert_prompt import (
     AlertPromptCreateRequestBase,
     AlertPromptCreateSuccessResponse,
@@ -14,6 +14,9 @@ from app.schemas.alert_prompt import (
     AlertPromptItem
 )
 from app.core.security import get_user_by_api_key
+from app.models.llm_models import LLMModel
+from app.utils.llm_validator import llm_validation
+from app.tasks.llm_apis.ollama import get_nomic_embeddings
 
 router = APIRouter()
 
@@ -32,23 +35,41 @@ async def create_alert(
         )
     
     try:
-        now = datetime.utcnow()
+        now = datetime.now()
+        
+        llm_model = db.query(LLMModel).filter(
+            LLMModel.model_name == alert_data.llm_model,
+            LLMModel.is_active == True
+        ).first()
+        if not llm_model:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"LLM model '{alert_data.llm_model}' not found"
+            )
+
+        llm_validation_response = llm_validation(alert_data, llm_model)
+
+        if not llm_validation_response.approval or llm_validation_response.chance_score < 0.85:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid alert request"
+            )
+        
         # Create new alert
         new_alert = AlertPrompt(
             user_id=user.id,
             prompt=alert_data.prompt,
+            prompt_embedding = get_nomic_embeddings(alert_data.prompt),
             http_method=alert_data.http_method,
             http_url=str(alert_data.http_url),
             parsed_intent=alert_data.parsed_intent or {},
+            parsed_intent_embedding = get_nomic_embeddings(str(alert_data.parsed_intent)),
             example_response=alert_data.example_response or {},
             max_datetime=alert_data.max_datetime or (now + timedelta(days=300)),
-            keywords=[],  # Will be populated by LLM processing
+            llm_model=alert_data.llm_model,
+            keywords=llm_validation_response.keywords,
             status=AlertStatus.ACTIVE
         )
-        
-        # TODO: Process prompt with LLM to extract keywords and generate output_intent
-        output_intent = "Placeholder output intent"
-        keywords = []
         
         db.add(new_alert)
         db.commit()
@@ -57,9 +78,9 @@ async def create_alert(
         return AlertPromptCreateSuccessResponse(
             id=new_alert.id,
             prompt=new_alert.prompt,
-            output_intent=output_intent,
             created_at=new_alert.created_at,
-            keywords=keywords
+            output_intent=llm_validation_response.output_intent,
+            keywords=llm_validation_response.keywords
         )
         
     except Exception as e:
@@ -97,7 +118,7 @@ async def list_alerts(
     if prompt_contains:
         query = query.filter(AlertPrompt.prompt.ilike(f"%{prompt_contains}%"))
     if max_datetime:
-        query = query.filter(AlertPrompt.max_datetime <= max_datetime)
+        query = query.filter(AlertPrompt.expires_at <= max_datetime)
     if created_after:
         query = query.filter(AlertPrompt.created_at >= created_after)
     

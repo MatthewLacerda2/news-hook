@@ -15,7 +15,7 @@ class AgentController(Base):
     google_id = Column(String, unique=True, nullable=False)
     name = Column(String, nullable=True)
     credits = Column(Integer, nullable=False, default=0)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=datetime.now())
     last_login = Column(DateTime, nullable=True)
 
     # Relationships

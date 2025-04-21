@@ -1,0 +1,114 @@
+import asyncio
+import logging
+import requests
+from datetime import datetime, time
+from typing import List
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+from docling.document_converter import DocumentConverter
+
+from app.core.database import SessionLocal
+from app.models.webscrape_source import WebscrapeSource
+from app.tasks.vector_search import process_document_for_vector_search
+from app.models.alert_prompt import Alert, AlertStatus
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+async def process_webscrape_source(source: WebscrapeSource, db: Session):
+    """Process a single webscrape source"""
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            'Accept-Language': 'pt-BR, pt;q=0.9, en;q=0.8'
+        }
+        headers = source.headers or headers
+        response = requests.get(
+            source.url, 
+            headers=headers,
+            timeout=15
+        )
+        response.raise_for_status()
+        
+        # Convert using docling
+        converter = DocumentConverter()
+        result = converter.convert(response.text).document.export_to_markdown()
+        
+        source.last_scraped_at = datetime.now()
+        source.num_scrapes += 1
+        db.commit()
+        
+        await process_document_for_vector_search(
+            md_document=result,
+            source_id=str(source.id)
+        )
+        
+    except Exception as e:
+        logger.error(f"Error processing source {source.id}: {str(e)}")
+        # Don't raise the exception - we want to continue with other sources
+        
+async def check_and_process_sources():
+    """Check for sources that need to be scraped and process them"""
+    try:
+        db = SessionLocal()
+        now = datetime.now()
+        
+        query = select(WebscrapeSource).where(
+            WebscrapeSource.is_active == True,
+            (
+                WebscrapeSource.last_scraped_at.is_(None) |
+                (
+                    now >= 
+                    WebscrapeSource.last_scraped_at + 
+                    WebscrapeSource.scrape_seconds_interval
+                )
+            )
+        )
+        
+        sources: List[WebscrapeSource] = db.execute(query).scalars().all()
+        
+        tasks = [process_webscrape_source(source, db) for source in sources]
+        await asyncio.gather(*tasks)
+        
+    except Exception as e:
+        logger.error(f"Error in check_and_process_sources: {str(e)}")
+    finally:
+        db.close()
+
+def is_night_time() -> bool:
+    """Check if current time is between 11 PM and 7 AM"""
+    current_time = datetime.now().time()
+    night_start = time(23, 0)
+    night_end = time(7, 0)
+    
+    if night_start <= current_time or current_time <= night_end:
+        return True
+    return False
+
+async def mark_expired_alerts():
+    """Mark expired alerts as expired"""
+    db = SessionLocal()
+    try:
+        expired_alerts = db.query(Alert).filter(Alert.expires_at < datetime.now()).all()
+        for alert in expired_alerts:
+            alert.status = AlertStatus.EXPIRED
+        db.commit()
+    finally:
+        db.close()
+
+async def run_periodic_check(day_interval: int = 60 * 10, night_interval: int = 60 * 30):
+    """
+    Run the periodic check every interval_seconds
+    
+    Args:
+        day_interval: Interval in seconds during day (7 AM - 11 PM)
+        night_interval: Interval in seconds during night (11 PM - 7 AM)
+    """
+    while True:
+        await mark_expired_alerts()
+        await check_and_process_sources()
+        interval = night_interval if is_night_time() else day_interval
+        await asyncio.sleep(interval)
+
+if __name__ == "__main__":
+    asyncio.run(run_periodic_check())

@@ -8,11 +8,9 @@ from app.models.alert_prompt import AlertStatus
 JsonPrimitive = Union[str, int, float, bool, None]
 
 class HttpMethod(str, Enum):
-    GET = "GET"
     POST = "POST"
     PUT = "PUT"
     PATCH = "PATCH"
-    DELETE = "DELETE"
 
 class AlertPromptCreateRequestBase(BaseModel):
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
@@ -22,7 +20,7 @@ class AlertPromptCreateRequestBase(BaseModel):
     
     # Optional fields
     parsed_intent: Optional[Dict[str, JsonPrimitive]] = Field(None, description="Parsed interpretation of the prompt. MUST BE FLAT JSON AND NOT NESTED")
-    example_response: Dict[str, JsonPrimitive] = Field(..., description="Example of expected response. MUST BE FLAT JSON AND NOT NESTED")
+    schema_format: Dict[str, JsonPrimitive] = Field(..., description="The schema of the response. MUST BE FLAT JSON AND NOT NESTED")
     max_datetime: Optional[datetime] = Field(None, description="Monitoring window. Must be within the next 300 days")
     
 
@@ -74,7 +72,7 @@ class AlertPromptPriceCheckRequest(BaseModel):
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     # Optional fields
     parsed_intent: Optional[Dict[str, JsonPrimitive]] = Field(None, description="Parsed interpretation of the prompt")
-    example_response: Optional[Dict[str, JsonPrimitive]] = Field(None, description="Example of expected response")
+    response_format: Optional[Dict[str, JsonPrimitive]] = Field(None, description="The schema of the response. MUST BE FLAT JSON AND NOT NESTED")
 
 class AlertPromptPriceCheckSuccessResponse(BaseModel):
     price_in_credits: int

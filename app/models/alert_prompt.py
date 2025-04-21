@@ -16,10 +16,8 @@ class AlertStatus(Enum):
     EXPIRED = "EXPIRED"
     
 class HttpMethod(Enum):
-    GET = "GET"
     POST = "POST"
     PUT = "PUT"
-    DELETE = "DELETE"
     PATCH = "PATCH"
     
 
@@ -38,7 +36,7 @@ class AlertPrompt(Base):
     
     parsed_intent = Column(JSON, nullable=False)
     parsed_intent_embedding = Column(Vector(384), nullable=False)
-    example_response = Column(JSON, nullable=False)
+    response_format = Column(JSON, nullable=False)
     
     tags = Column(ARRAY(String), nullable=True)
     keywords = Column(ARRAY(String), nullable=False)

@@ -47,7 +47,7 @@ async def verify_document_matches_alert(
         # Check if verification passes our criteria
         if verification_result.approval and verification_result.chance_score >= 0.85:
             # Pass to LLM generation
-            await llm_generation(alert_prompt, document)
+            await llm_generation(alert_prompt, document, db)
             
             # Update alert status
             alert_prompt.status = AlertStatus.TRIGGERED

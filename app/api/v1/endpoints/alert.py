@@ -16,6 +16,7 @@ from app.schemas.alert_prompt import (
 from app.core.security import get_user_by_api_key
 from app.models.llm_models import LLMModel
 from app.utils.llm_validator import llm_validation
+from app.tasks.llm_apis.ollama import get_nomic_embeddings
 
 router = APIRouter()
 
@@ -58,9 +59,11 @@ async def create_alert(
         new_alert = AlertPrompt(
             user_id=user.id,
             prompt=alert_data.prompt,
+            prompt_embedding = get_nomic_embeddings(alert_data.prompt),
             http_method=alert_data.http_method,
             http_url=str(alert_data.http_url),
             parsed_intent=alert_data.parsed_intent or {},
+            parsed_intent_embedding = get_nomic_embeddings(str(alert_data.parsed_intent)),
             example_response=alert_data.example_response or {},
             max_datetime=alert_data.max_datetime or (now + timedelta(days=300)),
             llm_model=alert_data.llm_model,

@@ -8,8 +8,9 @@ from app.core.database import SessionLocal
 from app.models.alert_prompt import AlertPrompt, AlertStatus
 from app.tasks.llm_verification import verify_document_matches_alert
 from app.models.agent_controller import AgentController
+from app.tasks.llm_apis.ollama import get_nomic_embeddings
 
-async def process_document_for_vector_search(md_document: Dict[str, Any], source_id: str):
+async def process_document_for_vector_search(md_document: str):
     """
     Process a document from a webscrape source and store it in the vector database.
     For each ACTIVE alert that has matching keywords, perform vector similarity search
@@ -19,6 +20,7 @@ async def process_document_for_vector_search(md_document: Dict[str, Any], source
         md_document: The markdown text to process, as returned by docling
         source_id: The ID of the webscrape source that generated this document
     """
+    #TODO: we gotta order the alerts by their parsed_intent_embedding's cosine similarity
     try:
         db = SessionLocal()
         

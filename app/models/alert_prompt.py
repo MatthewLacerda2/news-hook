@@ -37,6 +37,7 @@ class AlertPrompt(Base):
     http_url = Column(String, nullable=False)
     
     parsed_intent = Column(JSON, nullable=False)
+    parsed_intent_embedding = Column(Vector(384), nullable=False)
     example_response = Column(JSON, nullable=False)
     
     tags = Column(ARRAY(String), nullable=True)

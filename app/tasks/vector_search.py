@@ -64,10 +64,10 @@ async def find_matching_alerts(db: Session, document_content: str) -> List[Alert
     for alert in active_alerts:
         # Check user credits first - most common case
         user = db.query(AgentController).filter(
-            AgentController.id == alert.user_id
+            AgentController.id == alert.agent_controller_id
         ).first()
         
-        if user and user.credits > 0:
+        if user and user.credit_balance > 0:
             # Only check keywords if user has credits
             alert_keywords = set(alert.keywords)
             if alert_keywords.issubset(document_content):

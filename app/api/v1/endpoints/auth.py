@@ -158,7 +158,7 @@ async def check_credits(
                 detail="User not found"
             )
             
-        return {"credits": user.credits}
+        return {"credits": user.credit_balance}
         
     except ValueError:
         raise HTTPException(

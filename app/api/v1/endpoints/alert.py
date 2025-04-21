@@ -28,7 +28,7 @@ async def create_alert(
 ):
     """Create a new alert for monitoring"""
 
-    if user.credits <= 0:
+    if user.credit_balance <= 0:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Insufficient credits"
@@ -112,7 +112,7 @@ async def list_alerts(
         )
     
     # Build the query
-    query = db.query(AlertPrompt).filter(AlertPrompt.user_id == user.id)
+    query = db.query(AlertPrompt).filter(AlertPrompt.agent_controller_id == user.id)
     
     # Apply filters if provided
     if prompt_contains:
@@ -146,7 +146,7 @@ async def cancel_alert(
     # Find the alert and verify ownership
     alert = db.query(AlertPrompt).filter(
         AlertPrompt.id == alert_id,
-        AlertPrompt.user_id == user.id
+        AlertPrompt.agent_controller_id == user.id
     ).first()
     
     if not alert:

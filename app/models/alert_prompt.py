@@ -29,7 +29,7 @@ class AlertPrompt(Base):
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey('agent_controllers.id'), nullable=False)
+    agent_controller_id = Column(UUID(as_uuid=True), ForeignKey('agent_controllers.id'), nullable=False)
     prompt = Column(String, nullable=False)
     http_method = Column(SQLEnum(HttpMethod), nullable=False)
     http_url = Column(String, nullable=False)

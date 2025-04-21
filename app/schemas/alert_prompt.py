@@ -16,6 +16,7 @@ class AlertPromptCreateRequestBase(BaseModel):
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     http_method: HttpMethod = Field(..., description="HTTP method to alert at")
     http_url: HttpUrl = Field(..., description="The URL to alert at")
+    http_headers: Optional[Dict[str, JsonPrimitive]] = Field(None, description="HTTP headers to send with the request")
     llm_model: str = Field("gemini-2.5-pro", description="The LLM model to use for the alert")
     
     # Optional fields

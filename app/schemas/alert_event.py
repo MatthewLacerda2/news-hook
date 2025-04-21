@@ -5,7 +5,7 @@ from pydantic import Field
 from typing import Dict, JsonPrimitive
 
 
-class AlertEventResponse(Base):
+class NewsEvent(Base):
 
     id: UUID = Field(..., description="The ID of the alert event")
     alert_prompt_id: UUID = Field(..., description="The ID of the alert prompt")

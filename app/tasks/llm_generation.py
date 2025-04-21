@@ -1,7 +1,7 @@
 from app.models.alert_prompt import AlertPrompt
 from app.tasks.llm_apis.ollama import get_ollama_alert_generation
 from app.tasks.llm_apis.gemini import get_gemini_alert_generation
-from app.schemas.alert_event import AlertEventResponse
+from app.schemas.alert_event import NewsEvent
 from datetime import datetime
 import uuid
 from sqlalchemy.orm import Session
@@ -9,7 +9,7 @@ from app.models.alert_event import AlertEvent
 from app.utils.llm_response_formats import LLMGenerationFormat
 import requests
 
-async def llm_generation(alert_prompt: AlertPrompt, document: str, db: Session) -> AlertEventResponse:
+async def llm_generation(alert_prompt: AlertPrompt, document: str, db: Session) -> NewsEvent:
     
     if alert_prompt.llm_model == "ollama":
         generated_response = get_ollama_alert_generation(
@@ -28,7 +28,7 @@ async def llm_generation(alert_prompt: AlertPrompt, document: str, db: Session) 
         print(f"Unsupported LLM model: {alert_prompt.llm_model}\n{msg}")
         raise ValueError(f"Unsupported LLM model: {alert_prompt.llm_model}")
     
-    llm_generation_result = AlertEventResponse(
+    llm_generation_result = NewsEvent(
         id=uuid.uuid4(),
         alert_prompt_id=alert_prompt.id,
         triggered_at=datetime.now(),
@@ -43,7 +43,7 @@ async def llm_generation(alert_prompt: AlertPrompt, document: str, db: Session) 
     
     return llm_generation_result
 
-def save_alert_event(alert_event: AlertEventResponse, generated_response: LLMGenerationFormat, db: Session) -> AlertEvent:
+def save_alert_event(alert_event: NewsEvent, generated_response: LLMGenerationFormat, db: Session) -> AlertEvent:
     alert_event_db = AlertEvent(
         id=alert_event.id,
         alert_prompt_id=alert_event.alert_prompt_id,
@@ -57,15 +57,16 @@ def save_alert_event(alert_event: AlertEventResponse, generated_response: LLMGen
     db.refresh(alert_event_db)
     return alert_event_db
 
-def send_alert_event(alert_event: AlertEventResponse, db: Session):
+def send_alert_event(alert_event: NewsEvent, db: Session):
     
     alert_prompt = db.query(AlertPrompt).filter(AlertPrompt.id == alert_event.alert_prompt_id).first()
     
+    #TODO: add retries or backoff, and log the fails
     if alert_prompt.http_method == "POST":
-        response = requests.post(alert_prompt.http_url, json=alert_event.structured_data)
+        response = requests.post(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
     elif alert_prompt.http_method == "PUT":
-        response = requests.put(alert_prompt.http_url, json=alert_event.structured_data)
+        response = requests.put(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
     elif alert_prompt.http_method == "PATCH":
-        response = requests.patch(alert_prompt.http_url, json=alert_event.structured_data)
+        response = requests.patch(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
     else:
         raise ValueError(f"Unsupported HTTP method: {alert_prompt.http_method}")

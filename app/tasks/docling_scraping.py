@@ -77,14 +77,14 @@ async def check_and_process_sources():
 def is_night_time() -> bool:
     """Check if current time is between 11 PM and 7 AM"""
     current_time = datetime.now().time()
-    night_start = time(23, 0)  # 11 PM
-    night_end = time(7, 0)    # 7 AM
+    night_start = time(23, 0)
+    night_end = time(7, 0)
     
     if night_start <= current_time or current_time <= night_end:
         return True
     return False
 
-async def run_periodic_check(day_interval: int = 60, night_interval: int = 600):
+async def run_periodic_check(day_interval: int = 60 * 10, night_interval: int = 60 * 30):
     """
     Run the periodic check every interval_seconds
     

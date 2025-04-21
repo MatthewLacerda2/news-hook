@@ -15,6 +15,7 @@ from app.schemas.alert_prompt import (
 )
 from app.core.security import get_user_by_api_key
 from app.models.llm_models import LLMModel
+from app.utils.llm_validator import llm_validation
 
 router = APIRouter()
 
@@ -41,6 +42,14 @@ async def create_alert(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"LLM model '{alert_data.llm_model}' not found"
             )
+            
+        llm_validation_response = llm_validation(alert_data, llm_model)
+        
+        if not llm_validation_response.approval or llm_validation_response.chance_score < 0.85:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid alert request"
+            )
         
         # Create new alert
         new_alert = AlertPrompt(
@@ -52,13 +61,9 @@ async def create_alert(
             example_response=alert_data.example_response or {},
             max_datetime=alert_data.max_datetime or (now + timedelta(days=300)),
             llm_model=alert_data.llm_model,
-            keywords=[],  # Will be populated by LLM processing
+            keywords=llm_validation_response.keywords,
             status=AlertStatus.ACTIVE
         )
-        
-        # TODO: Process prompt with LLM to extract keywords and generate output_intent
-        output_intent = "Placeholder output intent"
-        keywords = []
         
         db.add(new_alert)
         db.commit()
@@ -67,9 +72,9 @@ async def create_alert(
         return AlertPromptCreateSuccessResponse(
             id=new_alert.id,
             prompt=new_alert.prompt,
-            output_intent=output_intent,
             created_at=new_alert.created_at,
-            keywords=keywords
+            output_intent=llm_validation_response.output_intent,
+            keywords=llm_validation_response.keywords
         )
         
     except Exception as e:

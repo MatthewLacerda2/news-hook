@@ -3,8 +3,9 @@ from datetime import datetime
 validation_prompt = """
 You are a helpful assistant that validates if an alert's request is reasonable.
 
-We have an alert request, to monitor and inform when and if an event happens.
+Alert request is when someone asks us to alert when and if an event does happen.
 The request carries a prompt and a parsed intent.
+
 
 The alert's prompt is:
 <alert_prompt>
@@ -16,6 +17,7 @@ The alert's parsed intent is:
 {alert_parsed_intent}
 </alert_parsed_intent>
 
+
 As guidelines, the alert request must be:
 - Clear
 - Specific
@@ -26,7 +28,15 @@ As guidelines, the alert request must be:
 - NOT subjective
 - NOT require external tools or APIs
 
+
 Your job is to validate if the alert's request is reasonable.
+You will respond in a structure format, with the following fields:
+- approval: Whether the alert's request is a valid one
+- chance_score: Validation estimate ranging from 0.0 to 1.0. Must be at least 0.85 to approve.
+- output_intent: What the LLM understood from the alert request
+- keywords: The keywords that MUST be in the data that triggers the alert
+
+
 Current date and time: {current_date_time}
 """
 
@@ -44,6 +54,7 @@ You are a helpful assistant that verifies if a document matches an alert's reque
 We have an alert request, to monitor and inform when and if an event happens.
 The request carries a prompt and a parsed intent.
 
+
 The alert's prompt is:
 <alert_prompt>
 {alert_prompt}
@@ -58,6 +69,7 @@ The document is:
 <document>
 {document}
 </document>
+
 
 With the above information, verify if the document matches the alert's request.
 If so, we will trigger the alert and send a request to the alert's URL.
@@ -79,6 +91,8 @@ You are a helpful assistant that generates a payload for an http request, based 
 
 We had an alert request, to monitor and inform when and if an event happens.
 Another system has done the work of verifying if document matches the alert's request.
+
+
 The request carried the parsed intent:
 <alert_parsed_intent>
 {alert_parsed_intent}
@@ -94,6 +108,7 @@ The payload shall be a JSON object in the given example format:
 <example_payload>
 {example_response}
 </example_payload>
+
 
 You answer must be self-contained, using the document as the source of truth and respond fully to the Query.
 Your answer must be correct, high-quality, and written by an expert using an unbiased and journalistic tone.

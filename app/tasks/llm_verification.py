@@ -7,10 +7,11 @@ from app.utils.llm_response_formats import LLMVerificationFormat
 from app.tasks.llm_apis.ollama import get_ollama_verification
 from app.tasks.llm_apis.gemini import get_gemini_verification
 from app.tasks.llm_generation import llm_generation
+from app.utils.sourced_data import SourcedData
 
 async def verify_document_matches_alert(
     alert_id: str,
-    document: Dict[str, Any],
+    sourced_document: SourcedData,
     similarity_score: float
 ):
     """
@@ -47,7 +48,7 @@ async def verify_document_matches_alert(
         # Check if verification passes our criteria
         if verification_result.approval and verification_result.chance_score >= 0.85:
             # Pass to LLM generation
-            await llm_generation(alert_prompt, document, db)
+            await llm_generation(alert_prompt, sourced_document, db)
             
             # Update alert status
             alert_prompt.status = AlertStatus.TRIGGERED

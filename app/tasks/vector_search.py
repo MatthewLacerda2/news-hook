@@ -1,4 +1,4 @@
-from typing import Dict, Any, List
+from typing import List
 from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -8,9 +8,10 @@ from app.core.database import SessionLocal
 from app.models.alert_prompt import AlertPrompt, AlertStatus
 from app.tasks.llm_verification import verify_document_matches_alert
 from app.models.agent_controller import AgentController
+from app.utils.sourced_data import SourcedData
 from app.tasks.llm_apis.ollama import get_nomic_embeddings
 
-async def process_document_for_vector_search(md_document: str):
+async def process_document_for_vector_search(sourced_document: SourcedData):
     """
     Process a document from a webscrape source and store it in the vector database.
     For each ACTIVE alert that has matching keywords, perform vector similarity search
@@ -25,11 +26,11 @@ async def process_document_for_vector_search(md_document: str):
         db = SessionLocal()
         
         # Get active alerts where all keywords are present in the document
-        active_alerts = await find_matching_alerts(db, md_document)
+        active_alerts = await find_matching_alerts(db, sourced_document.content)
         
         # For each matching alert, do vector similarity check
         for alert in active_alerts:
-            document_embedding = np.zeros(384)
+            document_embedding = get_nomic_embeddings(sourced_document.content)
             
             # Calculate cosine similarity
             similarity_score = calculate_cosine_similarity(
@@ -40,7 +41,7 @@ async def process_document_for_vector_search(md_document: str):
             if similarity_score >= 0.85:
                 await verify_document_matches_alert(
                     alert_id=str(alert.id),
-                    document=md_document,
+                    document=sourced_document,
                 )
                 
     except Exception as e:
@@ -49,7 +50,7 @@ async def process_document_for_vector_search(md_document: str):
     finally:
         db.close()
 
-async def find_matching_alerts(db: Session, document_keywords: set) -> List[AlertPrompt]:
+async def find_matching_alerts(db: Session, document_content: str) -> List[AlertPrompt]:
     """Find active alerts where all keywords are present in the document and user has sufficient credits"""
     active_alerts = db.execute(
         select(AlertPrompt).where(
@@ -69,7 +70,7 @@ async def find_matching_alerts(db: Session, document_keywords: set) -> List[Aler
         if user and user.credits > 0:
             # Only check keywords if user has credits
             alert_keywords = set(alert.keywords)
-            if alert_keywords.issubset(document_keywords):
+            if alert_keywords.issubset(document_content):
                 matching_alerts.append(alert)
             
     return matching_alerts

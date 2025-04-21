@@ -1,5 +1,5 @@
 from app.models.base import Base
-from sqlalchemy import Column, String, Float, Boolean, Integer
+from sqlalchemy import Column, String, Float, Boolean, Integer, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from sqlalchemy import ForeignKey
@@ -19,4 +19,6 @@ class LLMVerification(Base):
     input_tokens_price = Column(Float, nullable=False)
     output_tokens_count = Column(Integer, nullable=False)
     output_tokens_price = Column(Float, nullable=False)
+    
+    date_time = Column(DateTime, nullable=False)
 

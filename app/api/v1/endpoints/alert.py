@@ -15,8 +15,10 @@ from app.schemas.alert_prompt import (
 )
 from app.core.security import get_user_by_api_key
 from app.models.llm_models import LLMModel
-from app.utils.llm_validator import llm_validation
+from app.utils.llm_validator import llm_validation, get_llm_validation_price
 from app.tasks.llm_apis.ollama import get_nomic_embeddings
+import tiktoken
+from app.models.llm_validation import LLMValidation
 
 router = APIRouter()
 
@@ -47,12 +49,21 @@ async def create_alert(
                 detail=f"LLM model '{alert_data.llm_model}' not found"
             )
 
-        llm_validation_response = llm_validation(alert_data, llm_model)
+        llm_validation_response = await llm_validation(alert_data, llm_model)
 
         if not llm_validation_response.approval or llm_validation_response.chance_score < 0.85:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid alert request"
+            )
+        
+        input_price, output_price = await get_llm_validation_price(alert_data, llm_validation_response, llm_model)
+        tokens_price = input_price + output_price
+        
+        if user.credit_balance < tokens_price:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Insufficient credits"
             )
         
         # Create new alert
@@ -70,7 +81,25 @@ async def create_alert(
             keywords=llm_validation_response.keywords,
             status=AlertStatus.ACTIVE
         )
+
+        llm_validation = LLMValidation(
+            prompt=alert_data.prompt,
+            prompt_embedding=get_nomic_embeddings(alert_data.prompt),
+            prompt_id=new_alert.id,
+            parsed_intent=alert_data.parsed_intent,
+            parsed_intent_embedding=get_nomic_embeddings(str(alert_data.parsed_intent)),
+            approval=llm_validation_response.approval,
+            chance_score=llm_validation_response.chance_score,
+            input_tokens=tiktoken.count_tokens(alert_data.prompt) + tiktoken.count_tokens(str(alert_data.parsed_intent)),
+            input_price=input_price,
+            output_tokens=tiktoken.count_tokens(llm_validation_response),
+            output_price=output_price,
+            llm_id=llm_model.id,
+            date_time=datetime.now()
+        )
         
+        user.credit_balance -= tokens_price
+        db.add(llm_validation)
         db.add(new_alert)
         db.commit()
         db.refresh(new_alert)
@@ -89,8 +118,6 @@ async def create_alert(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error creating alert: {str(e)}"
         )
-
-#check alert price
 
 @router.get("/", response_model=AlertPromptListResponse)
 async def list_alerts(

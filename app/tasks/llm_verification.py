@@ -1,5 +1,5 @@
 from sqlalchemy import select
-
+from datetime import datetime
 from app.core.database import SessionLocal
 from app.models.alert_prompt import AlertPrompt, AlertStatus
 from app.utils.llm_response_formats import LLMVerificationFormat
@@ -78,6 +78,7 @@ async def register_llm_verification(alert_prompt: AlertPrompt, verification_resu
         output_tokens_count=output_tokens_count,
         output_tokens_price=output_tokens_count * llm_model_db.output_token_price,
         llm_model=llm_model,
+        date_time=datetime.now()
     )
     
     db.add(llm_verification)

@@ -17,13 +17,13 @@ import tiktoken
 async def llm_generation(alert_prompt: AlertPrompt, sourced_document: SourcedData, db: Session) -> NewsEvent:
     
     if alert_prompt.llm_model == "llama3.1":
-        generated_response = get_ollama_alert_generation(
+        generated_response = await get_ollama_alert_generation(
             alert_prompt.parsed_intent,
             sourced_document.content,
             alert_prompt.response_format,
         )
     elif alert_prompt.llm_model == "gemini":
-        generated_response = get_gemini_alert_generation(
+        generated_response = await get_gemini_alert_generation(
             alert_prompt.parsed_intent,
             sourced_document.content,
             alert_prompt.response_format,

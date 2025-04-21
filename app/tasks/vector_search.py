@@ -30,7 +30,7 @@ async def process_document_for_vector_search(sourced_document: SourcedData):
         
         # For each matching alert, do vector similarity check
         for alert in active_alerts:
-            document_embedding = get_nomic_embeddings(sourced_document.content)
+            document_embedding = await get_nomic_embeddings(sourced_document.content)
             
             # Calculate cosine similarity
             similarity_score = calculate_cosine_similarity(

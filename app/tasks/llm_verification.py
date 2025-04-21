@@ -32,7 +32,7 @@ async def verify_document_matches_alert(
         # Choose LLM based on model name
         verification_result: LLMVerificationFormat
         if alert_prompt.llm_model == "llama3.1":
-            verification_result = get_ollama_verification(
+            verification_result = await get_ollama_verification(
                 alert_prompt.prompt,
                 alert_prompt.parsed_intent,
             )

@@ -4,9 +4,6 @@ from app.tasks.llm_apis.ollama import get_ollama_validation
 from app.tasks.llm_apis.gemini import get_gemini_validation
 import tiktoken
 from app.models.llm_models import LLMModel
-from app.tasks.llm_apis.ollama import get_nomic_embeddings
-from app.models.llm_validation import LLMValidation
-from datetime import datetime
 
 async def llm_validation(alert_request: AlertPromptCreateRequestBase, llm_model: str) -> LLMValidationFormat:
     """
@@ -16,12 +13,12 @@ async def llm_validation(alert_request: AlertPromptCreateRequestBase, llm_model:
     # Choose LLM based on model name
     validation_result: LLMValidationFormat
     if llm_model == "llama3.1":
-        validation_result = get_ollama_validation(
+        validation_result = await get_ollama_validation(
             alert_request.prompt,
             alert_request.parsed_intent,
         )
     elif llm_model == "gemini":
-        validation_result = get_gemini_validation(
+        validation_result = await get_gemini_validation(
             alert_request.prompt,
             alert_request.parsed_intent,
         )

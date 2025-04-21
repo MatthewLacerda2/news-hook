@@ -42,6 +42,7 @@ async def process_webscrape_source(source: WebscrapeSource, db: Session):
         
         sourced_data = SourcedData(
             source=DataSource.WEBSCRAPE,
+            source_id=source.id,
             content=result,
             content_embedding=np.zeros(384)
         )

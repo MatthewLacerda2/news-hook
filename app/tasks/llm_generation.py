@@ -65,6 +65,7 @@ def save_alert_event(alert_event: NewsEvent, generated_response: LLMGenerationFo
     alert_event_db = AlertEvent(
         id=alert_event.id,
         alert_prompt_id=alert_event.alert_prompt_id,
+        scraped_data_id=alert_event.scraped_data_id,
         triggered_at=alert_event.triggered_at,
         output=generated_response.output,
         tags=generated_response.tags,

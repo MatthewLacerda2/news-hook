@@ -11,6 +11,7 @@ class SourcedData(Base):
     scraped_datetime : datetime
     source : DataSource
     source_url : str
+    source_id : UUID
     content : str
     content_embedding : Vector
     

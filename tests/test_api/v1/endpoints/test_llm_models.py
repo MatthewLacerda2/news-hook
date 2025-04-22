@@ -1,5 +1,7 @@
+import pytest
 from app.schemas.llm_models import LLMModelListResponse
 
+@pytest.mark.asyncio
 async def test_list_llm_models(client):
     # Test with actives_only=True
     response = await client.get("/api/v1/llm-models?actives_only=true")
@@ -17,6 +19,7 @@ async def test_list_llm_models(client):
     assert len(validated_data.items) == 3  # Should return all models
 
 # Test default behavior (should be the same as actives_only=true)
+@pytest.mark.asyncio
 async def test_list_llm_models_default(client):
     response = await client.get("/api/v1/llm-models")
     assert response.status_code == 200

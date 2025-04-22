@@ -269,4 +269,3 @@ def test_delete_account_nonexistent_user(client):
     
     assert response.status_code == 404
     assert response.json()["detail"] == "User not found"
-

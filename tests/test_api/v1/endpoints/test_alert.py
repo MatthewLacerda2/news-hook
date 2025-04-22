@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from uuid import uuid4
-from app.schemas.alert_prompt import AlertPromptCreateSuccessResponse, AlertPromptListResponse
+from app.schemas.alert_prompt import AlertPromptCreateSuccessResponse, AlertPromptListResponse, AlertPromptItem
 from app.models.alert_prompt import AlertStatus
 
 def test_create_alert_successful(client):
@@ -329,6 +329,71 @@ def test_list_alerts_invalid_api_key(client):
     )
     assert response.status_code == 401
     assert "Invalid API key" in response.json()["detail"]
+
+def test_get_alert_successful(client):
+    """Test successful alert retrieval"""
+    # First create a user
+    signup_response = client.post(
+        "/api/v1/auth/signup",
+        json={"access_token": "valid_google_token"}
+    )
+    user_data = signup_response.json()["agent_controller"]
+    api_key = user_data["api_key"]
+    
+    # Create an alert first
+    alert_data = {
+        "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
+        "http_method": "POST",
+        "http_url": "https://webhook.example.com/crypto-alert",
+        "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
+        "example_response": {"price": 50001, "alert": True},
+        "max_datetime": (datetime.now() + timedelta(days=30)).isoformat()
+    }
+    
+    create_response = client.post(
+        "/api/v1/alerts/",
+        headers={"X-API-Key": api_key},
+        json=alert_data
+    )
+    assert create_response.status_code == 201
+    alert_id = create_response.json()["id"]
+    
+    # Get the specific alert
+    response = client.get(
+        f"/api/v1/alerts/{alert_id}",
+        headers={"X-API-Key": api_key}
+    )
+    
+    assert response.status_code == 200
+    alert = response.json()
+    
+    # Validate the response matches our schema
+    AlertPromptItem.model_validate(alert)
+    
+    # Verify the alert data matches what we created
+    assert alert["prompt"] == alert_data["prompt"]
+    assert alert["http_method"] == alert_data["http_method"]
+    assert alert["http_url"] == alert_data["http_url"]
+
+def test_get_alert_not_found(client):
+    """Test attempting to get a non-existent alert"""
+    # First create a user
+    signup_response = client.post(
+        "/api/v1/auth/signup",
+        json={"access_token": "valid_google_token"}
+    )
+    user_data = signup_response.json()["agent_controller"]
+    api_key = user_data["api_key"]
+    
+    # Try to get a non-existent alert using a random UUID
+    non_existent_id = str(uuid4())
+    response = client.get(
+        f"/api/v1/alerts/{non_existent_id}",
+        headers={"X-API-Key": api_key}
+    )
+    
+    assert response.status_code == 404
+    assert "Not found" in response.json()["detail"]
 
 def test_cancel_alert_successful(client):
     """Test successful alert cancellation"""

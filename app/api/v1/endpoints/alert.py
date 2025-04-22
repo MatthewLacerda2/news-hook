@@ -73,6 +73,7 @@ async def create_alert(
             prompt_embedding = await get_nomic_embeddings(alert_data.prompt),
             http_method=alert_data.http_method,
             http_url=str(alert_data.http_url),
+            http_headers=alert_data.http_headers or {},
             parsed_intent=alert_data.parsed_intent or {},
             parsed_intent_embedding = await get_nomic_embeddings(str(alert_data.parsed_intent)),
             example_response=alert_data.example_response or {},
@@ -160,8 +161,29 @@ async def list_alerts(
         total=total
     )
 
-#cancel alert (they cannot be 'deleted' because creating them costed credits, thus we must keep track)
+@router.get("/{alert_id}", response_model=AlertPromptItem)
+async def get_alert(
+    alert_id: UUID,
+    db: Session = Depends(get_db),
+    user: AgentController = Depends(get_user_by_api_key)
+):
+    """Get a specific alert by ID"""
+    
+    # Find the alert and verify ownership
+    alert = db.query(AlertPrompt).filter(
+        AlertPrompt.id == alert_id,
+        AlertPrompt.agent_controller_id == user.id
+    ).first()
+    
+    if not alert:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not found"
+        )
+    
+    return alert
 
+#Alert can not be 'deleted'. They costed credits and thus have to be kept register of.
 @router.patch("/{alert_id}/cancel", status_code=status.HTTP_200_OK)
 async def cancel_alert(
     alert_id: UUID,

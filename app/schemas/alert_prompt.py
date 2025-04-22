@@ -34,7 +34,7 @@ class AlertPromptCreateRequestBase(BaseModel):
         now = datetime.now()
         max_allowed = now + timedelta(days=300)
         if v > max_allowed:
-            raise ValueError("max_datetime cannot be more than 1 year in the future")
+            raise ValueError("max_datetime cannot be more than 300 days in the future")
             
         return v
 
@@ -53,11 +53,12 @@ class AlertPromptItem(BaseModel):
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     http_method: HttpMethod
     http_url: HttpUrl
-    expire_datetime: Optional[datetime]
+    expire_datetime: datetime = Field(..., description="The date and time the alert will expire")
+    http_headers: Optional[Dict[str, JsonPrimitive]] = Field(None, description="HTTP headers to send with the request")
     tags: list[str] = Field(default=[], description="Tags for hinting")
-    keywords: list[str] = Field(default=[], description="Mandatory keywords to be found in the monitored data")
     status: AlertStatus 
     created_at: datetime = Field(..., lt=datetime.now(), description="The date and time the alert was created")
+    llm_model: str = Field(..., description="The LLM model used to create the alert")
 
     class Config:
         from_attributes = True

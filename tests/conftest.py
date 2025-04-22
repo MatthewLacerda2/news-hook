@@ -1,11 +1,18 @@
 import pytest
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from unittest.mock import patch
+from uuid import UUID
+
+# Set test environment variables before importing app
+os.environ["GOOGLE_CLIENT_ID"] = "dummy_client_id"
+os.environ["GOOGLE_CLIENT_SECRET"] = "dummy_client_secret"
+os.environ["GOOGLE_REDIRECT_URI"] = "http://localhost:8000/auth/callback"
+
 from app.models.base import Base
 from app.main import app
 from fastapi.testclient import TestClient
-from unittest.mock import patch
-from uuid import UUID
 from app.models.llm_models import LLMModel
 
 # Create a test database URL for SQLite in-memory database

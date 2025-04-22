@@ -196,7 +196,6 @@ def test_delete_account_successful(client):
         json={"access_token": "valid_google_token"}
     )
     access_token = signup_response.json()["access_token"]
-    user_id = signup_response.json()["agent_controller"]["id"]
     
     # Create some alert prompts for this user
     test_prompts = [

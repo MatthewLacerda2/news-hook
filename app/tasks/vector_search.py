@@ -67,8 +67,8 @@ async def find_matching_alerts(db: Session, document_content: str) -> List[Alert
             AgentController.id == alert.agent_controller_id
         ).first()
         
+        # Only check keywords if user has credits
         if user and user.credit_balance > 0:
-            # Only check keywords if user has credits
             alert_keywords = set(alert.keywords)
             if alert_keywords.issubset(document_content):
                 matching_alerts.append(alert)

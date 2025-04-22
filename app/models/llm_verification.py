@@ -3,7 +3,6 @@ from sqlalchemy import Column, String, Float, Boolean, Integer, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from sqlalchemy import ForeignKey
-from sqlalchemy.dialects.postgresql import ARRAY
 
 class LLMVerification(Base):
     __tablename__ = "llm_verifications"

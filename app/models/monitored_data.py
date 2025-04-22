@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from enum import Enum
-from sqlalchemy import Column, String, DateTime, JSON, Enum as SQLEnum, ForeignKey, Index
+from sqlalchemy import Column, DateTime, JSON, Enum as SQLEnum, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector

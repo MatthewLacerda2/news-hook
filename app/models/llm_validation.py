@@ -1,10 +1,8 @@
 from app.models.base import Base
 from sqlalchemy import Column, String, Float, Boolean, Integer, DateTime
 from sqlalchemy.dialects.postgresql import UUID
-import uuid
 from sqlalchemy import ForeignKey
-from sqlalchemy.dialects.postgresql import ARRAY
-from sqlalchemy.dialects.postgresql import Vector
+from pgvector.sqlalchemy import Vector
 
 class LLMValidation(Base):
     __tablename__ = "llm_validations"

@@ -52,7 +52,6 @@ def client():
 def mock_google_verify():
     """Fixture to mock Google token verification"""
     with patch('app.api.v1.endpoints.auth.verify_google_token') as mock:
-        # This simulates what we get back from Google's verification
         mock.return_value = {
             'email': 'test@example.com',
             'sub': '12345',  # This is Google's user ID

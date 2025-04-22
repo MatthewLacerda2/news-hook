@@ -2,12 +2,15 @@ import pytest
 from app.schemas.agent_controller import TokenResponse
 
 @pytest.mark.asyncio
-async def test_signup_successful(client):
+async def test_signup_successful(client, mock_google_verify):
     """Test successful signup with valid Google token"""
     response = client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
+    
+    print("\nResponse status:", response.status_code)
+    print("Response body:", response.json())
     
     assert response.status_code == 201
     # This will validate that the response matches the TokenResponse schema

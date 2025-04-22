@@ -1,6 +1,8 @@
+import pytest
 from app.schemas.agent_controller import TokenResponse
 
-def test_signup_successful(client):
+@pytest.mark.asyncio
+async def test_signup_successful(client):
     """Test successful signup with valid Google token"""
     response = client.post(
         "/api/v1/auth/signup",
@@ -19,7 +21,8 @@ def test_signup_successful(client):
     assert token_response.agent_controller.credits == 0
     assert token_response.agent_controller.api_key is not None
 
-def test_signup_invalid_token(client, mock_google_verify):
+@pytest.mark.asyncio
+async def test_signup_invalid_token(client, mock_google_verify):
     """Test signup with invalid Google token"""
     mock_google_verify.side_effect = Exception("Invalid token")
     
@@ -31,7 +34,8 @@ def test_signup_invalid_token(client, mock_google_verify):
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid Google token"
 
-def test_signup_existing_user(client):
+@pytest.mark.asyncio
+async def test_signup_existing_user(client):
     """Test signup attempt with existing Google account"""
     # First signup
     client.post(
@@ -48,7 +52,8 @@ def test_signup_existing_user(client):
     assert response.status_code == 409
     assert response.json()["detail"] == "User already exists"
 
-def test_signup_missing_token(client):
+@pytest.mark.asyncio
+async def test_signup_missing_token(client):
     """Test signup without providing token"""
     response = client.post(
         "/api/v1/auth/signup",
@@ -57,7 +62,8 @@ def test_signup_missing_token(client):
     
     assert response.status_code == 422  # Validation error
 
-def test_login_successful(client):
+@pytest.mark.asyncio
+async def test_login_successful(client):
     """Test successful login with valid Google token for existing user"""
     # First create a user through signup
     client.post(
@@ -83,7 +89,8 @@ def test_login_successful(client):
     assert token_response.agent_controller.credits == 0
     assert token_response.agent_controller.api_key is not None
 
-def test_login_nonexistent_user(client):
+@pytest.mark.asyncio
+async def test_login_nonexistent_user(client):
     """Test login attempt with Google account that hasn't signed up"""
     response = client.post(
         "/api/v1/auth/login",
@@ -93,7 +100,8 @@ def test_login_nonexistent_user(client):
     assert response.status_code == 404
     assert response.json()["detail"] == "User not found"
 
-def test_login_invalid_token(client, mock_google_verify):
+@pytest.mark.asyncio
+async def test_login_invalid_token(client, mock_google_verify):
     """Test login with invalid Google token"""
     mock_google_verify.side_effect = Exception("Invalid token")
     
@@ -105,7 +113,8 @@ def test_login_invalid_token(client, mock_google_verify):
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid Google token"
 
-def test_login_missing_token(client):
+@pytest.mark.asyncio
+async def test_login_missing_token(client):
     """Test login without providing token"""
     response = client.post(
         "/api/v1/auth/login",
@@ -114,7 +123,8 @@ def test_login_missing_token(client):
     
     assert response.status_code == 422  # Validation error
 
-def test_check_credits_successful(client):
+@pytest.mark.asyncio
+async def test_check_credits_successful(client):
     """Test successful credits check for authenticated user"""
     # First create a user through signup
     signup_response = client.post(
@@ -134,14 +144,16 @@ def test_check_credits_successful(client):
     assert "credits" in data
     assert isinstance(data["credits"], int)
 
-def test_check_credits_unauthorized(client):
+@pytest.mark.asyncio
+async def test_check_credits_unauthorized(client):
     """Test credits check without authentication"""
     response = client.get("/api/v1/auth/credits")
     
     assert response.status_code == 401
     assert response.json()["detail"] == "Not authenticated"
 
-def test_check_credits_invalid_token(client):
+@pytest.mark.asyncio
+async def test_check_credits_invalid_token(client):
     """Test credits check with invalid token"""
     response = client.get(
         "/api/v1/auth/credits",
@@ -151,7 +163,8 @@ def test_check_credits_invalid_token(client):
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid token"
 
-def test_check_credits_user_not_found(client):
+@pytest.mark.asyncio
+async def test_check_credits_user_not_found(client):
     """Test credits check for non-existent user"""
     # Create a token for a user that doesn't exist in DB
     response = client.get(
@@ -162,7 +175,8 @@ def test_check_credits_user_not_found(client):
     assert response.status_code == 404
     assert response.json()["detail"] == "User not found"
 
-def test_check_credits_after_modification(client):
+@pytest.mark.asyncio
+async def test_check_credits_after_modification(client):
     """Test credits check after credits have been modified"""
     # First create a user through signup
     signup_response = client.post(
@@ -188,7 +202,8 @@ def test_check_credits_after_modification(client):
     # Assert the new credit amount if you implemented the credit modification
     # assert data["credits"] == 100
 
-def test_delete_account_successful(client):
+@pytest.mark.asyncio
+async def test_delete_account_successful(client):
     """Test successful account deletion with valid token"""
     # First create a user through signup
     signup_response = client.post(
@@ -243,14 +258,16 @@ def test_delete_account_successful(client):
     )
     assert alerts_response.status_code == 401
 
-def test_delete_account_unauthorized(client):
+@pytest.mark.asyncio
+async def test_delete_account_unauthorized(client):
     """Test account deletion without authentication"""
     response = client.delete("/api/v1/auth/account")
     
     assert response.status_code == 401
     assert response.json()["detail"] == "Not authenticated"
 
-def test_delete_account_invalid_token(client):
+@pytest.mark.asyncio
+async def test_delete_account_invalid_token(client):
     """Test account deletion with invalid token"""
     response = client.delete(
         "/api/v1/auth/account",
@@ -260,7 +277,8 @@ def test_delete_account_invalid_token(client):
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid token"
 
-def test_delete_account_nonexistent_user(client):
+@pytest.mark.asyncio
+async def test_delete_account_nonexistent_user(client):
     """Test deletion attempt for non-existent user"""
     response = client.delete(
         "/api/v1/auth/account",

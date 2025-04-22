@@ -2,8 +2,10 @@ from datetime import datetime, timedelta
 from uuid import uuid4
 from app.schemas.alert_prompt import AlertPromptCreateSuccessResponse, AlertPromptListResponse, AlertPromptItem
 from app.models.alert_prompt import AlertStatus
+import pytest
 
-def test_create_alert_successful(client):
+@pytest.mark.asyncio
+async def test_create_alert_successful(client):
     """Test successful alert creation with valid data"""
     # First create a user and get their token (similar to auth tests)
     signup_response = client.post(
@@ -32,7 +34,8 @@ def test_create_alert_successful(client):
     # This will raise a validation error if the response doesn't match the schema
     AlertPromptCreateSuccessResponse.model_validate(response.json())
 
-def test_create_alert_invalid_api_key(client):
+@pytest.mark.asyncio
+async def test_create_alert_invalid_api_key(client):
     """Test alert creation with invalid API key"""
     alert_data = {
         "prompt": "Test prompt",
@@ -48,7 +51,8 @@ def test_create_alert_invalid_api_key(client):
     assert response.status_code == 401
     assert "Invalid API key" in response.json()["detail"]
 
-def test_create_alert_mismatched_user_api_key(client, mock_google_verify):
+@pytest.mark.asyncio
+async def test_create_alert_mismatched_user_api_key(client, mock_google_verify):
     """Test alert creation with API key not owned by user"""
     # Create first user
     signup1 = client.post(
@@ -82,7 +86,8 @@ def test_create_alert_mismatched_user_api_key(client, mock_google_verify):
     assert response.status_code == 400
     assert "API key does not match user" in response.json()["detail"]
 
-def test_create_alert_insufficient_credits(client):
+@pytest.mark.asyncio
+async def test_create_alert_insufficient_credits(client):
     """Test alert creation with insufficient credits"""
     # Create user with 0 credits
     signup_response = client.post(
@@ -103,7 +108,8 @@ def test_create_alert_insufficient_credits(client):
     assert response.status_code == 401
     assert "Insufficient credits" in response.json()["detail"]
 
-def test_create_alert_invalid_url(client):
+@pytest.mark.asyncio
+async def test_create_alert_invalid_url(client):
     """Test alert creation with invalid URL"""
     signup_response = client.post(
         "/api/v1/auth/signup",
@@ -123,7 +129,8 @@ def test_create_alert_invalid_url(client):
     assert response.status_code == 400
     assert "Invalid URL" in response.json()["detail"]
 
-def test_create_alert_invalid_parsed_intent(client):
+@pytest.mark.asyncio
+async def test_create_alert_invalid_parsed_intent(client):
     """Test alert creation with invalid parsed_intent JSON"""
     signup_response = client.post(
         "/api/v1/auth/signup",
@@ -144,7 +151,8 @@ def test_create_alert_invalid_parsed_intent(client):
     assert response.status_code == 400
     assert "Invalid parsed_intent format" in response.json()["detail"]
 
-def test_create_alert_invalid_example_response(client):
+@pytest.mark.asyncio
+async def test_create_alert_invalid_example_response(client):
     """Test alert creation with invalid example_response JSON"""
     signup_response = client.post(
         "/api/v1/auth/signup",
@@ -165,7 +173,8 @@ def test_create_alert_invalid_example_response(client):
     assert response.status_code == 400
     assert "Invalid example_response format" in response.json()["detail"]
 
-def test_create_alert_invalid_max_datetime(client):
+@pytest.mark.asyncio
+async def test_create_alert_invalid_max_datetime(client):
     """Test alert creation with invalid max_datetime values"""
     signup_response = client.post(
         "/api/v1/auth/signup",
@@ -193,7 +202,8 @@ def test_create_alert_invalid_max_datetime(client):
     assert response.status_code == 400
     assert "max_datetime cannot be more than 1 year in the future" in response.json()["detail"]
 
-def test_create_alert_invalid_llm_model(client):
+@pytest.mark.asyncio
+async def test_create_alert_invalid_llm_model(client):
     """Test alert creation with invalid LLM model"""
     # First create a user
     signup_response = client.post(
@@ -218,7 +228,8 @@ def test_create_alert_invalid_llm_model(client):
     assert response.status_code == 400
     assert "Invalid LLM model" in response.json()["detail"]
 
-def test_list_alerts_successful(client):
+@pytest.mark.asyncio
+async def test_list_alerts_successful(client):
     """Test successful alert listing with valid parameters"""
     # First create a user
     signup_response = client.post(
@@ -247,7 +258,8 @@ def test_list_alerts_successful(client):
     data = response.json()
     AlertPromptListResponse.model_validate(data)
 
-def test_list_alerts_invalid_parameters(client):
+@pytest.mark.asyncio
+async def test_list_alerts_invalid_parameters(client):
     """Test alert listing with invalid parameter types"""
     signup_response = client.post(
         "/api/v1/auth/signup",
@@ -281,7 +293,8 @@ def test_list_alerts_invalid_parameters(client):
     assert response.status_code == 400
     assert "Invalid datetime format" in response.json()["detail"]
 
-def test_list_alerts_datetime_validation(client):
+@pytest.mark.asyncio
+async def test_list_alerts_datetime_validation(client):
     """Test datetime validation between created_after and max_datetime"""
     signup_response = client.post(
         "/api/v1/auth/signup",
@@ -303,7 +316,8 @@ def test_list_alerts_datetime_validation(client):
     assert response.status_code == 400
     assert "created_after cannot be later than max_datetime" in response.json()["detail"]
 
-def test_list_alerts_minimal_parameters(client):
+@pytest.mark.asyncio
+async def test_list_alerts_minimal_parameters(client):
     """Test alert listing with no parameters (just authentication)"""
     signup_response = client.post(
         "/api/v1/auth/signup",
@@ -321,7 +335,8 @@ def test_list_alerts_minimal_parameters(client):
     data = response.json()
     AlertPromptListResponse.model_validate(data)
 
-def test_list_alerts_invalid_api_key(client):
+@pytest.mark.asyncio
+async def test_list_alerts_invalid_api_key(client):
     """Test alert listing with invalid API key"""
     response = client.get(
         "/api/v1/alerts/",
@@ -330,7 +345,8 @@ def test_list_alerts_invalid_api_key(client):
     assert response.status_code == 401
     assert "Invalid API key" in response.json()["detail"]
 
-def test_get_alert_successful(client):
+@pytest.mark.asyncio
+async def test_get_alert_successful(client):
     """Test successful alert retrieval"""
     # First create a user
     signup_response = client.post(
@@ -375,7 +391,8 @@ def test_get_alert_successful(client):
     assert alert["http_method"] == alert_data["http_method"]
     assert alert["http_url"] == alert_data["http_url"]
 
-def test_get_alert_not_found(client):
+@pytest.mark.asyncio
+async def test_get_alert_not_found(client):
     """Test attempting to get a non-existent alert"""
     # First create a user
     signup_response = client.post(
@@ -395,7 +412,8 @@ def test_get_alert_not_found(client):
     assert response.status_code == 404
     assert "Not found" in response.json()["detail"]
 
-def test_cancel_alert_successful(client):
+@pytest.mark.asyncio
+async def test_cancel_alert_successful(client):
     """Test successful alert cancellation"""
     # First create a user
     signup_response = client.post(
@@ -440,7 +458,8 @@ def test_cancel_alert_successful(client):
     cancelled_alert = next(alert for alert in alerts if alert["id"] == alert_id)
     assert cancelled_alert["status"] == AlertStatus.CANCELLED
 
-def test_cancel_alert_invalid_api_key(client):
+@pytest.mark.asyncio
+async def test_cancel_alert_invalid_api_key(client):
     """Test attempting to cancel an alert with invalid API key"""
     response = client.patch(
         f"/api/v1/alerts/{str(uuid4())}/cancel",
@@ -449,7 +468,8 @@ def test_cancel_alert_invalid_api_key(client):
     assert response.status_code == 403
     assert "Unauthorized" in response.json()["detail"]
 
-def test_cancel_alert_wrong_user(client, mock_google_verify):
+@pytest.mark.asyncio
+async def test_cancel_alert_wrong_user(client, mock_google_verify):
     """Test attempting to cancel an alert belonging to another user"""
     # Create first user and their alert
     signup1 = client.post(
@@ -495,7 +515,8 @@ def test_cancel_alert_wrong_user(client, mock_google_verify):
     assert response.status_code == 404
     assert "Not found" in response.json()["detail"]
 
-def test_cancel_nonexistent_alert(client):
+@pytest.mark.asyncio
+async def test_cancel_nonexistent_alert(client):
     """Test attempting to cancel an alert that doesn't exist"""
     # Create a user
     signup_response = client.post(

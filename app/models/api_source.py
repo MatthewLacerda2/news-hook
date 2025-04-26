@@ -24,4 +24,4 @@ class APISource(Base):
     is_active = Column(Boolean, default=True)
     
     # Relationship with MonitoredData
-    monitored_data = relationship("monitored_data", back_populates="api_source")
+    monitored_data = relationship("MonitoredData", back_populates="api_source")

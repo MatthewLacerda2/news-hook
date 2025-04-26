@@ -21,4 +21,4 @@ class WebhookSource(Base):
     is_active = Column(Boolean, default=True)
     
     # Relationship with MonitoredData
-    monitored_data = relationship("monitored_data", back_populates="webhook_source")
+    monitored_data = relationship("MonitoredData", back_populates="webhook_source")

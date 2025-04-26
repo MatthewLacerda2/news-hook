@@ -247,7 +247,7 @@ async def test_list_alerts_successful(client):
         "created_after": datetime.now().isoformat()
     }
     
-    response = client.get(
+    response = await client.get(
         "/api/v1/alerts/",
         params=list_params,
         headers={"X-API-Key": user_data["api_key"]}
@@ -273,7 +273,7 @@ async def test_list_alerts_invalid_parameters(client):
         "offset": -1,
         "limit": 101
     }
-    response = client.get(
+    response = await client.get(
         "/api/v1/alerts/",
         params=invalid_pagination_params,
         headers={"X-API-Key": api_key}
@@ -285,7 +285,7 @@ async def test_list_alerts_invalid_parameters(client):
     invalid_datetime_params = {
         "created_after": "not-a-datetime"
     }
-    response = client.get(
+    response = await client.get(
         "/api/v1/alerts/",
         params=invalid_datetime_params,
         headers={"X-API-Key": api_key}
@@ -308,7 +308,7 @@ async def test_list_alerts_datetime_validation(client):
         "max_datetime": (now + timedelta(days=1)).isoformat()
     }
     
-    response = client.get(
+    response = await client.get(
         "/api/v1/alerts/",
         params=params,
         headers={"X-API-Key": user_data["api_key"]}
@@ -325,7 +325,7 @@ async def test_list_alerts_minimal_parameters(client):
     )
     user_data = signup_response.json()["agent_controller"]
     
-    response = client.get(
+    response = await client.get(
         "/api/v1/alerts/",
         headers={"X-API-Key": user_data["api_key"]}
     )
@@ -338,7 +338,7 @@ async def test_list_alerts_minimal_parameters(client):
 @pytest.mark.asyncio
 async def test_list_alerts_invalid_api_key(client):
     """Test alert listing with invalid API key"""
-    response = client.get(
+    response = await client.get(
         "/api/v1/alerts/",
         headers={"X-API-Key": "invalid_api_key"}
     )
@@ -375,7 +375,7 @@ async def test_get_alert_successful(client):
     alert_id = create_response.json()["id"]
     
     # Get the specific alert
-    response = client.get(
+    response = await client.get(
         f"/api/v1/alerts/{alert_id}",
         headers={"X-API-Key": api_key}
     )
@@ -404,7 +404,7 @@ async def test_get_alert_not_found(client):
     
     # Try to get a non-existent alert using a random UUID
     non_existent_id = str(uuid4())
-    response = client.get(
+    response = await client.get(
         f"/api/v1/alerts/{non_existent_id}",
         headers={"X-API-Key": api_key}
     )
@@ -449,7 +449,7 @@ async def test_cancel_alert_successful(client):
     assert response.status_code == 200
     
     # Verify the alert is now cancelled by getting it
-    list_response = client.get(
+    list_response = await client.get(
         "/api/v1/alerts/",
         headers={"X-API-Key": api_key}
     )

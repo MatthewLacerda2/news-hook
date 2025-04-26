@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
+from sqlalchemy import select
 
 from app.schemas.llm_models import LLMModelListResponse
 from app.models.llm_models import LLMModel
@@ -8,7 +9,7 @@ from app.core.database import get_db
 
 router = APIRouter()
 
-@router.get("/llm-models", response_model=LLMModelListResponse)
+@router.get("/", response_model=LLMModelListResponse)
 async def list_llm_models(
     actives_only: bool = True,
     db: AsyncSession = Depends(get_db)
@@ -18,11 +19,11 @@ async def list_llm_models(
     If actives_only is True (default), only return active models.
     If actives_only is False, return all models.
     """
-    query = db.query(LLMModel)
+    query = select(LLMModel)
     if actives_only:
-        query = query.filter(LLMModel.is_active == True)
+        query = query.where(LLMModel.is_active == True)
     
-    models = await db.execute(query)
-    models = models.scalars().all()
+    result = await db.execute(query)
+    models = result.scalars().all()
     
     return LLMModelListResponse(items=models)

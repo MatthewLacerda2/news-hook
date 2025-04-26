@@ -8,7 +8,7 @@ import pytest
 async def test_create_alert_successful(client):
     """Test successful alert creation with valid data"""
     # First create a user and get their token (similar to auth tests)
-    signup_response = client.post(
+    signup_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
@@ -24,7 +24,7 @@ async def test_create_alert_successful(client):
         "llm_model": "gemini-2.5-pro"
     }
     
-    response = client.post(
+    response = await client.post(
         "/api/v1/alerts/",
         headers={"X-API-Key": user_data["api_key"]},  # API key in header
         json=alert_data
@@ -43,7 +43,7 @@ async def test_create_alert_invalid_api_key(client):
         "http_url": "https://webhook.example.com/test"
     }
     
-    response = client.post(
+    response = await client.post(
         "/api/v1/alerts/",
         headers={"X-API-Key": "invalid_api_key"},  # Invalid API key in header
         json=alert_data
@@ -55,7 +55,7 @@ async def test_create_alert_invalid_api_key(client):
 async def test_create_alert_mismatched_user_api_key(client, mock_google_verify):
     """Test alert creation with API key not owned by user"""
     # Create first user
-    signup1 = client.post(
+    signup1 = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token_1"}
     )
@@ -67,7 +67,7 @@ async def test_create_alert_mismatched_user_api_key(client, mock_google_verify):
         'sub': '67890',
         'name': 'Test User 2'
     }
-    signup2 = client.post(
+    signup2 = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token_2"}
     )
@@ -82,7 +82,7 @@ async def test_create_alert_mismatched_user_api_key(client, mock_google_verify):
         "http_url": "https://webhook.example.com/test"
     }
     
-    response = client.post("/api/v1/alerts/", json=alert_data)
+    response = await client.post("/api/v1/alerts/", json=alert_data)
     assert response.status_code == 400
     assert "API key does not match user" in response.json()["detail"]
 
@@ -90,7 +90,7 @@ async def test_create_alert_mismatched_user_api_key(client, mock_google_verify):
 async def test_create_alert_insufficient_credits(client):
     """Test alert creation with insufficient credits"""
     # Create user with 0 credits
-    signup_response = client.post(
+    signup_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
@@ -104,14 +104,14 @@ async def test_create_alert_insufficient_credits(client):
         "http_url": "https://webhook.example.com/test"
     }
     
-    response = client.post("/api/v1/alerts/", json=alert_data)
+    response = await client.post("/api/v1/alerts/", json=alert_data)
     assert response.status_code == 401
     assert "Insufficient credits" in response.json()["detail"]
 
 @pytest.mark.asyncio
 async def test_create_alert_invalid_url(client):
     """Test alert creation with invalid URL"""
-    signup_response = client.post(
+    signup_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
@@ -125,14 +125,14 @@ async def test_create_alert_invalid_url(client):
         "http_url": "not-a-valid-url"
     }
     
-    response = client.post("/api/v1/alerts/", json=alert_data)
+    response = await client.post("/api/v1/alerts/", json=alert_data)
     assert response.status_code == 400
     assert "Invalid URL" in response.json()["detail"]
 
 @pytest.mark.asyncio
 async def test_create_alert_invalid_parsed_intent(client):
     """Test alert creation with invalid parsed_intent JSON"""
-    signup_response = client.post(
+    signup_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
@@ -147,14 +147,14 @@ async def test_create_alert_invalid_parsed_intent(client):
         "parsed_intent": "not-a-valid-json"
     }
     
-    response = client.post("/api/v1/alerts/", json=alert_data)
+    response = await client.post("/api/v1/alerts/", json=alert_data)
     assert response.status_code == 400
     assert "Invalid parsed_intent format" in response.json()["detail"]
 
 @pytest.mark.asyncio
 async def test_create_alert_invalid_example_response(client):
     """Test alert creation with invalid example_response JSON"""
-    signup_response = client.post(
+    signup_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
@@ -169,14 +169,14 @@ async def test_create_alert_invalid_example_response(client):
         "example_response": "not-a-valid-json"
     }
     
-    response = client.post("/api/v1/alerts/", json=alert_data)
+    response = await client.post("/api/v1/alerts/", json=alert_data)
     assert response.status_code == 400
     assert "Invalid example_response format" in response.json()["detail"]
 
 @pytest.mark.asyncio
 async def test_create_alert_invalid_max_datetime(client):
     """Test alert creation with invalid max_datetime values"""
-    signup_response = client.post(
+    signup_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
@@ -192,13 +192,13 @@ async def test_create_alert_invalid_max_datetime(client):
         "max_datetime": (datetime.now() + timedelta(minutes=20)).isoformat()
     }
     
-    response = client.post("/api/v1/alerts/", json=alert_data)
+    response = await client.post("/api/v1/alerts/", json=alert_data)
     assert response.status_code == 400
     assert "max_datetime must be at least 30 minutes in the future" in response.json()["detail"]
     
     # Test with datetime too far in future
     alert_data["max_datetime"] = (datetime.now() + timedelta(days=400)).isoformat()
-    response = client.post("/api/v1/alerts/", json=alert_data)
+    response = await client.post("/api/v1/alerts/", json=alert_data)
     assert response.status_code == 400
     assert "max_datetime cannot be more than 1 year in the future" in response.json()["detail"]
 
@@ -206,7 +206,7 @@ async def test_create_alert_invalid_max_datetime(client):
 async def test_create_alert_invalid_llm_model(client):
     """Test alert creation with invalid LLM model"""
     # First create a user
-    signup_response = client.post(
+    signup_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
@@ -219,7 +219,7 @@ async def test_create_alert_invalid_llm_model(client):
         "llm_model": "nonexistent_model_name"
     }
     
-    response = client.post(
+    response = await client.post(
         "/api/v1/alerts/",
         headers={"X-API-Key": user_data["api_key"]},
         json=alert_data
@@ -232,7 +232,7 @@ async def test_create_alert_invalid_llm_model(client):
 async def test_list_alerts_successful(client):
     """Test successful alert listing with valid parameters"""
     # First create a user
-    signup_response = client.post(
+    signup_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
@@ -261,7 +261,7 @@ async def test_list_alerts_successful(client):
 @pytest.mark.asyncio
 async def test_list_alerts_invalid_parameters(client):
     """Test alert listing with invalid parameter types"""
-    signup_response = client.post(
+    signup_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
@@ -296,7 +296,7 @@ async def test_list_alerts_invalid_parameters(client):
 @pytest.mark.asyncio
 async def test_list_alerts_datetime_validation(client):
     """Test datetime validation between created_after and max_datetime"""
-    signup_response = client.post(
+    signup_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
@@ -319,7 +319,7 @@ async def test_list_alerts_datetime_validation(client):
 @pytest.mark.asyncio
 async def test_list_alerts_minimal_parameters(client):
     """Test alert listing with no parameters (just authentication)"""
-    signup_response = client.post(
+    signup_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
@@ -349,7 +349,7 @@ async def test_list_alerts_invalid_api_key(client):
 async def test_get_alert_successful(client):
     """Test successful alert retrieval"""
     # First create a user
-    signup_response = client.post(
+    signup_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
@@ -366,7 +366,7 @@ async def test_get_alert_successful(client):
         "max_datetime": (datetime.now() + timedelta(days=30)).isoformat()
     }
     
-    create_response = client.post(
+    create_response = await client.post(
         "/api/v1/alerts/",
         headers={"X-API-Key": api_key},
         json=alert_data
@@ -395,7 +395,7 @@ async def test_get_alert_successful(client):
 async def test_get_alert_not_found(client):
     """Test attempting to get a non-existent alert"""
     # First create a user
-    signup_response = client.post(
+    signup_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
@@ -416,7 +416,7 @@ async def test_get_alert_not_found(client):
 async def test_cancel_alert_successful(client):
     """Test successful alert cancellation"""
     # First create a user
-    signup_response = client.post(
+    signup_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
@@ -433,7 +433,7 @@ async def test_cancel_alert_successful(client):
         "max_datetime": (datetime.now() + timedelta(days=30)).isoformat()
     }
     
-    create_response = client.post(
+    create_response = await client.post(
         "/api/v1/alerts/", 
         headers={"X-API-Key": api_key},
         json=alert_data
@@ -442,7 +442,7 @@ async def test_cancel_alert_successful(client):
     alert_id = create_response.json()["id"]
     
     # Now cancel the alert using PATCH
-    response = client.patch(
+    response = await client.patch(
         f"/api/v1/alerts/{alert_id}/cancel",
         headers={"X-API-Key": api_key}
     )
@@ -461,7 +461,7 @@ async def test_cancel_alert_successful(client):
 @pytest.mark.asyncio
 async def test_cancel_alert_invalid_api_key(client):
     """Test attempting to cancel an alert with invalid API key"""
-    response = client.patch(
+    response = await client.patch(
         f"/api/v1/alerts/{str(uuid4())}/cancel",
         headers={"X-API-Key": "invalid_api_key"}
     )
@@ -472,7 +472,7 @@ async def test_cancel_alert_invalid_api_key(client):
 async def test_cancel_alert_wrong_user(client, mock_google_verify):
     """Test attempting to cancel an alert belonging to another user"""
     # Create first user and their alert
-    signup1 = client.post(
+    signup1 = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token_1"}
     )
@@ -486,7 +486,7 @@ async def test_cancel_alert_wrong_user(client, mock_google_verify):
         "max_datetime": (datetime.now() + timedelta(days=30)).isoformat()
     }
     
-    create_response = client.post(
+    create_response = await client.post(
         "/api/v1/alerts/",
         headers={"X-API-Key": api_key1},
         json=alert_data
@@ -500,7 +500,7 @@ async def test_cancel_alert_wrong_user(client, mock_google_verify):
         'sub': '67890',
         'name': 'Test User 2'
     }
-    signup2 = client.post(
+    signup2 = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token_2"}
     )
@@ -508,7 +508,7 @@ async def test_cancel_alert_wrong_user(client, mock_google_verify):
     api_key2 = user2_data["api_key"]
     
     # Try to cancel first user's alert with second user's API key
-    response = client.patch(
+    response = await client.patch(
         f"/api/v1/alerts/{alert_id}/cancel",
         headers={"X-API-Key": api_key2}
     )
@@ -519,14 +519,14 @@ async def test_cancel_alert_wrong_user(client, mock_google_verify):
 async def test_cancel_nonexistent_alert(client):
     """Test attempting to cancel an alert that doesn't exist"""
     # Create a user
-    signup_response = client.post(
+    signup_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
     user_data = signup_response.json()["agent_controller"]
     api_key = user_data["api_key"]
     
-    response = client.patch(
+    response = await client.patch(
         f"/api/v1/alerts/{str(uuid4())}/cancel",
         headers={"X-API-Key": api_key}
     )

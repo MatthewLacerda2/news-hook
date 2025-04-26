@@ -2,11 +2,12 @@ import uuid
 from datetime import datetime
 from enum import Enum
 from sqlalchemy import Column, String, DateTime, JSON, Enum as SQLEnum, ForeignKey, Index
-from sqlalchemy.dialects.postgresql import UUID, ARRAY
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
 
 from app.models.base import Base
+from app.models.alert_event import AlertEvent
 
 class AlertStatus(Enum):
     ACTIVE = "ACTIVE"
@@ -39,8 +40,8 @@ class AlertPrompt(Base):
     parsed_intent_embedding = Column(Vector(384), nullable=False)
     response_format = Column(JSON, nullable=False)
     
-    tags = Column(ARRAY(String), nullable=True)
-    keywords = Column(ARRAY(String), nullable=False)
+    tags = Column(JSON, nullable=True)
+    keywords = Column(JSON, nullable=False)
     prompt_embedding = Column(Vector(384), nullable=True)
     status = Column(SQLEnum(AlertStatus), nullable=False, default=AlertStatus.ACTIVE)
     created_at = Column(DateTime, nullable=False, default=datetime.now())

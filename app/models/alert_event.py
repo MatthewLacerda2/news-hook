@@ -23,5 +23,5 @@ class AlertEvent(Base):
     output_price = Column(Float, nullable=False)    
 
     # Relationships
-    alert_prompt = relationship("AlertPrompt", back_populates="alert_events")
-    monitored_data = relationship("MonitoredData")
+    alert_prompt = relationship("alert_prompt", back_populates="alert_events")
+    monitored_data = relationship("monitored_data")

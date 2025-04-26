@@ -32,10 +32,8 @@ class MonitoredData(Base):
     webhook_source_id = Column(UUID(as_uuid=True), ForeignKey('webhook_sources.id'), nullable=True)
     api_source_id = Column(UUID(as_uuid=True), ForeignKey('api_sources.id'), nullable=True)
     webscrape_source_id = Column(UUID(as_uuid=True), ForeignKey('webscrape_sources.id'), nullable=True)
-    youtube_channel_source_id = Column(UUID(as_uuid=True), ForeignKey('youtube_channel_sources.id'), nullable=True)
     
     # Relationships
     webhook_source = relationship("WebhookSource", back_populates="monitored_data")
     api_source = relationship("APISource", back_populates="monitored_data")
     webscrape_source = relationship("WebscrapeSource", back_populates="monitored_data")
-    youtube_channel_source = relationship("YoutubeChannelSource", back_populates="monitored_data")

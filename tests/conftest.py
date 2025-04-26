@@ -4,6 +4,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from unittest.mock import patch
 from uuid import UUID
+import app.models  # This will ensure all models are imported
+
 
 # Set test environment variables before importing app
 os.environ["GOOGLE_CLIENT_ID"] = "dummy_client_id"

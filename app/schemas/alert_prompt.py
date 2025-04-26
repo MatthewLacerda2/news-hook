@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional, Dict, Union
 from uuid import UUID
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict
 from app.models.alert_prompt import AlertStatus
 
 JsonPrimitive = Union[str, int, float, bool, None]
@@ -45,8 +45,7 @@ class AlertPromptCreateSuccessResponse(BaseModel):
     created_at: datetime
     keywords: Optional[list[str]] = Field(None, description="Keywords that will be expected to be in the data that triggers the alert")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class AlertPromptItem(BaseModel):
     id: UUID
@@ -60,15 +59,13 @@ class AlertPromptItem(BaseModel):
     created_at: datetime = Field(..., lt=datetime.now(), description="The date and time the alert was created")
     llm_model: str = Field(..., description="The LLM model used to create the alert")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class AlertPromptListResponse(BaseModel):
     alerts: list[AlertPromptItem]
     total_count: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class AlertPromptPriceCheckRequest(BaseModel):
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")

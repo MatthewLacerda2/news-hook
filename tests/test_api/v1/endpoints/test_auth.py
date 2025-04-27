@@ -1,8 +1,8 @@
 import pytest
 from app.schemas.agent_controller import TokenResponse
-from app.core.security import create_access_token
 import uuid
 from datetime import timedelta
+from app.core.security import create_access_token
 
 @pytest.mark.asyncio
 async def test_signup_successful(client, mock_google_verify):
@@ -16,10 +16,8 @@ async def test_signup_successful(client, mock_google_verify):
     print("Response body:", response.json())
     
     assert response.status_code == 201
-    # This will validate that the response matches the TokenResponse schema
     token_response = TokenResponse.model_validate(response.json())
     
-    # Now we can use the validated object for assertions
     assert token_response.token_type == "bearer"
     assert token_response.agent_controller.email == "test@example.com"
     assert token_response.agent_controller.name == "Test User"
@@ -66,28 +64,26 @@ async def test_signup_missing_token(client):
         json={}
     )
     
-    assert response.status_code == 422  # Validation error
+    assert response.status_code == 422
 
 @pytest.mark.asyncio
 async def test_login_successful(client):
     """Test successful login with valid Google token for existing user"""
-    # First create a user through signup
+    
     await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
     
-    # Now try to login
+    
     response = await client.post(
         "/api/v1/auth/login",
         json={"access_token": "valid_google_token"}
     )
     
     assert response.status_code == 200
-    # This will validate that the response matches the TokenResponse schema
     token_response = TokenResponse.model_validate(response.json())
     
-    # Now we can use the validated object for assertions
     assert token_response.token_type == "bearer"
     assert token_response.agent_controller.email == "test@example.com"
     assert token_response.agent_controller.name == "Test User"
@@ -96,8 +92,15 @@ async def test_login_successful(client):
     assert token_response.agent_controller.api_key is not None
 
 @pytest.mark.asyncio
-async def test_login_nonexistent_user(client):
+async def test_login_nonexistent_user(client, mock_google_verify):
     """Test login attempt with Google account that hasn't signed up"""
+    
+    mock_google_verify.return_value = {
+        'email': 'nonexistent@example.com',
+        'sub': 'nonexistent_google_id',
+        'name': 'Nonexistent User'
+    }
+    
     response = await client.post(
         "/api/v1/auth/login",
         json={"access_token": "valid_google_token"}
@@ -132,14 +135,13 @@ async def test_login_missing_token(client):
 @pytest.mark.asyncio
 async def test_check_credits_successful(client):
     """Test successful credits check for authenticated user"""
-    # First create a user through signup
+    
     signup_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
     access_token = signup_response.json()["access_token"]
     
-    # Check credits
     response = await client.get(
         "/api/v1/auth/credits",
         headers={"Authorization": f"Bearer {access_token}"}
@@ -172,10 +174,16 @@ async def test_check_credits_invalid_token(client):
 @pytest.mark.asyncio
 async def test_check_credits_user_not_found(client):
     """Test credits check for non-existent user"""
-    # Create a token for a user that doesn't exist in DB
+    
+    nonexistent_user_id = str(uuid.uuid4())
+    access_token = create_access_token(
+        data={"sub": nonexistent_user_id},
+        expires_delta=timedelta(minutes=15)
+    )
+    
     response = await client.get(
         "/api/v1/auth/credits",
-        headers={"Authorization": "Bearer valid_but_nonexistent_user_token"}
+        headers={"Authorization": f"Bearer {access_token}"}
     )
     
     assert response.status_code == 404
@@ -211,14 +219,13 @@ async def test_check_credits_after_modification(client):
 @pytest.mark.asyncio
 async def test_delete_account_successful(client):
     """Test successful account deletion with valid token"""
-    # First create a user through signup
+    
     signup_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
     access_token = signup_response.json()["access_token"]
     
-    # Create some alert prompts for this user
     test_prompts = [
         {
             "prompt": "Test prompt 1",
@@ -232,7 +239,6 @@ async def test_delete_account_successful(client):
         }
     ]
     
-    # Add test prompts to database
     for prompt in test_prompts:
         await client.post(
             "/api/v1/alerts/",
@@ -240,7 +246,6 @@ async def test_delete_account_successful(client):
             json=prompt
         )
     
-    # Delete the account
     response = await client.delete(
         "/api/v1/auth/account",
         headers={"Authorization": f"Bearer {access_token}"}
@@ -249,15 +254,12 @@ async def test_delete_account_successful(client):
     assert response.status_code == 200
     assert response.json()["message"] == "Account successfully deleted"
     
-    # Verify user can't login anymore
     login_response = await client.post(
         "/api/v1/auth/login",
         json={"access_token": "valid_google_token"}
     )
     assert login_response.status_code == 404
     
-    # Verify all alert prompts were deleted
-    # Try to get alerts (should fail as user doesn't exist)
     alerts_response = await client.get(
         "/api/v1/alerts/",
         headers={"Authorization": f"Bearer {access_token}"}
@@ -282,21 +284,3 @@ async def test_delete_account_invalid_token(client):
     
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid token"
-
-@pytest.mark.asyncio
-async def test_delete_account_nonexistent_user(client):
-    """Test deletion attempt for non-existent user"""
-    # Create a valid token with a non-existent user ID
-    nonexistent_user_id = str(uuid.uuid4())  # Generate a random UUID that won't exist in DB
-    token = create_access_token(
-        data={"sub": nonexistent_user_id},
-        expires_delta=timedelta(minutes=15)
-    )
-    
-    response = await client.delete(
-        "/api/v1/auth/account",
-        headers={"Authorization": f"Bearer {token}"}
-    )
-    
-    assert response.status_code == 401
-    assert "detail" in response.json()

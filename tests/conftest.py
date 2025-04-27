@@ -76,7 +76,7 @@ async def client():
 @pytest.fixture
 def mock_google_verify():
     """Fixture to mock Google token verification"""
-    with patch('app.api.v1.endpoints.auth.verify_google_token') as mock:
+    with patch('app.core.security.verify_google_token') as mock:
         mock.return_value = {
             'email': 'test@example.com',
             'sub': '12345',  # This is Google's user ID

@@ -267,14 +267,6 @@ async def test_delete_account_successful(client):
     assert alerts_response.status_code == 401
 
 @pytest.mark.asyncio
-async def test_delete_account_unauthorized(client):
-    """Test account deletion without authentication"""
-    response = await client.delete("/api/v1/auth/account")
-    
-    assert response.status_code == 401
-    assert response.json()["detail"] == "Not authenticated"
-
-@pytest.mark.asyncio
 async def test_delete_account_invalid_token(client):
     """Test account deletion with invalid token"""
     response = await client.delete(

@@ -1,5 +1,8 @@
 import pytest
 from app.schemas.agent_controller import TokenResponse
+from app.core.security import create_access_token
+import uuid
+from datetime import timedelta
 
 @pytest.mark.asyncio
 async def test_signup_successful(client, mock_google_verify):
@@ -283,9 +286,16 @@ async def test_delete_account_invalid_token(client):
 @pytest.mark.asyncio
 async def test_delete_account_nonexistent_user(client):
     """Test deletion attempt for non-existent user"""
+    # Create a valid token with a non-existent user ID
+    nonexistent_user_id = str(uuid.uuid4())  # Generate a random UUID that won't exist in DB
+    token = create_access_token(
+        data={"sub": nonexistent_user_id},
+        expires_delta=timedelta(minutes=15)
+    )
+    
     response = await client.delete(
         "/api/v1/auth/account",
-        headers={"Authorization": "Bearer valid_but_nonexistent_user_token"}
+        headers={"Authorization": f"Bearer {token}"}
     )
     
     assert response.status_code == 404

@@ -4,6 +4,7 @@ import os
 os.environ["GOOGLE_CLIENT_ID"] = "dummy_client_id"
 os.environ["GOOGLE_CLIENT_SECRET"] = "dummy_client_secret"
 os.environ["GOOGLE_REDIRECT_URI"] = "http://localhost:8000/auth/callback"
+os.environ["SECRET_KEY"] = "your-secret-key-here"  # Match the key from app/core/config.py
 
 import pytest
 import pytest_asyncio
@@ -11,7 +12,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from unittest.mock import patch
 from uuid import UUID
-import app.models  # This will ensure all models are imported
+import app.models
 from httpx import AsyncClient
 from app.models.base import Base
 from app.models.llm_models import LLMModel

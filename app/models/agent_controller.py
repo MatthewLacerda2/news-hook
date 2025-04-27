@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, DateTime, Integer
+from sqlalchemy import Column, String, DateTime, Float
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -14,7 +14,7 @@ class AgentController(Base):
     api_key = Column(String, nullable=False, unique=True)   #TODO: users shall be able to create and delete many api keys
     google_id = Column(String, unique=True, nullable=False)
     name = Column(String, nullable=True)
-    credits = Column(Integer, nullable=False, default=0)
+    credit_balance = Column(Float, nullable=False, default=0)   # Using Int when price is per million tokens would be a bitch and life is too short
     created_at = Column(DateTime, nullable=False, default=datetime.now())
     last_login = Column(DateTime, nullable=True)
 

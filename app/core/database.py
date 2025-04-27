@@ -1,7 +1,5 @@
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import QueuePool
 import os
 from dotenv import load_dotenv
 
@@ -10,25 +8,29 @@ load_dotenv()
 
 # Database URL should be in format: postgresql://user:password@host:port/dbname
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/news_hook")
+# Convert the URL to async format
+ASYNC_DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+asyncpg://')
 
-# Create SQLAlchemy engine with connection pooling
-engine = create_engine(
-    DATABASE_URL,
-    poolclass=QueuePool,
+# Create SQLAlchemy async engine
+engine = create_async_engine(
+    ASYNC_DATABASE_URL,
     pool_size=5,
     max_overflow=10
 )
 
 # SessionLocal will be used to create database sessions
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Base class for SQLAlchemy models
-Base = declarative_base()
+AsyncSessionLocal = sessionmaker(
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autocommit=False,
+    autoflush=False,
+)
 
 # Dependency to get DB session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()

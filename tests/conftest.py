@@ -1,51 +1,82 @@
+import os
+
+# Set test environment variables BEFORE importing anything
+os.environ["GOOGLE_CLIENT_ID"] = "dummy_client_id"
+os.environ["GOOGLE_CLIENT_SECRET"] = "dummy_client_secret"
+os.environ["GOOGLE_REDIRECT_URI"] = "http://localhost:8000/auth/callback"
+os.environ["SECRET_KEY"] = "your-secret-key-here"  # Match the key from app/core/config.py
+
 import pytest
-from sqlalchemy import create_engine
+import pytest_asyncio
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from app.models.base import Base
-from app.main import app
-from fastapi.testclient import TestClient
 from unittest.mock import patch
 from uuid import UUID
+import app.models
+from httpx import AsyncClient
+from app.models.base import Base
 from app.models.llm_models import LLMModel
+from app.main import app
+from app.core.database import get_db
+from httpx import ASGITransport
 
 # Create a test database URL for SQLite in-memory database
-SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///:memory:"
+SQLALCHEMY_TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 # Create the test engine
-test_engine = create_engine(
+test_engine = create_async_engine(
     SQLALCHEMY_TEST_DATABASE_URL,
     connect_args={"check_same_thread": False}  # Needed for SQLite
 )
 
 # Create test session factory
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+TestingSessionLocal = sessionmaker(
+    test_engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autocommit=False,
+    autoflush=False,
+)
 
-@pytest.fixture
-def test_db():
+# Override the database dependency
+async def override_get_db():
+    async with TestingSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
+
+@pytest_asyncio.fixture
+async def test_db():
     """SQLite in-memory test database fixture"""
     # Create all tables
-    Base.metadata.create_all(bind=test_engine)
+    async with test_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     
     # Create a test database session
-    db = TestingSessionLocal()
-    
-    try:
-        yield db
-    finally:
-        # Clean up after test
-        db.close()
-        Base.metadata.drop_all(bind=test_engine)
+    async with TestingSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
+            # Clean up after test
+            async with test_engine.begin() as conn:
+                await conn.run_sync(Base.metadata.drop_all)
 
-@pytest.fixture
-def client():
-    """Test client fixture"""
-    return TestClient(app)
+@pytest_asyncio.fixture
+async def client():
+    """Async test client fixture"""
+    # Override the database dependency
+    app.dependency_overrides[get_db] = override_get_db
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        yield ac
+    # Clean up the override after the test
+    app.dependency_overrides.clear()
 
 @pytest.fixture
 def mock_google_verify():
     """Fixture to mock Google token verification"""
-    with patch('app.api.v1.endpoints.auth.verify_google_token') as mock:
-        # This simulates what we get back from Google's verification
+    with patch('app.core.security.verify_google_token') as mock:
         mock.return_value = {
             'email': 'test@example.com',
             'sub': '12345',  # This is Google's user ID
@@ -53,8 +84,8 @@ def mock_google_verify():
         }
         yield mock
 
-@pytest.fixture
-def sample_llm_models(test_db):
+@pytest_asyncio.fixture
+async def sample_llm_models(test_db):
     models = [
         LLMModel(
             id=UUID("550e8400-e29b-41d4-a716-446655440001"),
@@ -81,6 +112,6 @@ def sample_llm_models(test_db):
     
     for model in models:
         test_db.add(model)
-    test_db.commit()
+    await test_db.commit()
     
     return models

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from enum import Enum
-from sqlalchemy import Column, String, DateTime, JSON, Enum as SQLEnum, ForeignKey, Index
+from sqlalchemy import Column, DateTime, JSON, Enum as SQLEnum, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
@@ -23,7 +23,6 @@ class MonitoredData(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     source = Column(SQLEnum(DataSource), nullable=False)
-    source_url = Column(String, nullable=False)
     content = Column(JSON, nullable=False)
     scraped_datetime = Column(DateTime, nullable=False, default=datetime.now())
     
@@ -33,7 +32,6 @@ class MonitoredData(Base):
     webhook_source_id = Column(UUID(as_uuid=True), ForeignKey('webhook_sources.id'), nullable=True)
     api_source_id = Column(UUID(as_uuid=True), ForeignKey('api_sources.id'), nullable=True)
     webscrape_source_id = Column(UUID(as_uuid=True), ForeignKey('webscrape_sources.id'), nullable=True)
-    youtube_source_id = Column(UUID(as_uuid=True), ForeignKey('youtube_sources.id'), nullable=True)
     
     # Relationships
     webhook_source = relationship("WebhookSource", back_populates="monitored_data")

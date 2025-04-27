@@ -65,13 +65,13 @@ async def signup(
         )
         
     except IntegrityError:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="User already exists"
         )
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid Google token"
@@ -158,7 +158,7 @@ async def check_credits(
                 detail="User not found"
             )
             
-        return {"credits": user.credits}
+        return {"credits": user.credit_balance}
         
     except ValueError:
         raise HTTPException(
@@ -198,7 +198,7 @@ async def delete_account(
         return {"message": "Account successfully deleted"}
         
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error deleting account"

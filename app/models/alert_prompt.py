@@ -2,11 +2,12 @@ import uuid
 from datetime import datetime
 from enum import Enum
 from sqlalchemy import Column, String, DateTime, JSON, Enum as SQLEnum, ForeignKey, Index
-from sqlalchemy.dialects.postgresql import UUID, ARRAY
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
 
 from app.models.base import Base
+from app.models.alert_event import AlertEvent
 
 class AlertStatus(Enum):
     ACTIVE = "ACTIVE"
@@ -16,10 +17,8 @@ class AlertStatus(Enum):
     EXPIRED = "EXPIRED"
     
 class HttpMethod(Enum):
-    GET = "GET"
     POST = "POST"
     PUT = "PUT"
-    DELETE = "DELETE"
     PATCH = "PATCH"
     
 
@@ -31,17 +30,18 @@ class AlertPrompt(Base):
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey('agent_controllers.id'), nullable=False)
+    agent_controller_id = Column(UUID(as_uuid=True), ForeignKey('agent_controllers.id'), nullable=False)
     prompt = Column(String, nullable=False)
     http_method = Column(SQLEnum(HttpMethod), nullable=False)
     http_url = Column(String, nullable=False)
+    http_headers = Column(JSON, nullable=True)
     
     parsed_intent = Column(JSON, nullable=False)
     parsed_intent_embedding = Column(Vector(384), nullable=False)
-    example_response = Column(JSON, nullable=False)
+    response_format = Column(JSON, nullable=False)
     
-    tags = Column(ARRAY(String), nullable=True)
-    keywords = Column(ARRAY(String), nullable=False)
+    tags = Column(JSON, nullable=True)
+    keywords = Column(JSON, nullable=False)
     prompt_embedding = Column(Vector(384), nullable=True)
     status = Column(SQLEnum(AlertStatus), nullable=False, default=AlertStatus.ACTIVE)
     created_at = Column(DateTime, nullable=False, default=datetime.now())

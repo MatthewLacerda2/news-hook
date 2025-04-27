@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
 
 class AgentControllerBase(BaseModel):
     email: EmailStr
@@ -13,13 +13,12 @@ class OAuth2Request(BaseModel):
 
 class AgentControllerResponse(AgentControllerBase):
     id: UUID
-    api_keys: str = Field(..., description="API key for authentication")
+    api_key: UUID = Field(..., description="API key for authentication")
     credits: int = Field(default=5000, description="Credits. In cents of USD")
     created_at: datetime
     last_login: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Schema for token response
 class TokenResponse(BaseModel):

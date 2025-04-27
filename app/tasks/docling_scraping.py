@@ -11,6 +11,8 @@ from app.core.database import SessionLocal
 from app.models.webscrape_source import WebscrapeSource
 from app.tasks.vector_search import process_document_for_vector_search
 from app.models.alert_prompt import Alert, AlertStatus
+from app.utils.sourced_data import SourcedData, DataSource
+import numpy as np
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -38,10 +40,14 @@ async def process_webscrape_source(source: WebscrapeSource, db: Session):
         source.num_scrapes += 1
         db.commit()
         
-        await process_document_for_vector_search(
-            md_document=result,
-            source_id=str(source.id)
+        sourced_data = SourcedData(
+            source=DataSource.WEBSCRAPE,
+            source_id=source.id,
+            content=result,
+            content_embedding=np.zeros(384)
         )
+        
+        await process_document_for_vector_search(sourced_document=sourced_data)
         
     except Exception as e:
         logger.error(f"Error processing source {source.id}: {str(e)}")

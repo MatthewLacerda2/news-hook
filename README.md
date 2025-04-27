@@ -1,11 +1,10 @@
 # news-hook
-A natural-language based alerts services
+This is a platform for sending alerts, focused mainly on AI agents
 
 # What the fuck is this?
 
-This is a platform for serving alerts, focused on AI agents
-
-The alerts requests come in what we call "alert prompts". Just like you'd say on whatsapp:
+This is a platform for sending alerts, focused mainly on AI agents
+The alerts requests come in what we call "alert prompts". Just like you'd say to a friend:
 
 - "Hey wake me up right before the game"
 - "Hey, if Trump does do that please alert me"
@@ -13,55 +12,49 @@ The alerts requests come in what we call "alert prompts". Just like you'd say on
 
 The alert-prompt could come in json format, since those fit natural-language
 
-- We get the alert
-    - Verify if the alert is valid (hasn't happened already, it's even possible, isn't ambiguous/subjective/too-complex)
-    - Alerts that need cross-referencing are not supported yet
-    - Store it
-- We continuously webscrape, sign-up to webhooks and send api-requests
-- As we get those _news_, we check if any of them satisfy any alert-request
-- If it does, we send the alert via http request
+- When and if the event happens, we send the alert via http request
+- It's a *natural-language triggered webhook*
 
 # How to run:
 
-[insert-database-name]
-
+_No point in running this yet_
+_The db will be on AWS at a later date..._
 ```
 pip install -r requirements.txt
-docker-compose up -d
 uvicorn main:app --reload
 ```
 
-For checking build-and-test-ing, you can just run the build-and-test.bat on Windows
+For build-and-test-ing, you can run `build-and-test.bat` on Windows
+For simple testing, you can run `pytest`
 
 # What's the infrastructure
 
 ## Alert-Prompt/Alert-Request
 
 - We get the POST request for an alert
-    - The request must obey rules (validity, possibility, unambiguity...)
+    - The request must obey semantic rules (clarity, possibility, unambiguity...). See "prompts.py" for that
+    - An LLM will validate those semantic rules
 - Valid requests will get stored
-    - We store the metadata
-    - They have their prompt vector-embedded
+    - Their prompts will be vector-embedded
 - We keep monitoring
-    - Webscrape the active webscrape sources at each's given interval
-    - Pgvector-search to see which alert-prompts are related to the scraped data
-    - The related ones will be sent to an LLM to confirm if the data fulfills the alert
-        - The prompt must not have been triggered nor expired, of course
-    - If the data does satisfy the alert:
-        - The LLM produces the alert in the alert-prompt's format
+    - Periodically webscraping sources
+    - Pgvector-search to see which alert-prompts are related to the scraped document
+    - Keyword filtering
+        - e.g if the alert-request is about a person and a country, we expect both their names in the scraped document
+    - We ask an LLM LLM for verification
+        - The LLM compares the alert-request and the document to see if the alert should be triggered
+    - If the document does satisfy the alert:
+        - The LLM produces it
+        - This is a webhook, so we produce a payload in a given format
     - We send the alert via HTTP request
-        - In the alert-prompt's http method and url
-        - And register the alert_event, of course
-- We check if the incoming data fits any alert
-    - We check the embedding to quickly cull the alerts
-    - We check metadata for quick validity
-    - We use LLM to finalize the validation
-- If it checks out, we process the data to send the appropriate alert
+        - In the alert-prompt's http method, url and format
+        - We of course register the alert_event
 
 # Pricing model
 
 The cost for the alert-requests and events will be:
-- The api request
-- The input and output tokens
+- The input and output tokens for the model used
+- The api request itself
 
 The agent can select the LLMs for the alert request and response separately
+We just pass forward the cost of the llm. What we are profiting on is the cost of our own infrastructure

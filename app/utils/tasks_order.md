@@ -1,3 +1,6 @@
+**llm-validation**
+    - An LLM semantically validates the alert request
+
 **scraping**
     - Webscrape the active webscrape sources at each's given interval
         - docling_scraping
@@ -5,6 +8,7 @@
 
 **vector-search**
     - Pgvector-search to see which alert-prompts are related to the scraped data
+    - We also filter the data based on keyword
 
 **llm-verification**
     - The related ones will be sent to an LLM to confirm if the data fulfills the alert

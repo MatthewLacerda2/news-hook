@@ -25,14 +25,11 @@ async def process_document_for_vector_search(sourced_document: SourcedData):
     try:
         db = SessionLocal()
         
-        # Get active alerts where all keywords are present in the document
         active_alerts = await find_matching_alerts(db, sourced_document.content)
         
-        # For each matching alert, do vector similarity check
         for alert in active_alerts:
             document_embedding = await get_nomic_embeddings(sourced_document.content)
             
-            # Calculate cosine similarity
             similarity_score = calculate_cosine_similarity(
                 document_embedding, 
                 alert.prompt_embedding
@@ -59,15 +56,12 @@ async def find_matching_alerts(db: Session, document_content: str) -> List[Alert
         )
     ).scalars().all()
     
-    # Filter alerts where user has sufficient credits and all keywords match
     matching_alerts = []
     for alert in active_alerts:
-        # Check user credits first - most common case
         user = db.query(AgentController).filter(
             AgentController.id == alert.agent_controller_id
         ).first()
         
-        # Only check keywords if user has credits
         if user and user.credit_balance > 0:
             alert_keywords = set(alert.keywords)
             if alert_keywords.issubset(document_content):

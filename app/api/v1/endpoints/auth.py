@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-import uuid
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlalchemy.exc import IntegrityError
 from app.core.config import settings
@@ -40,7 +39,7 @@ async def signup(
         
         # Create new user
         user = AgentController(
-            id=uuid.uuid4(),
+            id=str(uuid.uuid4()),
             email=user_info["email"],
             name=user_info.get("name"),
             google_id=user_info["sub"],
@@ -141,21 +140,18 @@ async def check_credits(
         )
         
     try:
-        # Extract token from Authorization header
         scheme, token = authorization.split()
         if scheme.lower() != 'bearer':
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid authentication scheme"
             )
-            
-        # Verify token and get user ID
+
         payload = verify_token(token)
         user_id = payload.get("sub")
         
         user_id = str(user_id)
         
-        # Get user from database using async syntax
         stmt = select(AgentController).where(AgentController.id == user_id)
         result = await db.execute(stmt)
         user = result.scalar_one_or_none()
@@ -166,7 +162,7 @@ async def check_credits(
                 detail="User not found"
             )
             
-        return {"credits": user.credit_balance}
+        return {"credit_balance": user.credit_balance}
         
     except ValueError:
         raise HTTPException(

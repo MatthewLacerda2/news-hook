@@ -4,7 +4,6 @@ from sqlalchemy import Column, String, DateTime, Float
 from sqlalchemy.orm import relationship
 
 from app.models.base import Base
-import uuid
 
 class AgentController(Base):
     __tablename__ = "agent_controllers"

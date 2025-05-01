@@ -137,13 +137,15 @@ async def test_login_missing_token(client):
     assert response.status_code == 422  # Validation error
 
 @pytest.mark.asyncio
-async def test_check_credits_successful(client):
+async def test_check_credits_successful(client, mock_google_verify, test_db):
     """Test successful credits check for authenticated user"""
     
     signup_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
+    print("Signup response:", signup_response.json())
+    
     access_token = signup_response.json()["access_token"]
     
     response = await client.get(
@@ -154,7 +156,7 @@ async def test_check_credits_successful(client):
     assert response.status_code == 200
     data = response.json()
     assert "credit_balance" in data
-    assert isinstance(data["credit_balance"], int)
+    assert isinstance(data["credit_balance"], float)
 
 @pytest.mark.asyncio
 async def test_check_credits_unauthorized(client):

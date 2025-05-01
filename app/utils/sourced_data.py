@@ -15,7 +15,7 @@ class SourcedData(Base):
     content_embedding : Vector
     
     def __init__(self, source: DataSource, source_url: str, content: str, content_embedding: Vector):
-        self.id = uuid.uuid4()
+        self.id = str(uuid.uuid4())
         self.scraped_datetime = datetime.now()
         self.source = source
         self.source_url = source_url

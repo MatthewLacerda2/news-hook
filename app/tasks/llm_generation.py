@@ -34,7 +34,7 @@ async def llm_generation(alert_prompt: AlertPrompt, sourced_document: SourcedDat
         raise ValueError(f"Unsupported LLM model: {alert_prompt.llm_model}")
     
     llm_generation_result = NewsEvent(
-        id=uuid.uuid4(),
+        id=str(uuid.uuid4()),
         alert_prompt_id=alert_prompt.id,
         triggered_at=datetime.now(),
         output=generated_response.output,

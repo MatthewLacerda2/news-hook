@@ -19,6 +19,7 @@ from app.tasks.llm_apis.ollama import get_nomic_embeddings
 import tiktoken
 from app.models.llm_validation import LLMValidation
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 router = APIRouter()
 
@@ -39,10 +40,12 @@ async def create_alert(
     try:
         now = datetime.now()
         
-        llm_model = db.query(LLMModel).filter(
+        stmt = select(LLMModel).where(
             LLMModel.model_name == alert_data.llm_model,
             LLMModel.is_active == True
-        ).first()
+        )
+        result = await db.execute(stmt)
+        llm_model = result.scalar_one_or_none()
         if not llm_model:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -102,8 +105,8 @@ async def create_alert(
         user.credit_balance -= tokens_price
         db.add(llm_validation)
         db.add(new_alert)
-        db.commit()
-        db.refresh(new_alert)
+        await db.commit()
+        await db.refresh(new_alert)
         
         return AlertPromptCreateSuccessResponse(
             id=new_alert.id,
@@ -140,25 +143,25 @@ async def list_alerts(
         )
     
     # Build the query
-    query = db.query(AlertPrompt).filter(AlertPrompt.agent_controller_id == user.id)
+    stmt = select(AlertPrompt).where(AlertPrompt.agent_controller_id == user.id)
     
     # Apply filters if provided
     if prompt_contains:
-        query = query.filter(AlertPrompt.prompt.ilike(f"%{prompt_contains}%"))
+        stmt = stmt.filter(AlertPrompt.prompt.ilike(f"%{prompt_contains}%"))
     if max_datetime:
-        query = query.filter(AlertPrompt.expires_at <= max_datetime)
+        stmt = stmt.filter(AlertPrompt.expires_at <= max_datetime)
     if created_after:
-        query = query.filter(AlertPrompt.created_at >= created_after)
+        stmt = stmt.filter(AlertPrompt.created_at >= created_after)
     
     # Apply pagination
-    total = query.count()
-    alerts = query.offset(offset).limit(limit).all()
+    total = await db.execute(stmt.count())
+    alerts = await db.execute(stmt.offset(offset).limit(limit))
     
     return AlertPromptListResponse(
         alerts=[
-            AlertPromptItem.model_validate(alert) for alert in alerts
+            AlertPromptItem.model_validate(alert) for alert in alerts.scalars().all()
         ],
-        total=total
+        total=total.scalar()
     )
 
 @router.get("/{alert_id}", response_model=AlertPromptItem)
@@ -170,10 +173,12 @@ async def get_alert(
     """Get a specific alert by ID"""
     
     # Find the alert and verify ownership
-    alert = db.query(AlertPrompt).filter(
+    stmt = select(AlertPrompt).where(
         AlertPrompt.id == alert_id,
         AlertPrompt.agent_controller_id == user.id
-    ).first()
+    )
+    result = await db.execute(stmt)
+    alert = result.scalar_one_or_none()
     
     if not alert:
         raise HTTPException(
@@ -193,10 +198,12 @@ async def cancel_alert(
     """Cancel an existing alert"""
     
     # Find the alert and verify ownership
-    alert = db.query(AlertPrompt).filter(
+    stmt = select(AlertPrompt).where(
         AlertPrompt.id == alert_id,
         AlertPrompt.agent_controller_id == user.id
-    ).first()
+    )
+    result = await db.execute(stmt)
+    alert = result.scalar_one_or_none()
     
     if not alert:
         raise HTTPException(

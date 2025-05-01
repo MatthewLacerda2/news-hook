@@ -60,14 +60,15 @@ async def verify_document_matches_alert(
     except Exception as e:
         print(f"Error in LLM verification: {str(e)}")
     finally:
-        db.close()
+        await db.close()
         
 async def register_llm_verification(alert_prompt: AlertPrompt, verification_result: LLMVerificationFormat, llm_model: str, db: AsyncSession):
-    
     input_tokens_count = tiktoken.count_tokens(alert_prompt.prompt)
     output_tokens_count = tiktoken.count_tokens(verification_result.output)
     
-    llm_model_db = db.query(LLMModel).filter(LLMModel.model_name == llm_model).first()
+    stmt = select(LLMModel).where(LLMModel.model_name == llm_model)
+    result = await db.execute(stmt)
+    llm_model_db = result.scalar_one_or_none()
     
     llm_verification = LLMVerification(
         alert_prompt_id=alert_prompt.id,
@@ -82,4 +83,4 @@ async def register_llm_verification(alert_prompt: AlertPrompt, verification_resu
     )
     
     db.add(llm_verification)
-    db.commit()
+    await db.commit()

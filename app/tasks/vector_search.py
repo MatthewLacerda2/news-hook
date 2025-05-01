@@ -45,7 +45,7 @@ async def process_document_for_vector_search(sourced_document: SourcedData):
         # Log error but don't raise to avoid breaking the scraping pipeline
         print(f"Error in vector search processing: {str(e)}")
     finally:
-        db.close()
+        await db.close()
 
 async def find_matching_alerts(db: AsyncSession, document_content: str) -> List[AlertPrompt]:
     """Find active alerts where all keywords are present in the document and user has sufficient credits"""
@@ -58,9 +58,9 @@ async def find_matching_alerts(db: AsyncSession, document_content: str) -> List[
     
     matching_alerts = []
     for alert in active_alerts:
-        user = db.query(AgentController).filter(
-            AgentController.id == alert.agent_controller_id
-        ).first()
+        stmt = select(AgentController).where(AgentController.id == alert.agent_controller_id)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
         
         if user and user.credit_balance > 0:
             alert_keywords = set(alert.keywords)

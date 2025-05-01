@@ -13,6 +13,7 @@ import requests
 from app.utils.sourced_data import SourcedData
 from app.models.monitored_data import MonitoredData
 import tiktoken
+from sqlalchemy import select
 
 async def llm_generation(alert_prompt: AlertPrompt, sourced_document: SourcedData, db: AsyncSession) -> NewsEvent:
     
@@ -53,7 +54,9 @@ async def llm_generation(alert_prompt: AlertPrompt, sourced_document: SourcedDat
 
 def send_alert_event(alert_event: NewsEvent, db: AsyncSession):
     
-    alert_prompt = db.query(AlertPrompt).filter(AlertPrompt.id == alert_event.alert_prompt_id).first()
+    stmt = select(AlertPrompt).where(AlertPrompt.id == alert_event.alert_prompt_id)
+    result = db.execute(stmt)
+    alert_prompt = result.scalar_one_or_none()
     
     #TODO: add retries or backoff, and log the failures
     if alert_prompt.http_method == "POST":
@@ -94,12 +97,19 @@ async def register_credit_usage(alert_prompt: AlertPrompt, sourced_document: Sou
     output_tokens_count = tiktoken.count_tokens(generated_response.output)
     
     # find the alert_prompt based on its id
-    alert_prompt_db = db.query(AlertPrompt).filter(AlertPrompt.id == alert_prompt.id).first()
+    stmt = select(AlertPrompt).where(AlertPrompt.id == alert_prompt.id)
+    result = await db.execute(stmt)
+    alert_prompt_db = result.scalar_one_or_none()
     
     # find the llm_model based on the alert prompt's llm_model
-    llm_model_db = db.query(LLMModel).filter(LLMModel.model_name == alert_prompt.llm_model).first()
+    stmt = select(LLMModel).where(LLMModel.model_name == alert_prompt.llm_model)
+    result = await db.execute(stmt)
+    llm_model_db = result.scalar_one_or_none()
+    
     # find the agent_controller based on the alert_prompt's agent_controller_id
-    agent_controller_db = db.query(AgentController).filter(AgentController.id == alert_prompt_db.agent_controller_id).first()
+    stmt = select(AgentController).where(AgentController.id == alert_prompt_db.agent_controller_id)
+    result = await db.execute(stmt)
+    agent_controller_db = result.scalar_one_or_none()
     
     input_tokens_price = input_tokens_count * (llm_model_db.input_token_price/1000000)
     output_tokens_price = output_tokens_count * (llm_model_db.output_token_price/1000000)

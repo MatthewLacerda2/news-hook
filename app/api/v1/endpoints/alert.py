@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from uuid import UUID
+import uuid
 
 from app.core.database import get_db
 from app.models.agent_controller import AgentController
@@ -163,7 +163,7 @@ async def list_alerts(
 
 @router.get("/{alert_id}", response_model=AlertPromptItem)
 async def get_alert(
-    alert_id: UUID,
+    alert_id: str,
     db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key)
 ):
@@ -186,7 +186,7 @@ async def get_alert(
 #Alert can not be 'deleted'. They costed credits and thus have to be kept register of.
 @router.patch("/{alert_id}/cancel", status_code=status.HTTP_200_OK)
 async def cancel_alert(
-    alert_id: UUID,
+    alert_id: str,
     db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key)
 ):

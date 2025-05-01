@@ -1,15 +1,15 @@
 import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, DateTime, Float
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.models.base import Base
+import uuid
 
 class AgentController(Base):
     __tablename__ = "agent_controllers"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     email = Column(String, nullable=False, unique=True)
     api_key = Column(String, nullable=False, unique=True)   #TODO: users shall be able to create and delete many api keys
     google_id = Column(String, unique=True, nullable=False)

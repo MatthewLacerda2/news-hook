@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional, Dict, Union
-from uuid import UUID
 from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict
 from app.models.alert_prompt import AlertStatus
 
@@ -39,7 +38,7 @@ class AlertPromptCreateRequestBase(BaseModel):
         return v
 
 class AlertPromptCreateSuccessResponse(BaseModel):
-    id: UUID = Field(..., description="The ID of the alert")
+    id: str = Field(..., description="The ID of the alert")
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     output_intent: str = Field(..., description="What the LLM understood from the prompt")
     created_at: datetime
@@ -48,7 +47,7 @@ class AlertPromptCreateSuccessResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class AlertPromptItem(BaseModel):
-    id: UUID
+    id: str = Field(..., description="The ID of the alert")
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     http_method: HttpMethod
     http_url: HttpUrl
@@ -79,5 +78,5 @@ class AlertPromptPriceCheckSuccessResponse(BaseModel):
     output_intent: str = Field(..., description="What LLM understood from the prompt")
     
 class AlertCancelRequest(BaseModel):
-    alert_id: UUID = Field(..., description="The ID of the alert to cancel")
-    user_id: UUID = Field(..., description="The ID of the agent controller requesting to cancel the alert")
+    alert_id: str = Field(..., description="The ID of the alert to cancel")
+    user_id: str = Field(..., description="The ID of the agent controller requesting to cancel the alert")

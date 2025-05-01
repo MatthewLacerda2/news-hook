@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from uuid import uuid4
+import uuid
 from app.schemas.alert_prompt import AlertPromptCreateSuccessResponse, AlertPromptListResponse, AlertPromptItem
 from app.models.alert_prompt import AlertStatus
 import pytest
@@ -402,8 +402,7 @@ async def test_get_alert_not_found(client):
     user_data = signup_response.json()["agent_controller"]
     api_key = user_data["api_key"]
     
-    # Try to get a non-existent alert using a random UUID
-    non_existent_id = str(uuid4())
+    non_existent_id = str(uuid.uuid4())
     response = await client.get(
         f"/api/v1/alerts/{non_existent_id}",
         headers={"X-API-Key": api_key}
@@ -462,7 +461,7 @@ async def test_cancel_alert_successful(client):
 async def test_cancel_alert_invalid_api_key(client):
     """Test attempting to cancel an alert with invalid API key"""
     response = await client.patch(
-        f"/api/v1/alerts/{str(uuid4())}/cancel",
+        f"/api/v1/alerts/{str(uuid.uuid4())}/cancel",
         headers={"X-API-Key": "invalid_api_key"}
     )
     assert response.status_code == 403
@@ -527,7 +526,7 @@ async def test_cancel_nonexistent_alert(client):
     api_key = user_data["api_key"]
     
     response = await client.patch(
-        f"/api/v1/alerts/{str(uuid4())}/cancel",
+        f"/api/v1/alerts/{str(uuid.uuid4())}/cancel",
         headers={"X-API-Key": api_key}
     )
     assert response.status_code == 404

@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import Optional
-from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
 
 class AgentControllerBase(BaseModel):
@@ -12,8 +11,8 @@ class OAuth2Request(BaseModel):
     access_token: str = Field(..., description="Google OAuth2 access token")
 
 class AgentControllerResponse(AgentControllerBase):
-    id: UUID
-    api_key: UUID = Field(..., description="API key for authentication")
+    id: str
+    api_key: str = Field(..., description="API key for authentication")
     credit_balance: int = Field(default=5000, description="Credits. In cents of USD")
     created_at: datetime
     last_login: Optional[datetime] = None

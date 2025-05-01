@@ -1,17 +1,16 @@
 from app.models.base import Base
 from app.models.monitored_data import DataSource
 from datetime import datetime
-from uuid import UUID
 from pgvector.sqlalchemy import Vector
 import uuid
 
 class SourcedData(Base):
 
-    id : UUID
+    id : str
     scraped_datetime : datetime
     source : DataSource
     source_url : str
-    source_id : UUID
+    source_id : str
     content : str
     content_embedding : Vector
     

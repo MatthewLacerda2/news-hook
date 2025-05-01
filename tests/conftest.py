@@ -11,7 +11,7 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from unittest.mock import patch
-from uuid import UUID
+import uuid
 import app.models
 from httpx import AsyncClient
 from app.models.base import Base
@@ -98,21 +98,21 @@ def mock_google_verify():
 async def sample_llm_models(test_db):
     models = [
         LLMModel(
-            id=UUID("550e8400-e29b-41d4-a716-446655440001"),
+            id=str(uuid.uuid4()),
             model_name="gemini-2.5-pro",
             input_token_price=0.001,
             output_token_price=0.002,
             is_active=True
         ),
         LLMModel(
-            id=UUID("550e8400-e29b-41d4-a716-446655440002"),
+            id=str(uuid.uuid4()),
             model_name="llama3.1",
             input_token_price=0.003,
             output_token_price=0.004,
             is_active=False
         ),
         LLMModel(
-            id=UUID("550e8400-e29b-41d4-a716-446655440000"),
+            id=str(uuid.uuid4()),
             model_name="gpt-4o",
             input_token_price=0.0015,
             output_token_price=0.0030,

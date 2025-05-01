@@ -1,9 +1,8 @@
 from pydantic import BaseModel, Field, ConfigDict
-from uuid import UUID
 from typing import List
 
 class LLMModelItem(BaseModel):
-    id: UUID
+    id: str
     model_name: str
     input_token_price: float
     output_token_price: float

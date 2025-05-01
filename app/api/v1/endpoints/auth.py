@@ -11,7 +11,7 @@ from app.models.agent_controller import AgentController
 from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from uuid import UUID
+import uuid
 
 router = APIRouter()
 
@@ -153,8 +153,7 @@ async def check_credits(
         payload = verify_token(token)
         user_id = payload.get("sub")
         
-        # Convert string UUID to UUID object
-        user_id = UUID(user_id)
+        user_id = str(user_id)
         
         # Get user from database using async syntax
         stmt = select(AgentController).where(AgentController.id == user_id)

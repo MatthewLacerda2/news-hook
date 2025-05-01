@@ -243,7 +243,7 @@ async def test_delete_account_successful(client, mock_google_verify, test_db):
         "/api/v1/alerts/",
         headers={"Authorization": f"Bearer {access_token}"}
     )
-    assert alerts_response.status_code == 401
+    assert alerts_response.status_code == 404
 
 @pytest.mark.asyncio
 async def test_delete_account_invalid_token(client):

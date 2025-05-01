@@ -39,22 +39,26 @@ async def test_signup_invalid_token(client, mock_google_verify):
     assert response.json()["detail"] == "Invalid Google token"
 
 @pytest.mark.asyncio
-async def test_signup_existing_user(client):
+async def test_signup_existing_user(client, mock_google_verify, test_db):
     """Test signup attempt with existing Google account"""
     # First signup
-    await client.post(
+    first_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
+    print(f"\nFirst signup response: {first_response.status_code}")
+    print(f"First signup body: {first_response.json()}")
     
     # Try to signup again with same Google account
-    response = await client.post(
+    second_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
+    print(f"\nSecond signup response: {second_response.status_code}")
+    print(f"Second signup body: {second_response.json()}")
     
-    assert response.status_code == 409
-    assert response.json()["detail"] == "User already exists"
+    assert second_response.status_code == 409
+    assert second_response.json()["detail"] == "User already exists"
 
 @pytest.mark.asyncio
 async def test_signup_missing_token(client):

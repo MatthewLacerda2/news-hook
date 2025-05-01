@@ -27,10 +27,10 @@ async def signup(
         # Verify Google token and get user info
         user_info = verify_google_token(oauth_data.access_token)
         
-        # Check if user already exists
-        existing_user = db.query(AgentController).filter(
-            AgentController.google_id == user_info["sub"]
-        ).first()
+        # Check if user exists using async syntax
+        stmt = select(AgentController).where(AgentController.google_id == user_info["sub"])
+        result = await db.execute(stmt)
+        existing_user = result.scalar_one_or_none()
         
         if existing_user:
             raise HTTPException(
@@ -49,8 +49,8 @@ async def signup(
         )
         
         db.add(user)
-        db.commit()
-        db.refresh(user)
+        await db.commit()  # Use async commit
+        await db.refresh(user)  # Use async refresh
         
         # Create access token
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -67,13 +67,13 @@ async def signup(
         )
         
     except IntegrityError:
-        await db.rollback()
+        await db.rollback()  # Use async rollback
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="User already exists"
         )
     except Exception as e:
-        await db.rollback()
+        await db.rollback()  # Use async rollback
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid Google token"

@@ -94,10 +94,10 @@ async def login(
         # Verify Google token and get user info
         user_info = verify_google_token(oauth_data.access_token)
         
-        # Check if user exists
-        user = db.query(AgentController).filter(
-            AgentController.google_id == user_info["sub"]
-        ).first()
+        # Check if user exists using async syntax
+        stmt = select(AgentController).where(AgentController.google_id == user_info["sub"])
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
         
         if not user:
             raise HTTPException(

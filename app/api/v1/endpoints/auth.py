@@ -194,10 +194,10 @@ async def delete_account(
     Delete user account and all associated data (alert prompts)
     """
     try:
-        # Get user with their relationships
-        user = db.query(AgentController).filter(
-            AgentController.id == current_user.id
-        ).first()
+        # Get user with their relationships using async syntax
+        stmt = select(AgentController).where(AgentController.id == current_user.id)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
         
         if not user:
             raise HTTPException(
@@ -206,8 +206,8 @@ async def delete_account(
             )
             
         # Delete user (this will cascade delete alert_prompts due to relationship)
-        db.delete(user)
-        db.commit()
+        await db.delete(user)
+        await db.commit()
         
         return {"message": "Account successfully deleted"}
         

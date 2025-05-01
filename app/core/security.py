@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.agent_controller import AgentController
+from sqlalchemy import select
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """
@@ -101,16 +102,6 @@ async def get_current_user(
 ) -> AgentController:
     """
     Get the current authenticated user from the JWT token.
-    
-    Args:
-        credentials: The HTTP Authorization credentials containing the JWT token
-        db: Database session
-        
-    Returns:
-        AgentController: The current authenticated user
-        
-    Raises:
-        HTTPException: If token is invalid or user not found
     """
     try:
         # Verify the JWT token and get the payload
@@ -124,10 +115,10 @@ async def get_current_user(
                 detail="Invalid token payload"
             )
             
-        # Get user from database
-        user = db.query(AgentController).filter(
-            AgentController.id == user_id
-        ).first()
+        # Get user from database using async syntax
+        stmt = select(AgentController).where(AgentController.id == user_id)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
         
         if not user:
             raise HTTPException(
@@ -158,9 +149,9 @@ async def get_user_by_api_key(
     """
     Get the current user based on their API key from the X-API-Key header.
     """
-    user = db.query(AgentController).filter(
-        AgentController.api_key == api_key
-    ).first()
+    stmt = select(AgentController).where(AgentController.api_key == api_key)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
     
     if not user:
         raise HTTPException(

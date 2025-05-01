@@ -5,7 +5,7 @@ from datetime import timedelta
 from app.core.security import create_access_token
 
 @pytest.mark.asyncio
-async def test_signup_successful(client, mock_google_verify):
+async def test_signup_successful(client, test_db, mock_google_verify):
     """Test successful signup with valid Google token"""
     response = await client.post(
         "/api/v1/auth/signup",
@@ -22,7 +22,7 @@ async def test_signup_successful(client, mock_google_verify):
     assert token_response.agent_controller.email == "test@example.com"
     assert token_response.agent_controller.name == "Test User"
     assert token_response.agent_controller.google_id == "12345"
-    assert token_response.agent_controller.credits == 0
+    assert token_response.agent_controller.credit_balance == 0
     assert token_response.agent_controller.api_key is not None
 
 @pytest.mark.asyncio
@@ -92,7 +92,7 @@ async def test_login_successful(client):
     assert token_response.agent_controller.email == "test@example.com"
     assert token_response.agent_controller.name == "Test User"
     assert token_response.agent_controller.google_id == "12345"
-    assert token_response.agent_controller.credits == 0
+    assert token_response.agent_controller.credit_balance == 0
     assert token_response.agent_controller.api_key is not None
 
 @pytest.mark.asyncio
@@ -153,8 +153,8 @@ async def test_check_credits_successful(client):
     
     assert response.status_code == 200
     data = response.json()
-    assert "credits" in data
-    assert isinstance(data["credits"], int)
+    assert "credit_balance" in data
+    assert isinstance(data["credit_balance"], int)
 
 @pytest.mark.asyncio
 async def test_check_credits_unauthorized(client):

@@ -45,7 +45,7 @@ async def signup(
             name=user_info.get("name"),
             google_id=user_info["sub"],
             api_key=str(uuid.uuid4()),  # Generate a unique API key
-            credits=0
+            credit_balance=0
         )
         
         db.add(user)
@@ -66,13 +66,15 @@ async def signup(
             agent_controller=user
         )
         
-    except IntegrityError:
+    except IntegrityError as e:
+        print(f"\nINTEGRITY ERROR IN SIGNUP: {type(e).__name__}: {str(e)}")
         await db.rollback()  # Use async rollback
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="User already exists"
         )
     except Exception as e:
+        print(f"\nEXCEPTION CAUGHT IN SIGNUP: {type(e).__name__}: {str(e)}")
         await db.rollback()  # Use async rollback
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

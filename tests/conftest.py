@@ -76,12 +76,22 @@ async def client():
 @pytest.fixture
 def mock_google_verify():
     """Fixture to mock Google token verification"""
-    with patch('app.core.security.verify_google_token') as mock:
-        mock.return_value = {
-            'email': 'test@example.com',
-            'sub': '12345',  # This is Google's user ID
-            'name': 'Test User'
+    from google.oauth2 import id_token
+    
+    def mock_verify_oauth2_token(token, request, client_id):
+        if token != "valid_google_token":
+            raise ValueError("Invalid token")
+        return {
+            "iss": "accounts.google.com",
+            "sub": "12345",  # Google's unique user ID
+            "email": "test@example.com",
+            "email_verified": True,
+            "name": "Test User",
+            "aud": client_id  # This should match settings.GOOGLE_CLIENT_ID
         }
+
+    # Mock the Google verification function instead
+    with patch('google.oauth2.id_token.verify_oauth2_token', side_effect=mock_verify_oauth2_token) as mock:
         yield mock
 
 @pytest_asyncio.fixture

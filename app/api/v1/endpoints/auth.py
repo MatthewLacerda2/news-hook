@@ -10,6 +10,9 @@ from app.schemas.agent_controller import OAuth2Request, TokenResponse
 from app.models.agent_controller import AgentController
 
 from jose import JWTError
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from uuid import UUID
 
 router = APIRouter()
 
@@ -122,7 +125,7 @@ async def login(
 
 @router.get("/credits")
 async def check_credits(
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     authorization: str = Header(None)
 ):
     """
@@ -147,10 +150,13 @@ async def check_credits(
         payload = verify_token(token)
         user_id = payload.get("sub")
         
-        # Get user from database
-        user = db.query(AgentController).filter(
-            AgentController.id == user_id
-        ).first()
+        # Convert string UUID to UUID object
+        user_id = UUID(user_id)
+        
+        # Get user from database using async syntax
+        stmt = select(AgentController).where(AgentController.id == user_id)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
         
         if not user:
             raise HTTPException(

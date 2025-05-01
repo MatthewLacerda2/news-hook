@@ -14,7 +14,7 @@ class OAuth2Request(BaseModel):
 class AgentControllerResponse(AgentControllerBase):
     id: UUID
     api_key: UUID = Field(..., description="API key for authentication")
-    credits: int = Field(default=5000, description="Credits. In cents of USD")
+    credit_balance: int = Field(default=5000, description="Credits. In cents of USD")
     created_at: datetime
     last_login: Optional[datetime] = None
 

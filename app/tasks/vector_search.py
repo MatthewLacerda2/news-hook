@@ -1,7 +1,6 @@
 from typing import List
 from datetime import datetime
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 import numpy as np
 
 from app.core.database import SessionLocal
@@ -10,6 +9,7 @@ from app.tasks.llm_verification import verify_document_matches_alert
 from app.models.agent_controller import AgentController
 from app.utils.sourced_data import SourcedData
 from app.tasks.llm_apis.ollama import get_nomic_embeddings
+from sqlalchemy.ext.asyncio import AsyncSession
 
 async def process_document_for_vector_search(sourced_document: SourcedData):
     """
@@ -47,7 +47,7 @@ async def process_document_for_vector_search(sourced_document: SourcedData):
     finally:
         db.close()
 
-async def find_matching_alerts(db: Session, document_content: str) -> List[AlertPrompt]:
+async def find_matching_alerts(db: AsyncSession, document_content: str) -> List[AlertPrompt]:
     """Find active alerts where all keywords are present in the document and user has sufficient credits"""
     active_alerts = db.execute(
         select(AlertPrompt).where(

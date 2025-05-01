@@ -9,8 +9,8 @@ from app.tasks.llm_generation import llm_generation
 from app.utils.sourced_data import SourcedData
 import tiktoken
 from app.models.llm_verification import LLMVerification
-from sqlalchemy.orm import Session
 from app.models.llm_models import LLMModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
 async def verify_document_matches_alert(
     alert_id: str,
@@ -62,7 +62,7 @@ async def verify_document_matches_alert(
     finally:
         db.close()
         
-async def register_llm_verification(alert_prompt: AlertPrompt, verification_result: LLMVerificationFormat, llm_model: str, db: Session):
+async def register_llm_verification(alert_prompt: AlertPrompt, verification_result: LLMVerificationFormat, llm_model: str, db: AsyncSession):
     
     input_tokens_count = tiktoken.count_tokens(alert_prompt.prompt)
     output_tokens_count = tiktoken.count_tokens(verification_result.output)

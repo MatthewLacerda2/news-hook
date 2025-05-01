@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
 from uuid import UUID
 
 from app.core.database import get_db
@@ -19,13 +18,14 @@ from app.utils.llm_validator import get_llm_validation_price
 from app.tasks.llm_apis.ollama import get_nomic_embeddings
 import tiktoken
 from app.models.llm_validation import LLMValidation
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
 @router.post("/", response_model=AlertPromptCreateSuccessResponse, status_code=status.HTTP_201_CREATED)
 async def create_alert(
     alert_data: AlertPromptCreateRequestBase,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key)
 ):
     """Create a new alert for monitoring"""
@@ -127,7 +127,7 @@ async def list_alerts(
     prompt_contains: Optional[str] = None,
     max_datetime: Optional[datetime] = None,
     created_after: Optional[datetime] = None,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key)
 ):
     """List alerts for the authenticated user with filtering and pagination"""
@@ -164,7 +164,7 @@ async def list_alerts(
 @router.get("/{alert_id}", response_model=AlertPromptItem)
 async def get_alert(
     alert_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key)
 ):
     """Get a specific alert by ID"""
@@ -187,7 +187,7 @@ async def get_alert(
 @router.patch("/{alert_id}/cancel", status_code=status.HTTP_200_OK)
 async def cancel_alert(
     alert_id: UUID,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key)
 ):
     """Cancel an existing alert"""

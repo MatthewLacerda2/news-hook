@@ -5,7 +5,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 from fastapi import HTTPException, status, Depends, Security
 from fastapi.security import HTTPBearer, APIKeyHeader, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.agent_controller import AgentController
@@ -97,7 +97,7 @@ security = HTTPBearer()
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ) -> AgentController:
     """
     Get the current authenticated user from the JWT token.
@@ -153,7 +153,7 @@ api_key_header = APIKeyHeader(name="X-API-Key")
 
 async def get_user_by_api_key(
     api_key: str = Security(api_key_header),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ) -> AgentController:
     """
     Get the current user based on their API key from the X-API-Key header.

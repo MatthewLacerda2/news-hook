@@ -4,7 +4,6 @@ import requests
 from datetime import datetime, time
 from typing import List
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 from docling.document_converter import DocumentConverter
 
 from app.core.database import SessionLocal
@@ -13,11 +12,12 @@ from app.tasks.vector_search import process_document_for_vector_search
 from app.models.alert_prompt import Alert, AlertStatus
 from app.utils.sourced_data import SourcedData, DataSource
 import numpy as np
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-async def process_webscrape_source(source: WebscrapeSource, db: Session):
+async def process_webscrape_source(source: WebscrapeSource, db: AsyncSession):
     """Process a single webscrape source"""
     try:
         headers = {

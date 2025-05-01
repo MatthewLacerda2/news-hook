@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, status, Header
-from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from app.core.config import settings
 from app.core.security import create_access_token, verify_google_token, verify_token, get_current_user
@@ -19,7 +18,7 @@ router = APIRouter()
 @router.post("/signup", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def signup(
     oauth_data: OAuth2Request,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Sign up a new user using Google OAuth2 token.
@@ -83,7 +82,7 @@ async def signup(
 @router.post("/login", response_model=TokenResponse)
 async def login(
     oauth_data: OAuth2Request,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Login using Google OAuth2 token.
@@ -179,7 +178,7 @@ async def check_credits(
 
 @router.delete("/account", status_code=status.HTTP_200_OK)
 async def delete_account(
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: AgentController = Depends(get_current_user)
 ):
     """

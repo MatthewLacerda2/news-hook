@@ -119,10 +119,20 @@ async def login(
             agent_controller=user
         )
         
-    except Exception as e:
+    except HTTPException:
+        # Re-raise HTTP exceptions without modifying them
+        raise
+    except ValueError as e:
+        # Handle Google token verification errors
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid Google token"
+        )
+    except Exception as e:
+        # Handle unexpected errors
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
         )
 
 @router.get("/credits")

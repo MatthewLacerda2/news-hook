@@ -44,15 +44,14 @@ async def signup(
             email=user_info["email"],
             name=user_info.get("name"),
             google_id=user_info["sub"],
-            api_key=str(uuid.uuid4()),  # Generate a unique API key
+            api_key=str(uuid.uuid4()),
             credit_balance=0
         )
         
         db.add(user)
-        await db.commit()  # Use async commit
-        await db.refresh(user)  # Use async refresh
+        await db.commit()
+        await db.refresh(user)
         
-        # Create access token
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
             data={"sub": str(user.id)},
@@ -68,14 +67,17 @@ async def signup(
         
     except IntegrityError as e:
         print(f"\nINTEGRITY ERROR IN SIGNUP: {type(e).__name__}: {str(e)}")
-        await db.rollback()  # Use async rollback
+        await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="User already exists"
         )
+    except HTTPException:
+        # Re-raise HTTP exceptions without modifying them
+        raise
     except Exception as e:
         print(f"\nEXCEPTION CAUGHT IN SIGNUP: {type(e).__name__}: {str(e)}")
-        await db.rollback()  # Use async rollback
+        await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid Google token"

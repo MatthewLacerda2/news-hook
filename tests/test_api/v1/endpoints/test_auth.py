@@ -252,4 +252,4 @@ async def test_delete_account_invalid_token(client):
     )
     
     assert response.status_code == 401
-    assert response.json()["detail"] == "Invalid token"
+    assert response.json()["detail"] == "Could not validate credentials"

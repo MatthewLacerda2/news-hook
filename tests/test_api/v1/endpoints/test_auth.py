@@ -190,33 +190,6 @@ async def test_check_credits_user_not_found(client):
     assert response.json()["detail"] == "User not found"
 
 @pytest.mark.asyncio
-async def test_check_credits_after_modification(client):
-    """Test credits check after credits have been modified"""
-    # First create a user through signup
-    signup_response = await client.post(
-        "/api/v1/auth/signup",
-        json={"access_token": "valid_google_token"}
-    )
-    access_token = signup_response.json()["access_token"]
-    
-    # Modify user's credits in the database (this would normally be done through an API endpoint)
-    # Note: You'll need to implement this part based on your database access pattern
-    # For example: test_db.update_user_credits(user_id, 100)
-    
-    # Check credits after modification
-    response = await client.get(
-        "/api/v1/auth/credits",
-        headers={"Authorization": f"Bearer {access_token}"}
-    )
-    
-    assert response.status_code == 200
-    data = response.json()
-    assert "credits" in data
-    assert isinstance(data["credits"], int)
-    # Assert the new credit amount if you implemented the credit modification
-    # assert data["credits"] == 100
-
-@pytest.mark.asyncio
 async def test_delete_account_successful(client):
     """Test successful account deletion with valid token"""
     

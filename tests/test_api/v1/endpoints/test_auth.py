@@ -71,7 +71,7 @@ async def test_signup_missing_token(client):
     assert response.status_code == 422
 
 @pytest.mark.asyncio
-async def test_login_successful(client):
+async def test_login_successful(client, mock_google_verify, test_db):
     """Test successful login with valid Google token for existing user"""
     
     await client.post(
@@ -96,7 +96,7 @@ async def test_login_successful(client):
     assert token_response.agent_controller.api_key is not None
 
 @pytest.mark.asyncio
-async def test_login_nonexistent_user(client, mock_google_verify):
+async def test_login_nonexistent_user(client, mock_google_verify, test_db):
     """Test login attempt with Google account that hasn't signed up"""
     
     mock_google_verify.return_value = {
@@ -196,7 +196,7 @@ async def test_check_credits_user_not_found(client, verify_tables):
     assert response.json()["detail"] == "User not found"
 
 @pytest.mark.asyncio
-async def test_delete_account_successful(client):
+async def test_delete_account_successful(client, mock_google_verify, test_db):
     """Test successful account deletion with valid token"""
     
     signup_response = await client.post(

@@ -176,7 +176,7 @@ async def test_check_credits_invalid_token(client):
     assert response.json()["detail"] == "Invalid token"
 
 @pytest.mark.asyncio
-async def test_check_credits_user_not_found(client):
+async def test_check_credits_user_not_found(client, verify_tables):
     """Test credits check for non-existent user"""
     
     nonexistent_user_id = str(uuid.uuid4())

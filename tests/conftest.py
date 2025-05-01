@@ -19,6 +19,8 @@ from app.models.llm_models import LLMModel
 from app.main import app
 from app.core.database import get_db
 from httpx import ASGITransport
+from app.models.agent_controller import AgentController
+from sqlalchemy.sql import text
 
 # Create a test database URL for SQLite in-memory database
 SQLALCHEMY_TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -125,3 +127,12 @@ async def sample_llm_models(test_db):
     await test_db.commit()
     
     return models
+
+@pytest_asyncio.fixture
+async def verify_tables(test_db):
+    """Verify that all required tables are created"""
+    async with test_engine.connect() as conn:
+        # This will show all tables that exist in the database
+        result = await conn.execute(text("SELECT name FROM sqlite_master WHERE type='table';"))
+        tables = result.fetchall()
+        print("Created tables:", [table[0] for table in tables])

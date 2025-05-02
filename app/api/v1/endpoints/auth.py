@@ -23,10 +23,8 @@ async def signup(
     Sign up a new user using Google OAuth2 token.
     """
     try:
-        # Verify Google token and get user info
         user_info = verify_google_token(oauth_data.access_token)
         
-        # Check if user exists using async syntax
         stmt = select(AgentController).where(AgentController.google_id == user_info["sub"])
         result = await db.execute(stmt)
         existing_user = result.scalar_one_or_none()
@@ -37,14 +35,13 @@ async def signup(
                 detail="User already exists"
             )
         
-        # Create new user
         user = AgentController(
             id=str(uuid.uuid4()),
             email=user_info["email"],
             name=user_info.get("name"),
             google_id=user_info["sub"],
             api_key=str(uuid.uuid4()),
-            credit_balance=0
+            credit_balance=1000
         )
         
         db.add(user)

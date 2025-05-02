@@ -5,7 +5,7 @@ from app.models.alert_prompt import AlertStatus
 import pytest
 
 @pytest.mark.asyncio
-async def test_create_alert_successful(client, mock_google_verify, test_db):
+async def test_create_alert_successful(client, mock_google_verify, test_db, sample_llm_models):
     """Test successful alert creation with valid data"""
     # First create a user and get their token (similar to auth tests)
     signup_response = await client.post(
@@ -48,7 +48,7 @@ async def test_create_alert_invalid_api_key(client, mock_google_verify, test_db)
         headers={"X-API-Key": "invalid_api_key"},  # Invalid API key in header
         json=alert_data
     )
-    print(response.json())
+    
     assert response.status_code == 401
     assert "Invalid API key" in response.json()["detail"]
 
@@ -178,7 +178,7 @@ async def test_create_alert_invalid_example_response(client, mock_google_verify,
     assert "Invalid example_response format" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_create_alert_invalid_max_datetime(client, mock_google_verify, test_db):
+async def test_create_alert_invalid_max_datetime(client, mock_google_verify, test_db, sample_llm_models):
     """Test alert creation with invalid max_datetime values"""
     signup_response = await client.post(
         "/api/v1/auth/signup",
@@ -192,7 +192,8 @@ async def test_create_alert_invalid_max_datetime(client, mock_google_verify, tes
         "prompt": "Test prompt",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/test",
-        "max_datetime": (datetime.now() + timedelta(minutes=20)).isoformat()
+        "max_datetime": (datetime.now() + timedelta(minutes=20)).isoformat(),
+        "llm_model": "gemini-2.5-pro"
     }
     
     response = await client.post("/api/v1/alerts/", json=alert_data)
@@ -206,7 +207,7 @@ async def test_create_alert_invalid_max_datetime(client, mock_google_verify, tes
     assert "max_datetime cannot be more than 1 year in the future" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_create_alert_invalid_llm_model(client, mock_google_verify, test_db):
+async def test_create_alert_invalid_llm_model(client, mock_google_verify, test_db, sample_llm_models):
     """Test alert creation with invalid LLM model"""
     # First create a user
     signup_response = await client.post(
@@ -232,7 +233,7 @@ async def test_create_alert_invalid_llm_model(client, mock_google_verify, test_d
     assert "Invalid LLM model" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_list_alerts_successful(client, mock_google_verify, test_db):
+async def test_list_alerts_successful(client, mock_google_verify, test_db, sample_llm_models):
     """Test successful alert listing with valid parameters"""
     # First create a user
     signup_response = await client.post(
@@ -246,8 +247,9 @@ async def test_list_alerts_successful(client, mock_google_verify, test_db):
         "offset": 0,
         "limit": 50,
         "prompt_contains": "bitcoin",
+        "created_after": datetime.now().isoformat(),
         "max_datetime": (datetime.now() + timedelta(days=30)).isoformat(),
-        "created_after": datetime.now().isoformat()
+        "llm_model": "gemini-2.5-pro"
     }
     
     response = await client.get(
@@ -349,7 +351,7 @@ async def test_list_alerts_invalid_api_key(client, mock_google_verify, test_db):
     assert "Invalid API key" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_get_alert_successful(client, mock_google_verify, test_db):
+async def test_get_alert_successful(client, mock_google_verify, test_db, sample_llm_models):
     """Test successful alert retrieval"""
     # First create a user
     signup_response = await client.post(
@@ -366,7 +368,8 @@ async def test_get_alert_successful(client, mock_google_verify, test_db):
         "http_url": "https://webhook.example.com/crypto-alert",
         "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
         "example_response": {"price": 50001, "alert": True},
-        "max_datetime": (datetime.now() + timedelta(days=30)).isoformat()
+        "max_datetime": (datetime.now() + timedelta(days=30)).isoformat(),
+        "llm_model": "gemini-2.5-pro"
     }
     
     create_response = await client.post(
@@ -374,6 +377,7 @@ async def test_get_alert_successful(client, mock_google_verify, test_db):
         headers={"X-API-Key": api_key},
         json=alert_data
     )
+    
     assert create_response.status_code == 201
     alert_id = create_response.json()["id"]
     
@@ -415,7 +419,7 @@ async def test_get_alert_not_found(client, mock_google_verify, test_db):
     assert "Not found" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_cancel_alert_successful(client, mock_google_verify, test_db):
+async def test_cancel_alert_successful(client, mock_google_verify, test_db, sample_llm_models):
     """Test successful alert cancellation"""
     # First create a user
     signup_response = await client.post(
@@ -432,7 +436,8 @@ async def test_cancel_alert_successful(client, mock_google_verify, test_db):
         "http_url": "https://webhook.example.com/crypto-alert",
         "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
         "example_response": {"price": 50001, "alert": True},
-        "max_datetime": (datetime.now() + timedelta(days=30)).isoformat()
+        "max_datetime": (datetime.now() + timedelta(days=30)).isoformat(),
+        "llm_model": "gemini-2.5-pro"
     }
     
     create_response = await client.post(
@@ -440,6 +445,7 @@ async def test_cancel_alert_successful(client, mock_google_verify, test_db):
         headers={"X-API-Key": api_key},
         json=alert_data
     )
+    
     assert create_response.status_code == 201
     alert_id = create_response.json()["id"]
     
@@ -461,7 +467,7 @@ async def test_cancel_alert_successful(client, mock_google_verify, test_db):
     assert cancelled_alert["status"] == AlertStatus.CANCELLED
 
 @pytest.mark.asyncio
-async def test_cancel_alert_invalid_api_key(client, mock_google_verify, test_db):
+async def test_cancel_alert_invalid_api_key(client, mock_google_verify, test_db, sample_llm_models):
     """Test attempting to cancel an alert with invalid API key"""
     response = await client.patch(
         f"/api/v1/alerts/{str(uuid.uuid4())}/cancel",
@@ -471,7 +477,7 @@ async def test_cancel_alert_invalid_api_key(client, mock_google_verify, test_db)
     assert "Unauthorized" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_cancel_alert_wrong_user(client, mock_google_verify, test_db):
+async def test_cancel_alert_wrong_user(client, mock_google_verify, test_db, sample_llm_models):
     """Test attempting to cancel an alert belonging to another user"""
     # Create first user and their alert
     signup1 = await client.post(
@@ -480,12 +486,14 @@ async def test_cancel_alert_wrong_user(client, mock_google_verify, test_db):
     )
     user1_data = signup1.json()["agent_controller"]
     api_key1 = user1_data["api_key"]
-    
     alert_data = {
         "prompt": "Test alert",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/test",
-        "max_datetime": (datetime.now() + timedelta(days=30)).isoformat()
+        "max_datetime": (datetime.now() + timedelta(days=30)).isoformat(),
+        "llm_model": "gemini-2.5-pro",
+        "parsed_intent": {"foo": "bar"},
+        "example_response": {"foo": "bar"}
     }
     
     create_response = await client.post(
@@ -493,9 +501,7 @@ async def test_cancel_alert_wrong_user(client, mock_google_verify, test_db):
         headers={"X-API-Key": api_key1},
         json=alert_data
     )
-    assert create_response.status_code == 201
     alert_id = create_response.json()["id"]
-    
     # Create second user
     mock_google_verify.return_value = {
         'email': 'test2@example.com',
@@ -514,6 +520,7 @@ async def test_cancel_alert_wrong_user(client, mock_google_verify, test_db):
         f"/api/v1/alerts/{alert_id}/cancel",
         headers={"X-API-Key": api_key2}
     )
+    
     assert response.status_code == 404
     assert "Not found" in response.json()["detail"]
 

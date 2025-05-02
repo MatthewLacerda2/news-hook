@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-import uuid
 
 from app.core.database import get_db
 from app.models.agent_controller import AgentController

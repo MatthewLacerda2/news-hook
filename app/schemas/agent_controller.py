@@ -25,7 +25,7 @@ class TokenResponse(BaseModel):
     token_type: str = Field(default="bearer", description="Type of token")
     expires_in: datetime = Field(..., description="Token expiration time")
     agent_controller: AgentControllerResponse
-
+    
     @field_validator('token_type')
     @classmethod
     def validate_token_type(cls, v: str) -> str:

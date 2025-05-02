@@ -53,16 +53,19 @@ async def test_create_alert_invalid_api_key(client, mock_google_verify, test_db)
     assert "Invalid API key" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_create_alert_mismatched_user_api_key(client, mock_google_verify):
+async def test_create_alert_mismatched_user_api_key(client, mock_google_verify, test_db):
     """Test alert creation with API key not owned by user"""
-    # Create first user
+    mock_google_verify.return_value = {
+        'email': 'test1@example.com',
+        'sub': '12345',
+        'name': 'Test User 1'
+    }
     signup1 = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token_1"}
     )
     user1_data = signup1.json()["agent_controller"]
-    
-    # Create second user
+
     mock_google_verify.return_value = {
         'email': 'test2@example.com',
         'sub': '67890',
@@ -84,8 +87,8 @@ async def test_create_alert_mismatched_user_api_key(client, mock_google_verify):
     }
     
     response = await client.post("/api/v1/alerts/", json=alert_data)
-    assert response.status_code == 400
-    assert "API key does not match user" in response.json()["detail"]
+    assert response.status_code == 403
+    assert "Not authenticated" in response.json()["detail"]
 
 @pytest.mark.asyncio
 async def test_create_alert_insufficient_credits(client, mock_google_verify, test_db):

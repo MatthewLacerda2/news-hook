@@ -20,6 +20,7 @@ import tiktoken
 from app.models.llm_validation import LLMValidation
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy import func
 
 router = APIRouter()
 
@@ -135,33 +136,35 @@ async def list_alerts(
 ):
     """List alerts for the authenticated user with filtering and pagination"""
     
-    # Validate created_after against max_datetime if both are provided
     if created_after and max_datetime and created_after > max_datetime:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="created_after cannot be later than max_datetime"
         )
     
-    # Build the query
     stmt = select(AlertPrompt).where(AlertPrompt.agent_controller_id == user.id)
-    
-    # Apply filters if provided
+    count_stmt = select(func.count()).select_from(AlertPrompt).where(AlertPrompt.agent_controller_id == user.id)
+
     if prompt_contains:
         stmt = stmt.filter(AlertPrompt.prompt.ilike(f"%{prompt_contains}%"))
+        count_stmt = count_stmt.filter(AlertPrompt.prompt.ilike(f"%{prompt_contains}%"))
     if max_datetime:
         stmt = stmt.filter(AlertPrompt.expires_at <= max_datetime)
+        count_stmt = count_stmt.filter(AlertPrompt.expires_at <= max_datetime)
     if created_after:
         stmt = stmt.filter(AlertPrompt.created_at >= created_after)
-    
-    # Apply pagination
-    total = await db.execute(stmt.count())
+        count_stmt = count_stmt.filter(AlertPrompt.created_at >= created_after)
+
     alerts = await db.execute(stmt.offset(offset).limit(limit))
+    
+    total_count = await db.execute(count_stmt)
+    total_count = total_count.scalar()
     
     return AlertPromptListResponse(
         alerts=[
             AlertPromptItem.model_validate(alert) for alert in alerts.scalars().all()
         ],
-        total=total.scalar()
+        total_count=total_count
     )
 
 @router.get("/{alert_id}", response_model=AlertPromptItem)

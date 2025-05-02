@@ -48,6 +48,7 @@ async def test_create_alert_invalid_api_key(client, mock_google_verify, test_db)
         headers={"X-API-Key": "invalid_api_key"},  # Invalid API key in header
         json=alert_data
     )
+    print(response.json())
     assert response.status_code == 401
     assert "Invalid API key" in response.json()["detail"]
 
@@ -182,7 +183,6 @@ async def test_create_alert_invalid_max_datetime(client, mock_google_verify, tes
     )
     user_data = signup_response.json()["agent_controller"]
     
-    # Test with datetime too soon
     alert_data = {
         "api_key": user_data["api_key"],
         "user_id": user_data["id"],

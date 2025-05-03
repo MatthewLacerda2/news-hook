@@ -24,7 +24,7 @@ async def get_ollama_validation(alert_prompt: str, alert_parsed_intent: str) -> 
         messages=[
             {"role": "user", "content": full_prompt},
         ],
-        format=LLMValidationFormat
+        response_format={"type": "json_object", "schema": LLMValidationFormat.model_json_schema()}
     )
     
     return response.choices[0].message.content
@@ -38,7 +38,7 @@ async def get_ollama_verification(alert_prompt: str, alert_parsed_intent: str, d
         messages=[
             {"role": "user", "content": full_prompt},
         ],
-        format=LLMVerificationFormat
+        response_format={"type": "json_object", "schema": LLMVerificationFormat.model_json_schema()}
     )
     
     return response.choices[0].message.content
@@ -52,7 +52,7 @@ async def get_ollama_alert_generation(alert_parsed_intent: str, document: str, e
         messages=[
             {"role": "user", "content": full_prompt},
         ],
-        format=LLMGenerationFormat
+        response_format={"type": "json_object", "schema": LLMGenerationFormat.model_json_schema()}
     )
     
     return response.choices[0].message.content

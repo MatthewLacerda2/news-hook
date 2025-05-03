@@ -8,7 +8,7 @@ import pytest
 async def test_create_alert_successful(client, valid_user_with_credits, sample_llm_models):
     """Test successful alert creation with valid data"""
     user_data = valid_user_with_credits
-        
+
     alert_data = {
         "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
         "http_method": "POST",
@@ -16,7 +16,7 @@ async def test_create_alert_successful(client, valid_user_with_credits, sample_l
         "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
         "example_response": {"price": 50001, "alert": True},
         "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
-        "llm_model": "gemini-2.5-pro"
+        "llm_model": "llama3.1"
     }
     
     response = await client.post(

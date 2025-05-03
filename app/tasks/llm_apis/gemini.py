@@ -13,7 +13,7 @@ async def get_gemini_validation(alert_prompt: str, alert_parsed_intent: str) -> 
     response = client.models.generate_content(
         model="gemini-2.5-pro", contents=full_prompt, config=types.GenerateContentConfig(
         response_mime_type='application/json',
-        response_schema=LLMValidationFormat,
+        response_schema=LLMValidationFormat.model_json_schema(),
         temperature=gemini_temperature,
     ),)
     
@@ -25,7 +25,7 @@ async def get_gemini_verification(alert_prompt: str, alert_parsed_intent: str, d
     response = client.models.generate_content(
         model="gemini-2.5-pro", contents=full_prompt, config=types.GenerateContentConfig(
         response_mime_type='application/json',
-        response_schema=LLMVerificationFormat,
+        response_schema=LLMVerificationFormat.model_json_schema(),
         temperature=gemini_temperature,
     ),)
 
@@ -37,7 +37,7 @@ async def get_gemini_alert_generation(alert_parsed_intent: str, document: str, e
     response = client.models.generate_content(
         model="gemini-2.5-pro", contents=full_prompt, config=types.GenerateContentConfig(
         response_mime_type='application/json',
-        response_schema=LLMGenerationFormat,
+        response_schema=LLMGenerationFormat.model_json_schema(),
         temperature=gemini_temperature,
     ),)
     

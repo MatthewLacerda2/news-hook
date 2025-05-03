@@ -37,7 +37,7 @@ class AlertPrompt(Base):
     http_headers = Column(JSON, nullable=True)
     
     parsed_intent = Column(JSON, nullable=False)
-    parsed_intent_embedding = Column(Vector(384), nullable=False)
+    parsed_intent_embedding = Column(Vector(384), nullable=True)
     response_format = Column(JSON, nullable=False)
     
     tags = Column(JSON, nullable=True)
@@ -47,7 +47,7 @@ class AlertPrompt(Base):
     created_at = Column(DateTime, nullable=False, default=datetime.now())
     expires_at = Column(DateTime, nullable=False)
     llm_model = Column(String, nullable=False)
-    max_datetime = Column(DateTime, nullable=False)
+    max_datetime = Column(DateTime, nullable=True)
 
     # Relationships
     user = relationship("AgentController", back_populates="alert_prompts")

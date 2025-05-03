@@ -3,7 +3,7 @@ from app.core.database import get_db
 from app.models.alert_prompt import AlertPrompt
 from sqlalchemy import select
 
-async def generate_and_save_embeddings(alert_id, prompt, parsed_intent):
+async def generate_and_save_alert_prompt_embeddings(alert_id, prompt, parsed_intent):
     prompt_embedding = await get_nomic_embeddings(prompt)
     parsed_intent_embedding = await get_nomic_embeddings(str(parsed_intent))
     await save_embeddings_to_db(alert_id, prompt_embedding, parsed_intent_embedding)

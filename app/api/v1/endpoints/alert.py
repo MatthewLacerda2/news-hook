@@ -20,7 +20,10 @@ from app.models.llm_validation import LLMValidation
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy import func
-from app.tasks.save_embedding import generate_and_save_embeddings
+from app.tasks.save_embedding import generate_and_save_alert_prompt_embeddings
+import json
+import uuid
+
 router = APIRouter()
 
 @router.post("/", response_model=AlertPromptCreateSuccessResponse, status_code=status.HTTP_201_CREATED)
@@ -70,15 +73,17 @@ async def create_alert(
             )
             
         new_alert = AlertPrompt(
+            id=str(uuid.uuid4()),
             agent_controller_id=user.id,
             prompt=alert_data.prompt,
             prompt_embedding = None,
             http_method=alert_data.http_method,
             http_url=str(alert_data.http_url),
             http_headers=alert_data.http_headers or {},
-            parsed_intent=alert_data.parsed_intent or {},
+            parsed_intent=json.dumps(alert_data.parsed_intent) if alert_data.parsed_intent else {},
             parsed_intent_embedding = None,
-            response_format=alert_data.schema_format or {},
+            response_format=json.dumps(alert_data.schema_format) if alert_data.schema_format else {},
+            expires_at=alert_data.max_datetime or (now + timedelta(days=300)),
             max_datetime=alert_data.max_datetime or (now + timedelta(days=300)),
             llm_model=alert_data.llm_model,
             keywords=llm_validation_response.keywords,
@@ -86,10 +91,11 @@ async def create_alert(
         )
 
         llm_validation = LLMValidation(
+            id=str(uuid.uuid4()),
             prompt=alert_data.prompt,
             prompt_embedding=None,
             prompt_id=new_alert.id,
-            parsed_intent=alert_data.parsed_intent,
+            parsed_intent=json.dumps(alert_data.parsed_intent),
             parsed_intent_embedding=None,
             approval=llm_validation_response.approval,
             chance_score=llm_validation_response.chance_score,
@@ -100,16 +106,16 @@ async def create_alert(
             llm_id=llm_model.id,
             date_time=datetime.now()
         )
-        print("Ate aqui nos ajudou o Senhor")
         user.credit_balance -= tokens_price
         db.add(llm_validation)
         db.add(new_alert)
+        print("Ate aqui nos ajudou o Senhor")
         await db.commit()
         await db.refresh(new_alert)
         print(f"Alert created: {new_alert.id}")
         print("Running embedding generation in the background")
         asyncio.create_task(
-            generate_and_save_embeddings(
+            generate_and_save_alert_prompt_embeddings(
                 new_alert.id,
                 alert_data.prompt,
                 alert_data.parsed_intent

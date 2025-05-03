@@ -54,15 +54,13 @@ async def create_alert(
 
         llm_validation_response = await get_llm_validation(alert_data, llm_model.model_name)
 
-        print(f"Alert.py Validation result: {llm_validation_response}")
-
         if not llm_validation_response.approval or llm_validation_response.chance_score < 0.85:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid alert request"
             )
         
-        input_price, output_price = await get_llm_validation_price(alert_data, llm_validation_response, llm_model)
+        input_price, output_price = get_llm_validation_price(alert_data, llm_validation_response, llm_model)
         tokens_price = input_price + output_price
         
         if user.credit_balance < tokens_price:

@@ -23,7 +23,7 @@ async def llm_generation(alert_prompt: AlertPrompt, sourced_document: SourcedDat
             sourced_document.content,
             alert_prompt.response_format,
         )
-    elif alert_prompt.llm_model == "gemini":
+    elif alert_prompt.llm_model == "gemini-2.5-pro":
         generated_response = await get_gemini_alert_generation(
             alert_prompt.parsed_intent,
             sourced_document.content,

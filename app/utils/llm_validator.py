@@ -5,7 +5,7 @@ from app.tasks.llm_apis.gemini import get_gemini_validation
 import tiktoken
 from app.models.llm_models import LLMModel
 
-async def llm_validator(alert_request: AlertPromptCreateRequestBase, llm_model: str) -> LLMValidationFormat:
+async def get_llm_validation(alert_request: AlertPromptCreateRequestBase, llm_model: str) -> LLMValidationFormat:
     """
     Validate the alert request using LLM
     """
@@ -17,7 +17,7 @@ async def llm_validator(alert_request: AlertPromptCreateRequestBase, llm_model: 
             alert_request.prompt,
             alert_request.parsed_intent,
         )
-    elif llm_model == "gemini":
+    elif llm_model == "gemini-2.5-pro":
         validation_result = await get_gemini_validation(
             alert_request.prompt,
             alert_request.parsed_intent,

@@ -5,7 +5,7 @@ from app.models.alert_prompt import AlertPrompt, AlertStatus
 from app.utils.llm_response_formats import LLMVerificationFormat
 from app.tasks.llm_apis.ollama import get_ollama_verification
 from app.tasks.llm_apis.gemini import get_gemini_verification
-from app.tasks.llm_generation import llm_generation
+from app.tasks.llm_generation import get_llm_generation
 from app.utils.sourced_data import SourcedData
 import tiktoken
 from app.models.llm_verification import LLMVerification
@@ -36,7 +36,7 @@ async def verify_document_matches_alert(
                 alert_prompt.prompt,
                 alert_prompt.parsed_intent,
             )
-        elif alert_prompt.llm_model == "gemini":
+        elif alert_prompt.llm_model == "gemini-2.5-pro":
             verification_result = await get_gemini_verification(
                 alert_prompt.prompt,
                 alert_prompt.parsed_intent,
@@ -51,7 +51,7 @@ async def verify_document_matches_alert(
         # Check if verification passes our criteria
         if verification_result.approval and verification_result.chance_score >= 0.85:
             # Pass to LLM generation
-            await llm_generation(alert_prompt, sourced_document, db)
+            await get_llm_generation(alert_prompt, sourced_document, db)
             
             # Update alert status
             alert_prompt.status = AlertStatus.TRIGGERED

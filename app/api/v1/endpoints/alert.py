@@ -14,7 +14,7 @@ from app.schemas.alert_prompt import (
 )
 from app.core.security import get_user_by_api_key
 from app.models.llm_models import LLMModel
-from app.utils.llm_validator import get_llm_validation_price
+from app.utils.llm_validator import get_llm_validation, get_llm_validation_price
 import tiktoken
 from app.models.llm_validation import LLMValidation
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -52,7 +52,7 @@ async def create_alert(
                 detail=f"LLM model '{alert_data.llm_model}' not found"
             )
 
-        llm_validation_response = await llm_validation(alert_data, llm_model)
+        llm_validation_response = await get_llm_validation(alert_data, llm_model.model_name)
 
         if not llm_validation_response.approval or llm_validation_response.chance_score < 0.85:
             raise HTTPException(
@@ -60,7 +60,7 @@ async def create_alert(
                 detail="Invalid alert request"
             )
         
-        input_price, output_price = await get_llm_validation_price(alert_data, llm_validation_response, llm_model)
+        input_price, output_price = await get_llm_validation_price(alert_data, llm_validation_response, llm_model.model_name)
         tokens_price = input_price + output_price
         
         if user.credit_balance < tokens_price:

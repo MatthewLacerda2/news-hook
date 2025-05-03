@@ -5,7 +5,7 @@ from app.models.alert_prompt import AlertStatus
 import pytest
 
 @pytest.mark.asyncio
-async def test_create_alert_successful(client, valid_user_with_credits):
+async def test_create_alert_successful(client, valid_user_with_credits, sample_llm_models):
     """Test successful alert creation with valid data"""
     user_data = valid_user_with_credits
         
@@ -25,11 +25,12 @@ async def test_create_alert_successful(client, valid_user_with_credits):
         json=alert_data
     )
     
+    print(response.status_code, response.json())
     assert response.status_code == 201
     AlertPromptCreateSuccessResponse.model_validate(response.json())
 
 @pytest.mark.asyncio
-async def test_create_alert_invalid_api_key(client, mock_google_verify, test_db):
+async def test_create_alert_invalid_api_key(client):
     """Test alert creation with invalid API key"""
     alert_data = {
         "prompt": "Test prompt",
@@ -47,7 +48,7 @@ async def test_create_alert_invalid_api_key(client, mock_google_verify, test_db)
     assert "Invalid API key" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_create_alert_mismatched_user_api_key(client, mock_google_verify, test_db):
+async def test_create_alert_mismatched_user_api_key(client, mock_google_verify):
     """Test alert creation with API key not owned by user"""
     mock_google_verify.return_value = {
         'email': 'test1@example.com',
@@ -152,7 +153,7 @@ async def test_create_alert_invalid_example_response(client, valid_user_with_cre
     assert "Invalid example_response format" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_create_alert_invalid_max_datetime(client, valid_user_with_credits, sample_llm_models):
+async def test_create_alert_invalid_max_datetime(client, valid_user_with_credits):
     user_data = valid_user_with_credits
 
     alert_data = {
@@ -175,7 +176,7 @@ async def test_create_alert_invalid_max_datetime(client, valid_user_with_credits
     assert "max_datetime cannot be more than 1 year in the future" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_create_alert_invalid_llm_model(client, valid_user_with_credits, sample_llm_models):
+async def test_create_alert_invalid_llm_model(client, valid_user_with_credits):
     user_data = valid_user_with_credits
 
     alert_data = {
@@ -195,7 +196,7 @@ async def test_create_alert_invalid_llm_model(client, valid_user_with_credits, s
     assert "Invalid LLM model" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_list_alerts_successful(client, valid_user_with_credits, sample_llm_models):
+async def test_list_alerts_successful(client, valid_user_with_credits):
     """Test successful alert listing with valid parameters"""
     user_data = valid_user_with_credits
 
@@ -281,7 +282,7 @@ async def test_list_alerts_minimal_parameters(client, valid_user_with_credits):
     AlertPromptListResponse.model_validate(data)
 
 @pytest.mark.asyncio
-async def test_list_alerts_invalid_api_key(client, mock_google_verify, test_db):
+async def test_list_alerts_invalid_api_key(client):
     """Test alert listing with invalid API key"""
     response = await client.get(
         "/api/v1/alerts/",

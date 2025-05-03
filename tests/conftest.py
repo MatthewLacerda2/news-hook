@@ -118,14 +118,14 @@ async def sample_llm_models(test_db):
             model_name="llama3.1",
             input_token_price=0.003,
             output_token_price=0.004,
-            is_active=False
+            is_active=True
         ),
         LLMModel(
             id=str("550e8400-e29b-41d4-a716-446655440000"),
             model_name="gpt-4o",
             input_token_price=0.0015,
             output_token_price=0.0030,
-            is_active=True
+            is_active=False
         )
     ]
     
@@ -163,3 +163,17 @@ async def valid_user_with_credits(test_db, client, mock_google_verify):
     await test_db.refresh(user)
 
     return user_data
+
+@pytest_asyncio.fixture(autouse=True)
+async def mock_llm_validation(monkeypatch):
+    class FakeLLMValidationResponse:
+        approval = True
+        chance_score = 0.99
+        output_intent = {"intent": "fake"}
+        keywords = ["bitcoin", "price"]
+
+    async def fake_get_llm_validation(alert_request, llm_model_name):
+        return FakeLLMValidationResponse()
+
+    monkeypatch.setattr("app.utils.llm_validator.get_llm_validation", fake_get_llm_validation)
+    yield

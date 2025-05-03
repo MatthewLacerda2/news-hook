@@ -1,6 +1,3 @@
-#save embedding
-
-import asyncio
 from app.tasks.llm_apis.ollama import get_nomic_embeddings
 from app.core.database import get_db
 from app.models.alert_prompt import AlertPrompt

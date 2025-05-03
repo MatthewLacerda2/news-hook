@@ -1,17 +1,15 @@
 import os
 
-# Set test environment variables BEFORE importing anything
 os.environ["GOOGLE_CLIENT_ID"] = "dummy_client_id"
 os.environ["GOOGLE_CLIENT_SECRET"] = "dummy_client_secret"
 os.environ["GOOGLE_REDIRECT_URI"] = "http://localhost:8000/auth/callback"
-os.environ["SECRET_KEY"] = "your-secret-key-here"  # Match the key from app/core/config.py
+os.environ["SECRET_KEY"] = "your-secret-key-here"
 
 import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from unittest.mock import patch
-import uuid
 import app.models
 from httpx import AsyncClient
 from app.models.base import Base
@@ -147,19 +145,21 @@ async def verify_tables(test_db):
         print("Created tables:", [table[0] for table in tables])
 
 @pytest_asyncio.fixture
-async def valid_user_with_credits(test_db, client):
-    # Create user via signup endpoint
+async def valid_user_with_credits(test_db, client, mock_google_verify):
+    mock_google_verify.return_value = {
+        'email': 'test@example.com',
+        'sub': '12345',
+        'name': 'Test User'
+    }
     signup_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
     user_data = signup_response.json()["agent_controller"]
 
-    # Set user credits
     user = await test_db.get(AgentController, user_data["id"])
-    user.credit_balance = 100  # or any positive number
+    user.credit_balance = 10000
     await test_db.commit()
     await test_db.refresh(user)
 
-    # Return both user_data and API key for convenience
     return user_data

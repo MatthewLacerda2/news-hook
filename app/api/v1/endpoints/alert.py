@@ -15,7 +15,6 @@ from app.schemas.alert_prompt import (
 from app.core.security import get_user_by_api_key
 from app.models.llm_models import LLMModel
 from app.utils.llm_validator import get_llm_validation_price
-from app.tasks.llm_apis.ollama import get_nomic_embeddings
 import tiktoken
 from app.models.llm_validation import LLMValidation
 from sqlalchemy.ext.asyncio import AsyncSession

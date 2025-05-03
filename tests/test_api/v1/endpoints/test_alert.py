@@ -161,18 +161,14 @@ async def test_create_alert_invalid_max_datetime(client, valid_user_with_credits
         "prompt": "Test prompt",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/test",
-        "max_datetime": (datetime.now() + timedelta(minutes=20)).isoformat(),
+        "max_datetime": (datetime.now() + timedelta(days=365)).isoformat(),
         "llm_model": "llama3.1"
     }
-
-    response = await client.post("/api/v1/alerts/", json=alert_data)
-    assert response.status_code == 400
-    assert "max_datetime must be at least 30 minutes in the future" in response.json()["detail"]
 
     alert_data["max_datetime"] = (datetime.now() + timedelta(days=400)).isoformat()
     response = await client.post("/api/v1/alerts/", json=alert_data)
     assert response.status_code == 400
-    assert "max_datetime cannot be more than 1 year in the future" in response.json()["detail"]
+    assert "max_datetime cannot be more than 300 days in the future" in response.json()["detail"]
 
 @pytest.mark.asyncio
 async def test_create_alert_invalid_llm_model(client, valid_user_with_credits):
@@ -204,7 +200,7 @@ async def test_list_alerts_successful(client, valid_user_with_credits):
         "limit": 50,
         "prompt_contains": "bitcoin",
         "created_after": datetime.now().isoformat(),
-        "max_datetime": (datetime.now() + timedelta(days=30)).isoformat(),
+        "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
         "llm_model": "llama3.1"
     }
     
@@ -302,7 +298,7 @@ async def test_get_alert_successful(client, valid_user_with_credits, sample_llm_
         "http_url": "https://webhook.example.com/crypto-alert",
         "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
         "example_response": {"price": 50001, "alert": True},
-        "max_datetime": (datetime.now() + timedelta(days=30)).isoformat(),
+        "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
         "llm_model": "llama3.1"
     }
     

@@ -108,17 +108,17 @@ async def create_alert(
         user.credit_balance -= tokens_price
         db.add(llm_validation)
         db.add(new_alert)
-        print("Ate aqui nos ajudou o Senhor")
+        
         await db.commit()
         await db.refresh(new_alert)
-        print(f"Alert created: {new_alert.id}")
-        print("Running embedding generation in the background")
+        
         asyncio.create_task(
             generate_and_save_alert_prompt_embeddings(
                 new_alert.id,
                 alert_data.prompt,
                 alert_data.parsed_intent
-            )
+            ),
+            #TODO: save validation embeddings
         )
         
         return AlertPromptCreateSuccessResponse(
@@ -201,7 +201,22 @@ async def get_alert(
             detail="Not found"
         )
     
-    return alert
+    return alert_to_schema(alert)
+
+def alert_to_schema(alert: AlertPrompt) -> AlertPromptItem:
+    return AlertPromptItem(
+        id=alert.id,
+        prompt=alert.prompt,
+        http_method=alert.http_method,
+        http_url=alert.http_url,
+        http_headers=alert.http_headers,
+        expires_at=alert.expires_at,
+        response_format=alert.response_format,
+        tags=alert.tags or [],
+        status=alert.status,
+        created_at=alert.created_at,
+        llm_model=alert.llm_model
+    )
 
 #Alert can not be 'deleted'. They costed credits and thus have to be kept register of.
 @router.patch("/{alert_id}/cancel", status_code=status.HTTP_200_OK)

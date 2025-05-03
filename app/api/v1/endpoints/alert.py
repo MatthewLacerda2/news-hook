@@ -84,7 +84,6 @@ async def create_alert(
             parsed_intent_embedding = None,
             response_format=json.dumps(alert_data.schema_format) if alert_data.schema_format else {},
             expires_at=alert_data.max_datetime or (now + timedelta(days=300)),
-            max_datetime=alert_data.max_datetime or (now + timedelta(days=300)),
             llm_model=alert_data.llm_model,
             keywords=llm_validation_response.keywords,
             status=AlertStatus.ACTIVE

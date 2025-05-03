@@ -47,7 +47,6 @@ class AlertPrompt(Base):
     created_at = Column(DateTime, nullable=False, default=datetime.now())
     expires_at = Column(DateTime, nullable=False)
     llm_model = Column(String, nullable=False)
-    max_datetime = Column(DateTime, nullable=True)
 
     # Relationships
     user = relationship("AgentController", back_populates="alert_prompts")

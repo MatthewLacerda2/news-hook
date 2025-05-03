@@ -48,7 +48,6 @@ async def verify_document_matches_alert(
         
         await register_llm_verification(alert_prompt, verification_result, alert_prompt.llm_model, db)
             
-        # Check if verification passes our criteria
         if verification_result.approval and verification_result.chance_score >= 0.85:
             # Pass to LLM generation
             await get_llm_generation(alert_prompt, sourced_document, db)

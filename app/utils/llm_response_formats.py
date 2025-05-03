@@ -1,29 +1,21 @@
 from pydantic import BaseModel, Field
-from typing import Dict, Union
+from typing import Dict, Union, Any
 
 JsonPrimitive = Union[str, int, float, bool, None]
 
 class LLMValidationFormat(BaseModel):
     
-    approval: bool = Field(default=False, description="Whether the alert's request is a valid one")
-    chance_score: float = Field(default=0.0, ge=0.0, le=1.0, description="Validation estimate ranging from 0.0 to 1.0. Must be at least 0.85 to approve.")
+    approval: bool = Field(default=False, description="Is the alert's request valid?")
+    chance_score: float = Field(default=0.0, ge=0.0, le=1.0, description="Estimation of the quality of the request. Ranging from 0.0 to 1.0. Must be at least 0.85 to approve.")
     
-    output_intent: str = Field(description="What the LLM understood from the alert request")
+    output_intent: Any = Field(description="What the LLM understood from the alert request")
     keywords: list[str] = Field(description="The keywords that MUST be in the data that triggers the alert")
-    
-    def __init__(self, approval: bool, chance_score: float):
-        self.approval = approval
-        self.chance_score = chance_score
 
 
 class LLMVerificationFormat(BaseModel):
     
     approval: bool = Field(default=False, description="Whether the document matches the alert's intent")
     chance_score: float = Field(default=0.0, ge=0.0, le=1.0, description="Validation estimate ranging from 0.0 to 1.0. Must be at least 0.85 to approve.")
-    
-    def __init__(self, approval: bool, chance_score: float):
-        self.approval = approval
-        self.chance_score = chance_score
         
 class LLMGenerationFormat(BaseModel):
     
@@ -31,8 +23,3 @@ class LLMGenerationFormat(BaseModel):
     tags: list[str] = Field(description="The tags for the alert")
     source_url: str = Field(description="The URL of the source that triggered the alert")
     structured_data: Dict[str, JsonPrimitive] = Field(description="The structured JSON response as requested by the alert requester")
-    
-    def __init__(self, output: str, tags: list[str], structured_data: Dict[str, JsonPrimitive]):
-        self.output = output
-        self.tags = tags
-        self.structured_data = structured_data

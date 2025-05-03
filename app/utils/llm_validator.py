@@ -4,6 +4,11 @@ from app.tasks.llm_apis.ollama import get_ollama_validation
 from app.tasks.llm_apis.gemini import get_gemini_validation
 import tiktoken
 from app.models.llm_models import LLMModel
+import json
+
+def count_tokens(text: str, model: str = "gpt-3.5-turbo") -> int:
+    encoding = tiktoken.encoding_for_model(model)
+    return len(encoding.encode(text))
 
 async def get_llm_validation(alert_request: AlertPromptCreateRequestBase, llm_model: str) -> LLMValidationFormat:
     """
@@ -27,6 +32,11 @@ async def get_llm_validation(alert_request: AlertPromptCreateRequestBase, llm_mo
         print(f"Unsupported LLM model: {llm_model}\n{msg}")
         raise ValueError(f"Unsupported LLM model: {llm_model}")
     
+    print(f"Validation result: {validation_result}")
+    
+    if isinstance(validation_result, str):
+        validation_result = LLMValidationFormat(**json.loads(validation_result))    
+    
     return validation_result
 
 def get_llm_validation_price(alert_request: AlertPromptCreateRequestBase, validation_result: LLMValidationFormat, llm_model: LLMModel) -> float:
@@ -34,8 +44,8 @@ def get_llm_validation_price(alert_request: AlertPromptCreateRequestBase, valida
     Get the price of the LLM validation
     """
     
-    input_token_count = tiktoken.count_tokens(alert_request.prompt) + tiktoken.count_tokens(str(alert_request.parsed_intent))
-    output_token_count = tiktoken.count_tokens(validation_result)
+    input_token_count = count_tokens(alert_request.prompt, llm_model.model_name) + count_tokens(str(alert_request.parsed_intent), llm_model.model_name)
+    output_token_count = count_tokens(validation_result)
     
     input_price = input_token_count * (llm_model.input_token_price/1000000)
     output_price = output_token_count * (llm_model.output_token_price/1000000)

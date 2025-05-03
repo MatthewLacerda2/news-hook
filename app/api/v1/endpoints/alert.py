@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+import asyncio
 
 from app.core.database import get_db
 from app.models.agent_controller import AgentController
@@ -20,7 +21,7 @@ from app.models.llm_validation import LLMValidation
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy import func
-
+from app.tasks.save_embedding import generate_and_save_embeddings
 router = APIRouter()
 
 @router.post("/", response_model=AlertPromptCreateSuccessResponse, status_code=status.HTTP_201_CREATED)
@@ -68,17 +69,16 @@ async def create_alert(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Insufficient credits"
             )
-        
-        # Create new alert
+            
         new_alert = AlertPrompt(
             user_id=user.id,
             prompt=alert_data.prompt,
-            prompt_embedding = await get_nomic_embeddings(alert_data.prompt),
+            prompt_embedding = None,
             http_method=alert_data.http_method,
             http_url=str(alert_data.http_url),
             http_headers=alert_data.http_headers or {},
             parsed_intent=alert_data.parsed_intent or {},
-            parsed_intent_embedding = await get_nomic_embeddings(str(alert_data.parsed_intent)),
+            parsed_intent_embedding = None,
             example_response=alert_data.example_response or {},
             max_datetime=alert_data.max_datetime or (now + timedelta(days=300)),
             llm_model=alert_data.llm_model,
@@ -88,10 +88,10 @@ async def create_alert(
 
         llm_validation = LLMValidation(
             prompt=alert_data.prompt,
-            prompt_embedding=await get_nomic_embeddings(alert_data.prompt),
+            prompt_embedding=None,
             prompt_id=new_alert.id,
             parsed_intent=alert_data.parsed_intent,
-            parsed_intent_embedding=await get_nomic_embeddings(str(alert_data.parsed_intent)),
+            parsed_intent_embedding=None,
             approval=llm_validation_response.approval,
             chance_score=llm_validation_response.chance_score,
             input_tokens=tiktoken.count_tokens(alert_data.prompt) + tiktoken.count_tokens(str(alert_data.parsed_intent)),
@@ -107,6 +107,15 @@ async def create_alert(
         db.add(new_alert)
         await db.commit()
         await db.refresh(new_alert)
+        
+        # Start the embedding generation in the background
+        asyncio.create_task(
+            generate_and_save_embeddings(
+                new_alert.id,
+                alert_data.prompt,
+                alert_data.parsed_intent
+            )
+        )
         
         return AlertPromptCreateSuccessResponse(
             id=new_alert.id,

@@ -5,7 +5,7 @@ from app.tasks.llm_apis.gemini import get_gemini_validation
 import tiktoken
 from app.models.llm_models import LLMModel
 
-async def llm_validation(alert_request: AlertPromptCreateRequestBase, llm_model: str) -> LLMValidationFormat:
+async def llm_validator(alert_request: AlertPromptCreateRequestBase, llm_model: str) -> LLMValidationFormat:
     """
     Validate the alert request using LLM
     """
@@ -41,5 +41,3 @@ def get_llm_validation_price(alert_request: AlertPromptCreateRequestBase, valida
     output_price = output_token_count * (llm_model.output_token_price/1000000)
     
     return input_price, output_price
-    
-    

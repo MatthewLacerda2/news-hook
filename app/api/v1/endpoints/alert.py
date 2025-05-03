@@ -15,7 +15,7 @@ from app.schemas.alert_prompt import (
 from app.core.security import get_user_by_api_key
 from app.models.llm_models import LLMModel
 from app.utils.llm_validator import get_llm_validation, get_llm_validation_price
-import tiktoken
+from app.utils.count_tokens import count_tokens
 from app.models.llm_validation import LLMValidation
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -70,7 +70,7 @@ async def create_alert(
             )
             
         new_alert = AlertPrompt(
-            user_id=user.id,
+            agent_controller_id=user.id,
             prompt=alert_data.prompt,
             prompt_embedding = None,
             http_method=alert_data.http_method,
@@ -78,7 +78,7 @@ async def create_alert(
             http_headers=alert_data.http_headers or {},
             parsed_intent=alert_data.parsed_intent or {},
             parsed_intent_embedding = None,
-            example_response=alert_data.example_response or {},
+            response_format=alert_data.schema_format or {},
             max_datetime=alert_data.max_datetime or (now + timedelta(days=300)),
             llm_model=alert_data.llm_model,
             keywords=llm_validation_response.keywords,
@@ -93,21 +93,21 @@ async def create_alert(
             parsed_intent_embedding=None,
             approval=llm_validation_response.approval,
             chance_score=llm_validation_response.chance_score,
-            input_tokens=tiktoken.count_tokens(alert_data.prompt) + tiktoken.count_tokens(str(alert_data.parsed_intent)),
+            input_tokens=count_tokens(alert_data.prompt, llm_model.model_name) + count_tokens(str(alert_data.parsed_intent), llm_model.model_name),
             input_price=input_price,
-            output_tokens=tiktoken.count_tokens(llm_validation_response),
+            output_tokens=count_tokens(llm_validation_response.output_intent, llm_model.model_name),
             output_price=output_price,
             llm_id=llm_model.id,
             date_time=datetime.now()
         )
-        
+        print("Ate aqui nos ajudou o Senhor")
         user.credit_balance -= tokens_price
         db.add(llm_validation)
         db.add(new_alert)
         await db.commit()
         await db.refresh(new_alert)
-        
-        # Start the embedding generation in the background
+        print(f"Alert created: {new_alert.id}")
+        print("Running embedding generation in the background")
         asyncio.create_task(
             generate_and_save_embeddings(
                 new_alert.id,

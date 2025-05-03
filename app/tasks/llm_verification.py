@@ -7,7 +7,7 @@ from app.tasks.llm_apis.ollama import get_ollama_verification
 from app.tasks.llm_apis.gemini import get_gemini_verification
 from app.tasks.llm_generation import get_llm_generation
 from app.utils.sourced_data import SourcedData
-import tiktoken
+from app.utils.count_tokens import count_tokens
 from app.models.llm_verification import LLMVerification
 from app.models.llm_models import LLMModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -62,8 +62,8 @@ async def verify_document_matches_alert(
         await db.close()
         
 async def register_llm_verification(alert_prompt: AlertPrompt, verification_result: LLMVerificationFormat, llm_model: str, db: AsyncSession):
-    input_tokens_count = tiktoken.count_tokens(alert_prompt.prompt)
-    output_tokens_count = tiktoken.count_tokens(verification_result.output)
+    input_tokens_count = count_tokens(alert_prompt.prompt, alert_prompt.llm_model)
+    output_tokens_count = count_tokens(verification_result.output, alert_prompt.llm_model)
     
     stmt = select(LLMModel).where(LLMModel.model_name == llm_model)
     result = await db.execute(stmt)

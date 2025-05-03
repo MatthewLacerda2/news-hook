@@ -2,20 +2,9 @@ from app.utils.llm_response_formats import LLMValidationFormat
 from app.schemas.alert_prompt import AlertPromptCreateRequestBase
 from app.tasks.llm_apis.ollama import get_ollama_validation
 from app.tasks.llm_apis.gemini import get_gemini_validation
-import tiktoken
+from app.utils.count_tokens import count_tokens
 from app.models.llm_models import LLMModel
 import json
-
-def count_tokens(text: str, model: str) -> int:
-    model_to_encoding = {
-        "llama3.1": "cl100k_base",
-        "gpt-3.5-turbo": "cl100k_base",
-        "gpt-4": "cl100k_base",
-        "gemini-2.5-pro": "cl100k_base",
-    }
-    encoding_name = model_to_encoding.get(model, "cl100k_base")
-    encoding = tiktoken.get_encoding(encoding_name)
-    return len(encoding.encode(text))
 
 async def get_llm_validation(alert_request: AlertPromptCreateRequestBase, llm_model: str) -> LLMValidationFormat:
     """

@@ -12,7 +12,7 @@ from app.utils.llm_response_formats import LLMGenerationFormat
 import requests
 from app.utils.sourced_data import SourcedData
 from app.models.monitored_data import MonitoredData
-import tiktoken
+from app.utils.count_tokens import count_tokens
 from sqlalchemy import select
 
 async def llm_generation(alert_prompt: AlertPrompt, sourced_document: SourcedData, db: AsyncSession) -> NewsEvent:
@@ -93,8 +93,8 @@ async def save_monitored_data(sourced_document: SourcedData, db: AsyncSession):
 
 async def register_credit_usage(alert_prompt: AlertPrompt, sourced_document: SourcedData, generated_response: LLMGenerationFormat, db: AsyncSession):
     
-    input_tokens_count = tiktoken.count_tokens(alert_prompt.prompt) + tiktoken.count_tokens(generated_response.output)
-    output_tokens_count = tiktoken.count_tokens(generated_response.output)
+    input_tokens_count = count_tokens(alert_prompt.prompt, alert_prompt.llm_model) + count_tokens(generated_response.output, alert_prompt.llm_model)
+    output_tokens_count = count_tokens(generated_response.output, alert_prompt.llm_model)
     
     # find the alert_prompt based on its id
     stmt = select(AlertPrompt).where(AlertPrompt.id == alert_prompt.id)

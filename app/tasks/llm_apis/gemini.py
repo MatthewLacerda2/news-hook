@@ -5,7 +5,7 @@ from app.utils.llm_response_formats import LLMValidationFormat, LLMVerificationF
 
 client = genai.Client(api_key="YOUR_API_KEY") #TODO: Add API key
 
-gemini_temperature = 0.5
+gemini_temperature = 0.0
 
 async def get_gemini_validation(alert_prompt: str, alert_parsed_intent: str) -> LLMValidationFormat:
     

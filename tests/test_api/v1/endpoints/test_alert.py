@@ -163,7 +163,7 @@ async def test_create_alert_invalid_max_datetime(client, valid_user_with_credits
         "http_method": "POST",
         "http_url": "https://webhook.example.com/test",
         "max_datetime": (datetime.now() + timedelta(minutes=20)).isoformat(),
-        "llm_model": "gemini-2.5-pro"
+        "llm_model": "llama3.1"
     }
 
     response = await client.post("/api/v1/alerts/", json=alert_data)
@@ -206,7 +206,7 @@ async def test_list_alerts_successful(client, valid_user_with_credits):
         "prompt_contains": "bitcoin",
         "created_after": datetime.now().isoformat(),
         "max_datetime": (datetime.now() + timedelta(days=30)).isoformat(),
-        "llm_model": "gemini-2.5-pro"
+        "llm_model": "llama3.1"
     }
     
     response = await client.get(
@@ -305,7 +305,7 @@ async def test_get_alert_successful(client, valid_user_with_credits):
         "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
         "example_response": {"price": 50001, "alert": True},
         "max_datetime": (datetime.now() + timedelta(days=30)).isoformat(),
-        "llm_model": "gemini-2.5-pro"
+        "llm_model": "llama3.1"
     }
     
     create_response = await client.post(
@@ -360,7 +360,7 @@ async def test_cancel_alert_successful(client, valid_user_with_credits):
         "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
         "example_response": {"price": 50001, "alert": True},
         "max_datetime": (datetime.now() + timedelta(days=30)).isoformat(),
-        "llm_model": "gemini-2.5-pro"
+        "llm_model": "llama3.1"
     }
     
     create_response = await client.post(
@@ -411,7 +411,7 @@ async def test_cancel_alert_wrong_user(client, valid_user_with_credits, mock_goo
         "http_method": "POST",
         "http_url": "https://webhook.example.com/test",
         "max_datetime": (datetime.now() + timedelta(days=30)).isoformat(),
-        "llm_model": "gemini-2.5-pro",
+        "llm_model": "llama3.1",
         "parsed_intent": {"foo": "bar"},
         "example_response": {"foo": "bar"}
     }

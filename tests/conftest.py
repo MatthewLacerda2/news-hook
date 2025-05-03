@@ -145,3 +145,21 @@ async def verify_tables(test_db):
         result = await conn.execute(text("SELECT name FROM sqlite_master WHERE type='table';"))
         tables = result.fetchall()
         print("Created tables:", [table[0] for table in tables])
+
+@pytest_asyncio.fixture
+async def valid_user_with_credits(test_db, client):
+    # Create user via signup endpoint
+    signup_response = await client.post(
+        "/api/v1/auth/signup",
+        json={"access_token": "valid_google_token"}
+    )
+    user_data = signup_response.json()["agent_controller"]
+
+    # Set user credits
+    user = await test_db.get(AgentController, user_data["id"])
+    user.credit_balance = 100  # or any positive number
+    await test_db.commit()
+    await test_db.refresh(user)
+
+    # Return both user_data and API key for convenience
+    return user_data

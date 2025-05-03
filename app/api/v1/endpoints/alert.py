@@ -228,6 +228,6 @@ async def cancel_alert(
     
     # Update alert status to cancelled
     alert.status = AlertStatus.CANCELLED
-    db.commit()
+    await db.commit()
     
     return {"message": "Alert cancelled successfully"}

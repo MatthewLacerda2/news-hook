@@ -25,12 +25,11 @@ async def test_create_alert_successful(client, valid_user_with_credits, sample_l
         json=alert_data
     )
     
-    print(response.status_code, response.json())
     assert response.status_code == 201
     AlertPromptCreateSuccessResponse.model_validate(response.json())
 
 @pytest.mark.asyncio
-async def test_create_alert_invalid_api_key(client):
+async def test_create_alert_invalid_api_key(client, test_db):
     """Test alert creation with invalid API key"""
     alert_data = {
         "prompt": "Test prompt",
@@ -48,7 +47,7 @@ async def test_create_alert_invalid_api_key(client):
     assert "Invalid API key" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_create_alert_mismatched_user_api_key(client, mock_google_verify):
+async def test_create_alert_mismatched_user_api_key(client, mock_google_verify, test_db):
     """Test alert creation with API key not owned by user"""
     mock_google_verify.return_value = {
         'email': 'test1@example.com',
@@ -282,7 +281,7 @@ async def test_list_alerts_minimal_parameters(client, valid_user_with_credits):
     AlertPromptListResponse.model_validate(data)
 
 @pytest.mark.asyncio
-async def test_list_alerts_invalid_api_key(client):
+async def test_list_alerts_invalid_api_key(client, test_db):
     """Test alert listing with invalid API key"""
     response = await client.get(
         "/api/v1/alerts/",
@@ -292,12 +291,11 @@ async def test_list_alerts_invalid_api_key(client):
     assert "Invalid API key" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_get_alert_successful(client, valid_user_with_credits):
+async def test_get_alert_successful(client, valid_user_with_credits, sample_llm_models, test_db):
     """Test successful alert retrieval"""
     user_data = valid_user_with_credits
     api_key = user_data["api_key"]
     
-    # Create an alert first
     alert_data = {
         "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
         "http_method": "POST",
@@ -347,12 +345,11 @@ async def test_get_alert_not_found(client, valid_user_with_credits):
     assert "Not found" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_cancel_alert_successful(client, valid_user_with_credits):
+async def test_cancel_alert_successful(client, valid_user_with_credits, sample_llm_models, test_db):
     """Test successful alert cancellation"""
     user_data = valid_user_with_credits
     api_key = user_data["api_key"]
     
-    # Create an alert first
     alert_data = {
         "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
         "http_method": "POST",
@@ -390,7 +387,7 @@ async def test_cancel_alert_successful(client, valid_user_with_credits):
     assert cancelled_alert["status"] == AlertStatus.CANCELLED
 
 @pytest.mark.asyncio
-async def test_cancel_alert_invalid_api_key(client):
+async def test_cancel_alert_invalid_api_key(client, test_db):
     """Test attempting to cancel an alert with invalid API key"""
     
     response = await client.patch(
@@ -401,19 +398,19 @@ async def test_cancel_alert_invalid_api_key(client):
     assert "Unauthorized" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_cancel_alert_wrong_user(client, valid_user_with_credits, mock_google_verify):
+async def test_cancel_alert_wrong_user(client, valid_user_with_credits, mock_google_verify, sample_llm_models):
     """Test attempting to cancel an alert belonging to another user"""
     user_data = valid_user_with_credits
     api_key = user_data["api_key"]
     
     alert_data = {
-        "prompt": "Test alert",
+        "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/test",
+        "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
+        "example_response": {"price": 50001, "alert": True},
         "max_datetime": (datetime.now() + timedelta(days=30)).isoformat(),
         "llm_model": "llama3.1",
-        "parsed_intent": {"foo": "bar"},
-        "example_response": {"foo": "bar"}
     }
     
     create_response = await client.post(

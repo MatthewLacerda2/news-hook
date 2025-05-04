@@ -26,6 +26,9 @@ async def process_document_for_vector_search(sourced_document: SourcedData):
         
         active_alerts = await find_matching_alerts(db, sourced_document.content)
         
+        # Sort alerts by keyword overlap before processing
+        active_alerts = sort_alerts_by_keyword_overlap(active_alerts)
+        
         for alert in active_alerts:
             document_embedding = await get_nomic_embeddings(sourced_document.content)
             
@@ -74,3 +77,31 @@ def calculate_cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
     norm1 = np.linalg.norm(vec1)
     norm2 = np.linalg.norm(vec2)
     return dot_product / (norm1 * norm2)
+
+def count_keyword_matches(alert_keywords, reference_keywords):
+    count = 0
+    for ref_kw in reference_keywords:
+        for kw in alert_keywords:
+            if ref_kw in kw or kw in ref_kw:
+                count += 1
+                break  # Only count one match per reference keyword
+    return count
+
+def sort_alerts_by_keyword_overlap(active_alerts):
+    if not active_alerts:
+        return []
+
+    reference_keywords = active_alerts[0].keywords or []
+    # Ensure all keywords are strings
+    reference_keywords = [str(k) for k in reference_keywords]
+
+    def match_count(alert):
+        alert_keywords = alert.keywords or []
+        alert_keywords = [str(k) for k in alert_keywords]
+        return count_keyword_matches(alert_keywords, reference_keywords)
+
+    # Sort by match count (descending), but keep the first element at the top
+    sorted_alerts = [active_alerts[0]] + sorted(
+        active_alerts[1:], key=match_count, reverse=True
+    )
+    return sorted_alerts

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from app.schemas.user_document import UserDocumentCreateRequest, UserDocumentCreateResponse
 from app.core.database import get_db
 from app.models.agent_controller import AgentController
@@ -16,15 +16,21 @@ async def post_document(
     user_document: UserDocumentCreateRequest,
     db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key),
+    x_user_id: str = Header(..., alias="X-User-Id"),
 ):
     """
     Create a new document
     """
+    
+    #TODO: do like create_alert and have this delegated to someone else
+    if user.id != x_user_id:
+        raise HTTPException(status_code=403, detail="Not authenticated: user_id and api_key mismatch")
+    
     # Validate name and content length
     if len(user_document.name) < 3:
-        raise HTTPException(status_code=400, detail="name must be at least 3 characters long")
+        raise HTTPException(status_code=401, detail="name must be at least 3 characters long")
     if len(user_document.content) < 16:
-        raise HTTPException(status_code=400, detail="content must be at least 16 characters long")
+        raise HTTPException(status_code=401, detail="content must be at least 16 characters long")
 
     try:
         embedding_response = await get_nomic_embeddings(user_document.content)

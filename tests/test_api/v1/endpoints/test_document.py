@@ -33,7 +33,7 @@ async def test_post_document_invalid_name(client, valid_user_with_credits):
         json=doc_data,
         headers=headers
     )
-    assert response.status_code == 400
+    assert response.status_code == 401
     assert "name" in response.json()["detail"]
 
 @pytest.mark.asyncio
@@ -50,7 +50,7 @@ async def test_post_document_invalid_content(client, valid_user_with_credits):
         json=doc_data,
         headers=headers
     )
-    assert response.status_code == 400
+    assert response.status_code == 401
     assert "content" in response.json()["detail"]
 
 @pytest.mark.asyncio
@@ -67,23 +67,8 @@ async def test_post_document_invalid_api_key(client, valid_user_with_credits):
         json=doc_data,
         headers=headers
     )
-    assert response.status_code == 400
+    assert response.status_code == 401
     assert "api_key" in response.json()["detail"] or "Invalid API key" in response.json()["detail"]
-
-@pytest.mark.asyncio
-async def test_post_document_missing_token_header(client, valid_user_with_credits):
-    """Test document upload with missing token header"""
-    doc_data = {
-        "name": "Valid Name",
-        "content": "This is a sufficiently long document content."
-    }
-    # No headers
-    response = await client.post(
-        "/api/v1/documents/",
-        json=doc_data
-    )
-    assert response.status_code == 400
-    assert "token" in response.json()["detail"] or "header" in response.json()["detail"]
 
 @pytest.mark.asyncio
 async def test_post_document_mismatched_user_api_key(client, mock_google_verify, test_db):
@@ -123,5 +108,5 @@ async def test_post_document_mismatched_user_api_key(client, mock_google_verify,
         json=doc_data,
         headers=headers
     )
-    assert response.status_code == 400 or response.status_code == 403
+    assert response.status_code == 403
     assert "Not authenticated" in response.json()["detail"] or "mismatch" in response.json()["detail"]

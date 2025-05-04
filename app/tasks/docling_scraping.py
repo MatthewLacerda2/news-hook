@@ -4,7 +4,6 @@ import requests
 from datetime import datetime, time
 from typing import List
 from sqlalchemy import select
-from sqlalchemy.orm import Session
 from docling.document_converter import DocumentConverter
 
 from app.core.database import SessionLocal
@@ -13,11 +12,12 @@ from app.tasks.vector_search import process_document_for_vector_search
 from app.models.alert_prompt import Alert, AlertStatus
 from app.utils.sourced_data import SourcedData, DataSource
 import numpy as np
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-async def process_webscrape_source(source: WebscrapeSource, db: Session):
+async def process_webscrape_source(source: WebscrapeSource, db: AsyncSession):
     """Process a single webscrape source"""
     try:
         headers = {
@@ -71,7 +71,8 @@ async def check_and_process_sources():
             )
         )
         
-        sources: List[WebscrapeSource] = db.execute(query).scalars().all()
+        result = await db.execute(query)
+        sources: List[WebscrapeSource] = result.scalars().all()
         
         tasks = [process_webscrape_source(source, db) for source in sources]
         await asyncio.gather(*tasks)
@@ -79,7 +80,7 @@ async def check_and_process_sources():
     except Exception as e:
         logger.error(f"Error in check_and_process_sources: {str(e)}")
     finally:
-        db.close()
+        await db.close()
 
 def is_night_time() -> bool:
     """Check if current time is between 11 PM and 7 AM"""
@@ -95,12 +96,15 @@ async def mark_expired_alerts():
     """Mark expired alerts as expired"""
     db = SessionLocal()
     try:
-        expired_alerts = db.query(Alert).filter(Alert.expires_at < datetime.now()).all()
+        stmt = select(Alert).where(Alert.expires_at < datetime.now())
+        result = await db.execute(stmt)
+        expired_alerts = result.scalars().all()
+        
         for alert in expired_alerts:
             alert.status = AlertStatus.EXPIRED
-        db.commit()
+        await db.commit()
     finally:
-        db.close()
+        await db.close()
 
 async def run_periodic_check(day_interval: int = 60 * 10, night_interval: int = 60 * 30):
     """

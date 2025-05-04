@@ -5,7 +5,7 @@ from datetime import timedelta
 from app.core.security import create_access_token
 
 @pytest.mark.asyncio
-async def test_signup_successful(client, mock_google_verify):
+async def test_signup_successful(client, test_db, mock_google_verify):
     """Test successful signup with valid Google token"""
     response = await client.post(
         "/api/v1/auth/signup",
@@ -22,7 +22,7 @@ async def test_signup_successful(client, mock_google_verify):
     assert token_response.agent_controller.email == "test@example.com"
     assert token_response.agent_controller.name == "Test User"
     assert token_response.agent_controller.google_id == "12345"
-    assert token_response.agent_controller.credits == 0
+    assert token_response.agent_controller.credit_balance == 0
     assert token_response.agent_controller.api_key is not None
 
 @pytest.mark.asyncio
@@ -39,22 +39,26 @@ async def test_signup_invalid_token(client, mock_google_verify):
     assert response.json()["detail"] == "Invalid Google token"
 
 @pytest.mark.asyncio
-async def test_signup_existing_user(client):
+async def test_signup_existing_user(client, mock_google_verify, test_db):
     """Test signup attempt with existing Google account"""
     # First signup
-    await client.post(
+    first_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
+    print(f"\nFirst signup response: {first_response.status_code}")
+    print(f"First signup body: {first_response.json()}")
     
     # Try to signup again with same Google account
-    response = await client.post(
+    second_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
+    print(f"\nSecond signup response: {second_response.status_code}")
+    print(f"Second signup body: {second_response.json()}")
     
-    assert response.status_code == 409
-    assert response.json()["detail"] == "User already exists"
+    assert second_response.status_code == 409
+    assert second_response.json()["detail"] == "User already exists"
 
 @pytest.mark.asyncio
 async def test_signup_missing_token(client):
@@ -67,7 +71,7 @@ async def test_signup_missing_token(client):
     assert response.status_code == 422
 
 @pytest.mark.asyncio
-async def test_login_successful(client):
+async def test_login_successful(client, mock_google_verify, test_db):
     """Test successful login with valid Google token for existing user"""
     
     await client.post(
@@ -88,11 +92,11 @@ async def test_login_successful(client):
     assert token_response.agent_controller.email == "test@example.com"
     assert token_response.agent_controller.name == "Test User"
     assert token_response.agent_controller.google_id == "12345"
-    assert token_response.agent_controller.credits == 0
+    assert token_response.agent_controller.credit_balance == 0
     assert token_response.agent_controller.api_key is not None
 
 @pytest.mark.asyncio
-async def test_login_nonexistent_user(client, mock_google_verify):
+async def test_login_nonexistent_user(client, mock_google_verify, test_db):
     """Test login attempt with Google account that hasn't signed up"""
     
     mock_google_verify.return_value = {
@@ -133,13 +137,15 @@ async def test_login_missing_token(client):
     assert response.status_code == 422  # Validation error
 
 @pytest.mark.asyncio
-async def test_check_credits_successful(client):
+async def test_check_credits_successful(client, mock_google_verify, test_db):
     """Test successful credits check for authenticated user"""
     
     signup_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
+    print("Signup response:", signup_response.json())
+    
     access_token = signup_response.json()["access_token"]
     
     response = await client.get(
@@ -149,8 +155,8 @@ async def test_check_credits_successful(client):
     
     assert response.status_code == 200
     data = response.json()
-    assert "credits" in data
-    assert isinstance(data["credits"], int)
+    assert "credit_balance" in data
+    assert isinstance(data["credit_balance"], float)
 
 @pytest.mark.asyncio
 async def test_check_credits_unauthorized(client):
@@ -172,7 +178,7 @@ async def test_check_credits_invalid_token(client):
     assert response.json()["detail"] == "Invalid token"
 
 @pytest.mark.asyncio
-async def test_check_credits_user_not_found(client):
+async def test_check_credits_user_not_found(client, verify_tables):
     """Test credits check for non-existent user"""
     
     nonexistent_user_id = str(uuid.uuid4())
@@ -190,34 +196,7 @@ async def test_check_credits_user_not_found(client):
     assert response.json()["detail"] == "User not found"
 
 @pytest.mark.asyncio
-async def test_check_credits_after_modification(client):
-    """Test credits check after credits have been modified"""
-    # First create a user through signup
-    signup_response = await client.post(
-        "/api/v1/auth/signup",
-        json={"access_token": "valid_google_token"}
-    )
-    access_token = signup_response.json()["access_token"]
-    
-    # Modify user's credits in the database (this would normally be done through an API endpoint)
-    # Note: You'll need to implement this part based on your database access pattern
-    # For example: test_db.update_user_credits(user_id, 100)
-    
-    # Check credits after modification
-    response = await client.get(
-        "/api/v1/auth/credits",
-        headers={"Authorization": f"Bearer {access_token}"}
-    )
-    
-    assert response.status_code == 200
-    data = response.json()
-    assert "credits" in data
-    assert isinstance(data["credits"], int)
-    # Assert the new credit amount if you implemented the credit modification
-    # assert data["credits"] == 100
-
-@pytest.mark.asyncio
-async def test_delete_account_successful(client):
+async def test_delete_account_successful(client, mock_google_verify, test_db):
     """Test successful account deletion with valid token"""
     
     signup_response = await client.post(
@@ -264,7 +243,7 @@ async def test_delete_account_successful(client):
         "/api/v1/alerts/",
         headers={"Authorization": f"Bearer {access_token}"}
     )
-    assert alerts_response.status_code == 401
+    assert alerts_response.status_code == 404
 
 @pytest.mark.asyncio
 async def test_delete_account_invalid_token(client):
@@ -275,4 +254,4 @@ async def test_delete_account_invalid_token(client):
     )
     
     assert response.status_code == 401
-    assert response.json()["detail"] == "Invalid token"
+    assert response.json()["detail"] == "Could not validate credentials"

@@ -1,8 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
-from uuid import UUID
+import asyncio
 
 from app.core.database import get_db
 from app.models.agent_controller import AgentController
@@ -15,41 +14,48 @@ from app.schemas.alert_prompt import (
 )
 from app.core.security import get_user_by_api_key
 from app.models.llm_models import LLMModel
-from app.utils.llm_validator import get_llm_validation_price
-from app.tasks.llm_apis.ollama import get_nomic_embeddings
-import tiktoken
+from app.utils.llm_validator import get_llm_validation, get_llm_validation_price
+from app.utils.count_tokens import count_tokens
 from app.models.llm_validation import LLMValidation
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy import func
+from app.tasks.save_embedding import generate_and_save_embeddings
+import json
+import uuid
 
 router = APIRouter()
 
 @router.post("/", response_model=AlertPromptCreateSuccessResponse, status_code=status.HTTP_201_CREATED)
 async def create_alert(
     alert_data: AlertPromptCreateRequestBase,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key)
 ):
     """Create a new alert for monitoring"""
 
     if user.credit_balance <= 0:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="Insufficient credits"
         )
     
     try:
         now = datetime.now()
         
-        llm_model = db.query(LLMModel).filter(
+        stmt = select(LLMModel).where(
             LLMModel.model_name == alert_data.llm_model,
             LLMModel.is_active == True
-        ).first()
+        )
+        result = await db.execute(stmt)
+        llm_model = result.scalar_one_or_none()
         if not llm_model:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"LLM model '{alert_data.llm_model}' not found"
+                detail=f"Invalid LLM model"
             )
 
-        llm_validation_response = await llm_validation(alert_data, llm_model)
+        llm_validation_response = await get_llm_validation(alert_data, llm_model.model_name)
 
         if not llm_validation_response.approval or llm_validation_response.chance_score < 0.85:
             raise HTTPException(
@@ -57,53 +63,62 @@ async def create_alert(
                 detail="Invalid alert request"
             )
         
-        input_price, output_price = await get_llm_validation_price(alert_data, llm_validation_response, llm_model)
+        input_price, output_price = get_llm_validation_price(alert_data, llm_validation_response, llm_model)
         tokens_price = input_price + output_price
         
         if user.credit_balance < tokens_price:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
+                status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient credits"
             )
-        
-        # Create new alert
+            
         new_alert = AlertPrompt(
-            user_id=user.id,
+            id=str(uuid.uuid4()),
+            agent_controller_id=user.id,
             prompt=alert_data.prompt,
-            prompt_embedding = await get_nomic_embeddings(alert_data.prompt),
+            prompt_embedding = None,
             http_method=alert_data.http_method,
             http_url=str(alert_data.http_url),
             http_headers=alert_data.http_headers or {},
-            parsed_intent=alert_data.parsed_intent or {},
-            parsed_intent_embedding = await get_nomic_embeddings(str(alert_data.parsed_intent)),
-            example_response=alert_data.example_response or {},
-            max_datetime=alert_data.max_datetime or (now + timedelta(days=300)),
+            parsed_intent=json.dumps(alert_data.parsed_intent) if alert_data.parsed_intent else {},
+            parsed_intent_embedding = None,
+            response_format=json.dumps(alert_data.schema_format) if alert_data.schema_format else {},
+            expires_at=alert_data.max_datetime or (now + timedelta(days=300)),
             llm_model=alert_data.llm_model,
             keywords=llm_validation_response.keywords,
             status=AlertStatus.ACTIVE
         )
 
         llm_validation = LLMValidation(
+            id=str(uuid.uuid4()),
             prompt=alert_data.prompt,
-            prompt_embedding=await get_nomic_embeddings(alert_data.prompt),
+            prompt_embedding=None,
             prompt_id=new_alert.id,
-            parsed_intent=alert_data.parsed_intent,
-            parsed_intent_embedding=await get_nomic_embeddings(str(alert_data.parsed_intent)),
+            parsed_intent=json.dumps(alert_data.parsed_intent),
+            parsed_intent_embedding=None,
             approval=llm_validation_response.approval,
             chance_score=llm_validation_response.chance_score,
-            input_tokens=tiktoken.count_tokens(alert_data.prompt) + tiktoken.count_tokens(str(alert_data.parsed_intent)),
+            input_tokens=count_tokens(alert_data.prompt, llm_model.model_name) + count_tokens(str(alert_data.parsed_intent), llm_model.model_name),
             input_price=input_price,
-            output_tokens=tiktoken.count_tokens(llm_validation_response),
+            output_tokens=count_tokens(llm_validation_response.output_intent, llm_model.model_name),
             output_price=output_price,
             llm_id=llm_model.id,
             date_time=datetime.now()
         )
-        
         user.credit_balance -= tokens_price
         db.add(llm_validation)
         db.add(new_alert)
-        db.commit()
-        db.refresh(new_alert)
+        
+        await db.commit()
+        await db.refresh(new_alert)
+        
+        asyncio.create_task(
+            generate_and_save_embeddings(
+                new_alert.id,
+                alert_data.prompt,
+                alert_data.parsed_intent
+            )
+        )
         
         return AlertPromptCreateSuccessResponse(
             id=new_alert.id,
@@ -113,6 +128,8 @@ async def create_alert(
             keywords=llm_validation_response.keywords
         )
         
+    except HTTPException as e:
+        raise e  # re-raise HTTPExceptions so FastAPI can handle them
     except Exception as e:
         await db.rollback()
         raise HTTPException(
@@ -127,53 +144,57 @@ async def list_alerts(
     prompt_contains: Optional[str] = None,
     max_datetime: Optional[datetime] = None,
     created_after: Optional[datetime] = None,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key)
 ):
     """List alerts for the authenticated user with filtering and pagination"""
     
-    # Validate created_after against max_datetime if both are provided
     if created_after and max_datetime and created_after > max_datetime:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="created_after cannot be later than max_datetime"
         )
     
-    # Build the query
-    query = db.query(AlertPrompt).filter(AlertPrompt.agent_controller_id == user.id)
-    
-    # Apply filters if provided
+    stmt = select(AlertPrompt).where(AlertPrompt.agent_controller_id == user.id)
+    count_stmt = select(func.count()).select_from(AlertPrompt).where(AlertPrompt.agent_controller_id == user.id)
+
     if prompt_contains:
-        query = query.filter(AlertPrompt.prompt.ilike(f"%{prompt_contains}%"))
+        stmt = stmt.filter(AlertPrompt.prompt.ilike(f"%{prompt_contains}%"))
+        count_stmt = count_stmt.filter(AlertPrompt.prompt.ilike(f"%{prompt_contains}%"))
     if max_datetime:
-        query = query.filter(AlertPrompt.expires_at <= max_datetime)
+        stmt = stmt.filter(AlertPrompt.expires_at <= max_datetime)
+        count_stmt = count_stmt.filter(AlertPrompt.expires_at <= max_datetime)
     if created_after:
-        query = query.filter(AlertPrompt.created_at >= created_after)
+        stmt = stmt.filter(AlertPrompt.created_at >= created_after)
+        count_stmt = count_stmt.filter(AlertPrompt.created_at >= created_after)
+
+    alerts = await db.execute(stmt.offset(offset).limit(limit))
     
-    # Apply pagination
-    total = query.count()
-    alerts = query.offset(offset).limit(limit).all()
+    total_count = await db.execute(count_stmt)
+    total_count = total_count.scalar()
     
     return AlertPromptListResponse(
         alerts=[
-            AlertPromptItem.model_validate(alert) for alert in alerts
+            AlertPromptItem.model_validate(alert) for alert in alerts.scalars().all()
         ],
-        total=total
+        total_count=total_count
     )
 
 @router.get("/{alert_id}", response_model=AlertPromptItem)
 async def get_alert(
-    alert_id: UUID,
-    db: Session = Depends(get_db),
+    alert_id: str,
+    db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key)
 ):
     """Get a specific alert by ID"""
     
     # Find the alert and verify ownership
-    alert = db.query(AlertPrompt).filter(
+    stmt = select(AlertPrompt).where(
         AlertPrompt.id == alert_id,
         AlertPrompt.agent_controller_id == user.id
-    ).first()
+    )
+    result = await db.execute(stmt)
+    alert = result.scalar_one_or_none()
     
     if not alert:
         raise HTTPException(
@@ -181,22 +202,38 @@ async def get_alert(
             detail="Not found"
         )
     
-    return alert
+    return alert_to_schema(alert)
+
+def alert_to_schema(alert: AlertPrompt) -> AlertPromptItem:
+    return AlertPromptItem(
+        id=alert.id,
+        prompt=alert.prompt,
+        http_method=alert.http_method,
+        http_url=alert.http_url,
+        http_headers=alert.http_headers,
+        expires_at=alert.expires_at,
+        response_format=alert.response_format,
+        tags=alert.tags or [],
+        status=alert.status,
+        created_at=alert.created_at,
+        llm_model=alert.llm_model
+    )
 
 #Alert can not be 'deleted'. They costed credits and thus have to be kept register of.
 @router.patch("/{alert_id}/cancel", status_code=status.HTTP_200_OK)
 async def cancel_alert(
-    alert_id: UUID,
-    db: Session = Depends(get_db),
+    alert_id: str,
+    db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key)
 ):
     """Cancel an existing alert"""
     
-    # Find the alert and verify ownership
-    alert = db.query(AlertPrompt).filter(
+    stmt = select(AlertPrompt).where(
         AlertPrompt.id == alert_id,
         AlertPrompt.agent_controller_id == user.id
-    ).first()
+    )
+    result = await db.execute(stmt)
+    alert = result.scalar_one_or_none()
     
     if not alert:
         raise HTTPException(
@@ -204,8 +241,7 @@ async def cancel_alert(
             detail="Not found"
         )
     
-    # Update alert status to cancelled
     alert.status = AlertStatus.CANCELLED
-    db.commit()
+    await db.commit()
     
     return {"message": "Alert cancelled successfully"}

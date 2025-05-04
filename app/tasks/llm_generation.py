@@ -6,15 +6,16 @@ from app.tasks.llm_apis.gemini import get_gemini_alert_generation
 from app.schemas.alert_event import NewsEvent
 from datetime import datetime
 import uuid
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.alert_event import AlertEvent
 from app.utils.llm_response_formats import LLMGenerationFormat
 import requests
 from app.utils.sourced_data import SourcedData
 from app.models.monitored_data import MonitoredData
-import tiktoken
+from app.utils.count_tokens import count_tokens
+from sqlalchemy import select
 
-async def llm_generation(alert_prompt: AlertPrompt, sourced_document: SourcedData, db: Session) -> NewsEvent:
+async def llm_generation(alert_prompt: AlertPrompt, sourced_document: SourcedData, db: AsyncSession) -> NewsEvent:
     
     if alert_prompt.llm_model == "llama3.1":
         generated_response = await get_ollama_alert_generation(
@@ -22,7 +23,7 @@ async def llm_generation(alert_prompt: AlertPrompt, sourced_document: SourcedDat
             sourced_document.content,
             alert_prompt.response_format,
         )
-    elif alert_prompt.llm_model == "gemini":
+    elif alert_prompt.llm_model == "gemini-2.5-pro":
         generated_response = await get_gemini_alert_generation(
             alert_prompt.parsed_intent,
             sourced_document.content,
@@ -34,7 +35,7 @@ async def llm_generation(alert_prompt: AlertPrompt, sourced_document: SourcedDat
         raise ValueError(f"Unsupported LLM model: {alert_prompt.llm_model}")
     
     llm_generation_result = NewsEvent(
-        id=uuid.uuid4(),
+        id=str(uuid.uuid4()),
         alert_prompt_id=alert_prompt.id,
         triggered_at=datetime.now(),
         output=generated_response.output,
@@ -51,9 +52,11 @@ async def llm_generation(alert_prompt: AlertPrompt, sourced_document: SourcedDat
     
     return llm_generation_result
 
-def send_alert_event(alert_event: NewsEvent, db: Session):
+def send_alert_event(alert_event: NewsEvent, db: AsyncSession):
     
-    alert_prompt = db.query(AlertPrompt).filter(AlertPrompt.id == alert_event.alert_prompt_id).first()
+    stmt = select(AlertPrompt).where(AlertPrompt.id == alert_event.alert_prompt_id)
+    result = db.execute(stmt)
+    alert_prompt = result.scalar_one_or_none()
     
     #TODO: add retries or backoff, and log the failures
     if alert_prompt.http_method == "POST":
@@ -65,7 +68,7 @@ def send_alert_event(alert_event: NewsEvent, db: Session):
     else:
         raise ValueError(f"Unsupported HTTP method: {alert_prompt.http_method}")
 
-async def save_alert_event(alert_event: NewsEvent, generated_response: LLMGenerationFormat, db: Session) -> AlertEvent:
+async def save_alert_event(alert_event: NewsEvent, generated_response: LLMGenerationFormat, db: AsyncSession) -> AlertEvent:
     alert_event_db = AlertEvent(
         id=alert_event.id,
         alert_prompt_id=alert_event.alert_prompt_id,
@@ -78,7 +81,7 @@ async def save_alert_event(alert_event: NewsEvent, generated_response: LLMGenera
     db.add(alert_event_db)
     db.commit()
 
-async def save_monitored_data(sourced_document: SourcedData, db: Session):
+async def save_monitored_data(sourced_document: SourcedData, db: AsyncSession):
     monitored_data_db = MonitoredData(
         id=sourced_document.id,
         source=sourced_document.source,
@@ -88,18 +91,25 @@ async def save_monitored_data(sourced_document: SourcedData, db: Session):
     db.add(monitored_data_db)
     db.commit()
 
-async def register_credit_usage(alert_prompt: AlertPrompt, sourced_document: SourcedData, generated_response: LLMGenerationFormat, db: Session):
+async def register_credit_usage(alert_prompt: AlertPrompt, sourced_document: SourcedData, generated_response: LLMGenerationFormat, db: AsyncSession):
     
-    input_tokens_count = tiktoken.count_tokens(alert_prompt.prompt) + tiktoken.count_tokens(generated_response.output)
-    output_tokens_count = tiktoken.count_tokens(generated_response.output)
+    input_tokens_count = count_tokens(alert_prompt.prompt, alert_prompt.llm_model) + count_tokens(generated_response.output, alert_prompt.llm_model)
+    output_tokens_count = count_tokens(generated_response.output, alert_prompt.llm_model)
     
     # find the alert_prompt based on its id
-    alert_prompt_db = db.query(AlertPrompt).filter(AlertPrompt.id == alert_prompt.id).first()
+    stmt = select(AlertPrompt).where(AlertPrompt.id == alert_prompt.id)
+    result = await db.execute(stmt)
+    alert_prompt_db = result.scalar_one_or_none()
     
     # find the llm_model based on the alert prompt's llm_model
-    llm_model_db = db.query(LLMModel).filter(LLMModel.model_name == alert_prompt.llm_model).first()
+    stmt = select(LLMModel).where(LLMModel.model_name == alert_prompt.llm_model)
+    result = await db.execute(stmt)
+    llm_model_db = result.scalar_one_or_none()
+    
     # find the agent_controller based on the alert_prompt's agent_controller_id
-    agent_controller_db = db.query(AgentController).filter(AgentController.id == alert_prompt_db.agent_controller_id).first()
+    stmt = select(AgentController).where(AgentController.id == alert_prompt_db.agent_controller_id)
+    result = await db.execute(stmt)
+    agent_controller_db = result.scalar_one_or_none()
     
     input_tokens_price = input_tokens_count * (llm_model_db.input_token_price/1000000)
     output_tokens_price = output_tokens_count * (llm_model_db.output_token_price/1000000)

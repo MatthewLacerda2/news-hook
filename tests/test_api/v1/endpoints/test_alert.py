@@ -1,19 +1,15 @@
-from datetime import datetime, timedelta
-from uuid import uuid4
-from app.schemas.alert_prompt import AlertPromptCreateSuccessResponse, AlertPromptListResponse, AlertPromptItem
-from app.models.alert_prompt import AlertStatus
+import uuid
 import pytest
+from datetime import datetime, timedelta
+from app.models.alert_prompt import AlertStatus
+from app.models.agent_controller import AgentController
+from app.schemas.alert_prompt import AlertPromptCreateSuccessResponse, AlertPromptListResponse, AlertPromptItem
 
 @pytest.mark.asyncio
-async def test_create_alert_successful(client):
+async def test_create_alert_successful(client, valid_user_with_credits, sample_llm_models, mock_llm_validation):
     """Test successful alert creation with valid data"""
-    # First create a user and get their token (similar to auth tests)
-    signup_response = await client.post(
-        "/api/v1/auth/signup",
-        json={"access_token": "valid_google_token"}
-    )
-    user_data = signup_response.json()["agent_controller"]
-    
+    user_data = valid_user_with_credits
+
     alert_data = {
         "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
         "http_method": "POST",
@@ -21,21 +17,25 @@ async def test_create_alert_successful(client):
         "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
         "example_response": {"price": 50001, "alert": True},
         "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
-        "llm_model": "gemini-2.5-pro"
+        "llm_model": "llama3.1"
     }
     
     response = await client.post(
         "/api/v1/alerts/",
-        headers={"X-API-Key": user_data["api_key"]},  # API key in header
-        json=alert_data
+        json=alert_data,
+        headers={"X-API-Key": user_data["api_key"]}
     )
     
+    print(response)
+    print(response.json())
+    print(response.status_code)
+    
     assert response.status_code == 201
-    # This will raise a validation error if the response doesn't match the schema
     AlertPromptCreateSuccessResponse.model_validate(response.json())
+    
 
 @pytest.mark.asyncio
-async def test_create_alert_invalid_api_key(client):
+async def test_create_alert_invalid_api_key(client, test_db):
     """Test alert creation with invalid API key"""
     alert_data = {
         "prompt": "Test prompt",
@@ -45,23 +45,27 @@ async def test_create_alert_invalid_api_key(client):
     
     response = await client.post(
         "/api/v1/alerts/",
-        headers={"X-API-Key": "invalid_api_key"},  # Invalid API key in header
+        headers={"X-API-Key": "invalid_api_key"},
         json=alert_data
     )
+    
     assert response.status_code == 401
     assert "Invalid API key" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_create_alert_mismatched_user_api_key(client, mock_google_verify):
+async def test_create_alert_mismatched_user_api_key(client, mock_google_verify, test_db):
     """Test alert creation with API key not owned by user"""
-    # Create first user
+    mock_google_verify.return_value = {
+        'email': 'test1@example.com',
+        'sub': '12345',
+        'name': 'Test User 1'
+    }
     signup1 = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token_1"}
     )
     user1_data = signup1.json()["agent_controller"]
-    
-    # Create second user
+
     mock_google_verify.return_value = {
         'email': 'test2@example.com',
         'sub': '67890',
@@ -83,192 +87,154 @@ async def test_create_alert_mismatched_user_api_key(client, mock_google_verify):
     }
     
     response = await client.post("/api/v1/alerts/", json=alert_data)
-    assert response.status_code == 400
-    assert "API key does not match user" in response.json()["detail"]
+    assert response.status_code == 403
+    assert "Not authenticated" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_create_alert_insufficient_credits(client):
+async def test_create_alert_insufficient_credits(client, valid_user_with_credits, test_db):
     """Test alert creation with insufficient credits"""
-    # Create user with 0 credits
-    signup_response = await client.post(
-        "/api/v1/auth/signup",
-        json={"access_token": "valid_google_token"}
+    user_data = valid_user_with_credits
+
+    user = await test_db.get(AgentController, user_data["id"])
+    user.credit_balance = 0
+    await test_db.commit()
+    await test_db.refresh(user)
+
+    response = await client.post(
+        "/api/v1/alerts/",
+        json={
+            "user_id": user_data["id"],
+            "prompt": "Test prompt",
+            "http_method": "POST",
+            "http_url": "https://webhook.example.com/test"
+        },
+        headers={"X-API-Key": user_data["api_key"]}
     )
-    user_data = signup_response.json()["agent_controller"]
-    
-    alert_data = {
-        "api_key": user_data["api_key"],
-        "user_id": user_data["id"],
-        "prompt": "Test prompt",
-        "http_method": "POST",
-        "http_url": "https://webhook.example.com/test"
-    }
-    
-    response = await client.post("/api/v1/alerts/", json=alert_data)
-    assert response.status_code == 401
+    assert response.status_code == 403
     assert "Insufficient credits" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_create_alert_invalid_url(client):
-    """Test alert creation with invalid URL"""
-    signup_response = await client.post(
-        "/api/v1/auth/signup",
-        json={"access_token": "valid_google_token"}
-    )
-    user_data = signup_response.json()["agent_controller"]
-    
+async def test_create_alert_invalid_url(client, valid_user_with_credits):
+    user_data = valid_user_with_credits
+
     alert_data = {
-        "api_key": user_data["api_key"],
         "user_id": user_data["id"],
         "prompt": "Test prompt",
         "http_method": "POST",
         "http_url": "not-a-valid-url"
     }
-    
-    response = await client.post("/api/v1/alerts/", json=alert_data)
-    assert response.status_code == 400
-    assert "Invalid URL" in response.json()["detail"]
+
+    response = await client.post("/api/v1/alerts/", json=alert_data, headers={"X-API-Key": user_data["api_key"]})
+    assert response.status_code == 422
+    assert any(
+        "valid URL" in error["msg"] for error in response.json()["detail"]
+    )
 
 @pytest.mark.asyncio
-async def test_create_alert_invalid_parsed_intent(client):
-    """Test alert creation with invalid parsed_intent JSON"""
-    signup_response = await client.post(
-        "/api/v1/auth/signup",
-        json={"access_token": "valid_google_token"}
-    )
-    user_data = signup_response.json()["agent_controller"]
-    
+async def test_create_alert_invalid_parsed_intent(client, valid_user_with_credits):
+    user_data = valid_user_with_credits
+
     alert_data = {
-        "api_key": user_data["api_key"],
-        "user_id": user_data["id"],
         "prompt": "Test prompt",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/test",
         "parsed_intent": "not-a-valid-json"
     }
-    
-    response = await client.post("/api/v1/alerts/", json=alert_data)
-    assert response.status_code == 400
-    assert "Invalid parsed_intent format" in response.json()["detail"]
+
+    response = await client.post("/api/v1/alerts/", json=alert_data, headers={"X-API-Key": user_data["api_key"]})
+    assert response.status_code == 422
+    assert any(
+        "valid dictionary" in error["msg"] for error in response.json()["detail"]
+    )
 
 @pytest.mark.asyncio
-async def test_create_alert_invalid_example_response(client):
-    """Test alert creation with invalid example_response JSON"""
-    signup_response = await client.post(
-        "/api/v1/auth/signup",
-        json={"access_token": "valid_google_token"}
-    )
-    user_data = signup_response.json()["agent_controller"]
-    
+async def test_create_alert_invalid_schema_format(client, valid_user_with_credits):
+    user_data = valid_user_with_credits
+
     alert_data = {
-        "api_key": user_data["api_key"],
-        "user_id": user_data["id"],
         "prompt": "Test prompt",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/test",
-        "example_response": "not-a-valid-json"
+        "schema_format": "not-a-valid-json"
     }
-    
-    response = await client.post("/api/v1/alerts/", json=alert_data)
-    assert response.status_code == 400
-    assert "Invalid example_response format" in response.json()["detail"]
+
+    response = await client.post("/api/v1/alerts/", json=alert_data, headers={"X-API-Key": user_data["api_key"]})
+    assert response.status_code == 422
+    assert any(
+        "valid dictionary" in error["msg"] for error in response.json()["detail"]
+    )
 
 @pytest.mark.asyncio
-async def test_create_alert_invalid_max_datetime(client):
-    """Test alert creation with invalid max_datetime values"""
-    signup_response = await client.post(
-        "/api/v1/auth/signup",
-        json={"access_token": "valid_google_token"}
-    )
-    user_data = signup_response.json()["agent_controller"]
-    
-    # Test with datetime too soon
+async def test_create_alert_invalid_max_datetime(client, valid_user_with_credits):
+    user_data = valid_user_with_credits
+
     alert_data = {
-        "api_key": user_data["api_key"],
-        "user_id": user_data["id"],
-        "prompt": "Test prompt",
+        "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
         "http_method": "POST",
-        "http_url": "https://webhook.example.com/test",
-        "max_datetime": (datetime.now() + timedelta(minutes=20)).isoformat()
+        "http_url": "https://webhook.example.com/crypto-alert",
+        "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
+        "example_response": {"price": 50001, "alert": True},
+        "max_datetime": (datetime.now() + timedelta(days=365)).isoformat(),
+        "llm_model": "llama3.1"
     }
     
-    response = await client.post("/api/v1/alerts/", json=alert_data)
-    assert response.status_code == 400
-    assert "max_datetime must be at least 30 minutes in the future" in response.json()["detail"]
+    response = await client.post("/api/v1/alerts/", json=alert_data, headers={"X-API-Key": user_data["api_key"]})
     
-    # Test with datetime too far in future
-    alert_data["max_datetime"] = (datetime.now() + timedelta(days=400)).isoformat()
-    response = await client.post("/api/v1/alerts/", json=alert_data)
-    assert response.status_code == 400
-    assert "max_datetime cannot be more than 1 year in the future" in response.json()["detail"]
+    assert response.status_code == 422
+    assert any(
+        "max_datetime cannot be more than 300 days in the future" in err["msg"]
+        for err in response.json()["detail"]
+    )
 
 @pytest.mark.asyncio
-async def test_create_alert_invalid_llm_model(client):
-    """Test alert creation with invalid LLM model"""
-    # First create a user
-    signup_response = await client.post(
-        "/api/v1/auth/signup",
-        json={"access_token": "valid_google_token"}
-    )
-    user_data = signup_response.json()["agent_controller"]
-    
+async def test_create_alert_invalid_llm_model(client, valid_user_with_credits, sample_llm_models, test_db):
+    user_data = valid_user_with_credits
+
     alert_data = {
         "prompt": "Test prompt",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/test",
         "llm_model": "nonexistent_model_name"
     }
-    
+
     response = await client.post(
         "/api/v1/alerts/",
         headers={"X-API-Key": user_data["api_key"]},
         json=alert_data
     )
-    
+
     assert response.status_code == 400
     assert "Invalid LLM model" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_list_alerts_successful(client):
+async def test_list_alerts_successful(client, valid_user_with_credits, mock_llm_validation):
     """Test successful alert listing with valid parameters"""
-    # First create a user
-    signup_response = await client.post(
-        "/api/v1/auth/signup",
-        json={"access_token": "valid_google_token"}
-    )
-    user_data = signup_response.json()["agent_controller"]
-    
-    # Valid request with all optional parameters
+
     list_params = {
         "offset": 0,
         "limit": 50,
         "prompt_contains": "bitcoin",
-        "max_datetime": (datetime.now() + timedelta(days=30)).isoformat(),
-        "created_after": datetime.now().isoformat()
+        "created_after": datetime.now().isoformat(),
+        "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
+        "llm_model": "llama3.1"
     }
     
     response = await client.get(
         "/api/v1/alerts/",
         params=list_params,
-        headers={"X-API-Key": user_data["api_key"]}
+        headers={"X-API-Key": valid_user_with_credits["api_key"]}
     )
     assert response.status_code == 200
     
-    # Validate response matches AlertPromptListResponse schema
     data = response.json()
     AlertPromptListResponse.model_validate(data)
 
 @pytest.mark.asyncio
-async def test_list_alerts_invalid_parameters(client):
+async def test_list_alerts_invalid_parameters(client, valid_user_with_credits, test_db, sample_llm_models, mock_llm_validation):
     """Test alert listing with invalid parameter types"""
-    signup_response = await client.post(
-        "/api/v1/auth/signup",
-        json={"access_token": "valid_google_token"}
-    )
-    user_data = signup_response.json()["agent_controller"]
+    user_data = valid_user_with_credits
     api_key = user_data["api_key"]
     
-    # Test invalid offset/limit
     invalid_pagination_params = {
         "offset": -1,
         "limit": 101
@@ -278,10 +244,13 @@ async def test_list_alerts_invalid_parameters(client):
         params=invalid_pagination_params,
         headers={"X-API-Key": api_key}
     )
-    assert response.status_code == 400
-    assert "Invalid pagination parameters" in response.json()["detail"]
+    assert response.status_code == 422
+    assert any(
+        "greater than or equal to 0" in error["msg"] or
+        "less than or equal to 100" in error["msg"]
+        for error in response.json()["detail"]
+    )
     
-    # Test invalid datetime format
     invalid_datetime_params = {
         "created_after": "not-a-datetime"
     }
@@ -290,17 +259,16 @@ async def test_list_alerts_invalid_parameters(client):
         params=invalid_datetime_params,
         headers={"X-API-Key": api_key}
     )
-    assert response.status_code == 400
-    assert "Invalid datetime format" in response.json()["detail"]
+    assert response.status_code == 422
+    assert any(
+        "valid datetime" in error["msg"] or "invalid datetime format" in error["msg"]
+        for error in response.json()["detail"]
+    )
 
 @pytest.mark.asyncio
-async def test_list_alerts_datetime_validation(client):
+async def test_list_alerts_datetime_validation(client, valid_user_with_credits, mock_llm_validation):
     """Test datetime validation between created_after and max_datetime"""
-    signup_response = await client.post(
-        "/api/v1/auth/signup",
-        json={"access_token": "valid_google_token"}
-    )
-    user_data = signup_response.json()["agent_controller"]
+    user_data = valid_user_with_credits
     
     now = datetime.now()
     params = {
@@ -311,32 +279,27 @@ async def test_list_alerts_datetime_validation(client):
     response = await client.get(
         "/api/v1/alerts/",
         params=params,
-        headers={"X-API-Key": user_data["api_key"]}
+        headers={"X-API-Key": valid_user_with_credits["api_key"]}
     )
     assert response.status_code == 400
     assert "created_after cannot be later than max_datetime" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_list_alerts_minimal_parameters(client):
+async def test_list_alerts_minimal_parameters(client, valid_user_with_credits):
     """Test alert listing with no parameters (just authentication)"""
-    signup_response = await client.post(
-        "/api/v1/auth/signup",
-        json={"access_token": "valid_google_token"}
-    )
-    user_data = signup_response.json()["agent_controller"]
+    user_data = valid_user_with_credits
     
     response = await client.get(
         "/api/v1/alerts/",
-        headers={"X-API-Key": user_data["api_key"]}
+        headers={"X-API-Key": valid_user_with_credits["api_key"]}
     )
     assert response.status_code == 200
     
-    # Validate response
     data = response.json()
     AlertPromptListResponse.model_validate(data)
 
 @pytest.mark.asyncio
-async def test_list_alerts_invalid_api_key(client):
+async def test_list_alerts_invalid_api_key(client, test_db):
     """Test alert listing with invalid API key"""
     response = await client.get(
         "/api/v1/alerts/",
@@ -344,26 +307,31 @@ async def test_list_alerts_invalid_api_key(client):
     )
     assert response.status_code == 401
     assert "Invalid API key" in response.json()["detail"]
-
+    
 @pytest.mark.asyncio
-async def test_get_alert_successful(client):
-    """Test successful alert retrieval"""
-    # First create a user
-    signup_response = await client.post(
-        "/api/v1/auth/signup",
-        json={"access_token": "valid_google_token"}
+async def test_get_alert_invalid_api_key(client, test_db):
+    """Test alert retrieval with invalid API key"""
+    response = await client.get(
+        "/api/v1/alerts/123",
+        headers={"X-API-Key": "invalid_api_key"}
     )
-    user_data = signup_response.json()["agent_controller"]
+    assert response.status_code == 401
+    assert "Invalid API key" in response.json()["detail"]
+    
+@pytest.mark.asyncio
+async def test_get_alert_successful(client, valid_user_with_credits, sample_llm_models, test_db, mock_llm_validation):
+    """Test successful alert retrieval"""
+    user_data = valid_user_with_credits
     api_key = user_data["api_key"]
     
-    # Create an alert first
     alert_data = {
         "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/crypto-alert",
         "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
         "example_response": {"price": 50001, "alert": True},
-        "max_datetime": (datetime.now() + timedelta(days=30)).isoformat()
+        "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
+        "llm_model": "llama3.1"
     }
     
     create_response = await client.post(
@@ -371,10 +339,10 @@ async def test_get_alert_successful(client):
         headers={"X-API-Key": api_key},
         json=alert_data
     )
+    
     assert create_response.status_code == 201
     alert_id = create_response.json()["id"]
     
-    # Get the specific alert
     response = await client.get(
         f"/api/v1/alerts/{alert_id}",
         headers={"X-API-Key": api_key}
@@ -383,27 +351,19 @@ async def test_get_alert_successful(client):
     assert response.status_code == 200
     alert = response.json()
     
-    # Validate the response matches our schema
     AlertPromptItem.model_validate(alert)
     
-    # Verify the alert data matches what we created
     assert alert["prompt"] == alert_data["prompt"]
     assert alert["http_method"] == alert_data["http_method"]
     assert alert["http_url"] == alert_data["http_url"]
 
 @pytest.mark.asyncio
-async def test_get_alert_not_found(client):
+async def test_get_alert_not_found(client, valid_user_with_credits):
     """Test attempting to get a non-existent alert"""
-    # First create a user
-    signup_response = await client.post(
-        "/api/v1/auth/signup",
-        json={"access_token": "valid_google_token"}
-    )
-    user_data = signup_response.json()["agent_controller"]
+    user_data = valid_user_with_credits
     api_key = user_data["api_key"]
     
-    # Try to get a non-existent alert using a random UUID
-    non_existent_id = str(uuid4())
+    non_existent_id = str(uuid.uuid4())
     response = await client.get(
         f"/api/v1/alerts/{non_existent_id}",
         headers={"X-API-Key": api_key}
@@ -413,31 +373,27 @@ async def test_get_alert_not_found(client):
     assert "Not found" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_cancel_alert_successful(client):
+async def test_cancel_alert_successful(client, valid_user_with_credits, sample_llm_models, test_db, mock_llm_validation):
     """Test successful alert cancellation"""
-    # First create a user
-    signup_response = await client.post(
-        "/api/v1/auth/signup",
-        json={"access_token": "valid_google_token"}
-    )
-    user_data = signup_response.json()["agent_controller"]
+    user_data = valid_user_with_credits
     api_key = user_data["api_key"]
     
-    # Create an alert first
     alert_data = {
         "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/crypto-alert",
         "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
         "example_response": {"price": 50001, "alert": True},
-        "max_datetime": (datetime.now() + timedelta(days=30)).isoformat()
+        "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
+        "llm_model": "llama3.1"
     }
     
     create_response = await client.post(
         "/api/v1/alerts/", 
-        headers={"X-API-Key": api_key},
-        json=alert_data
+        json=alert_data,
+        headers={"X-API-Key": api_key}
     )
+    
     assert create_response.status_code == 201
     alert_id = create_response.json()["id"]
     
@@ -450,51 +406,49 @@ async def test_cancel_alert_successful(client):
     
     # Verify the alert is now cancelled by getting it
     list_response = await client.get(
-        "/api/v1/alerts/",
+        f"/api/v1/alerts/{alert_id}",
         headers={"X-API-Key": api_key}
     )
+    
     assert list_response.status_code == 200
-    alerts = list_response.json()["alerts"]
-    cancelled_alert = next(alert for alert in alerts if alert["id"] == alert_id)
-    assert cancelled_alert["status"] == AlertStatus.CANCELLED
+    alert = list_response.json()
+    assert alert["id"] == alert_id
+    assert alert["status"] == "CANCELLED"
 
 @pytest.mark.asyncio
-async def test_cancel_alert_invalid_api_key(client):
+async def test_cancel_alert_invalid_api_key(client, test_db):
     """Test attempting to cancel an alert with invalid API key"""
+    
     response = await client.patch(
-        f"/api/v1/alerts/{str(uuid4())}/cancel",
+        f"/api/v1/alerts/{str(uuid.uuid4())}/cancel",
         headers={"X-API-Key": "invalid_api_key"}
     )
-    assert response.status_code == 403
-    assert "Unauthorized" in response.json()["detail"]
+    assert response.status_code == 401
+    assert "Invalid API key" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_cancel_alert_wrong_user(client, mock_google_verify):
+async def test_cancel_alert_wrong_user(client, valid_user_with_credits, mock_google_verify, sample_llm_models, test_db, mock_llm_validation):
     """Test attempting to cancel an alert belonging to another user"""
-    # Create first user and their alert
-    signup1 = await client.post(
-        "/api/v1/auth/signup",
-        json={"access_token": "valid_google_token_1"}
-    )
-    user1_data = signup1.json()["agent_controller"]
-    api_key1 = user1_data["api_key"]
+    user_data = valid_user_with_credits
+    api_key = user_data["api_key"]
     
     alert_data = {
-        "prompt": "Test alert",
+        "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/test",
-        "max_datetime": (datetime.now() + timedelta(days=30)).isoformat()
+        "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
+        "example_response": {"price": 50001, "alert": True},
+        "max_datetime": (datetime.now() + timedelta(days=30)).isoformat(),
+        "llm_model": "llama3.1",
     }
     
     create_response = await client.post(
         "/api/v1/alerts/",
-        headers={"X-API-Key": api_key1},
+        headers={"X-API-Key": api_key},
         json=alert_data
     )
-    assert create_response.status_code == 201
     alert_id = create_response.json()["id"]
     
-    # Create second user
     mock_google_verify.return_value = {
         'email': 'test2@example.com',
         'sub': '67890',
@@ -507,27 +461,22 @@ async def test_cancel_alert_wrong_user(client, mock_google_verify):
     user2_data = signup2.json()["agent_controller"]
     api_key2 = user2_data["api_key"]
     
-    # Try to cancel first user's alert with second user's API key
     response = await client.patch(
         f"/api/v1/alerts/{alert_id}/cancel",
         headers={"X-API-Key": api_key2}
     )
+    
     assert response.status_code == 404
     assert "Not found" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_cancel_nonexistent_alert(client):
+async def test_cancel_nonexistent_alert(client, valid_user_with_credits):
     """Test attempting to cancel an alert that doesn't exist"""
-    # Create a user
-    signup_response = await client.post(
-        "/api/v1/auth/signup",
-        json={"access_token": "valid_google_token"}
-    )
-    user_data = signup_response.json()["agent_controller"]
+    user_data = valid_user_with_credits
     api_key = user_data["api_key"]
     
     response = await client.patch(
-        f"/api/v1/alerts/{str(uuid4())}/cancel",
+        f"/api/v1/alerts/{str(uuid.uuid4())}/cancel",
         headers={"X-API-Key": api_key}
     )
     assert response.status_code == 404

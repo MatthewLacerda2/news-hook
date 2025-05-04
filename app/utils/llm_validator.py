@@ -2,10 +2,11 @@ from app.utils.llm_response_formats import LLMValidationFormat
 from app.schemas.alert_prompt import AlertPromptCreateRequestBase
 from app.tasks.llm_apis.ollama import get_ollama_validation
 from app.tasks.llm_apis.gemini import get_gemini_validation
-import tiktoken
+from app.utils.count_tokens import count_tokens
 from app.models.llm_models import LLMModel
+import json
 
-async def llm_validation(alert_request: AlertPromptCreateRequestBase, llm_model: str) -> LLMValidationFormat:
+async def get_llm_validation(alert_request: AlertPromptCreateRequestBase, llm_model: str) -> LLMValidationFormat:
     """
     Validate the alert request using LLM
     """
@@ -17,7 +18,7 @@ async def llm_validation(alert_request: AlertPromptCreateRequestBase, llm_model:
             alert_request.prompt,
             alert_request.parsed_intent,
         )
-    elif llm_model == "gemini":
+    elif llm_model == "gemini-2.5-pro":
         validation_result = await get_gemini_validation(
             alert_request.prompt,
             alert_request.parsed_intent,
@@ -27,6 +28,9 @@ async def llm_validation(alert_request: AlertPromptCreateRequestBase, llm_model:
         print(f"Unsupported LLM model: {llm_model}\n{msg}")
         raise ValueError(f"Unsupported LLM model: {llm_model}")
     
+    if isinstance(validation_result, str):
+        validation_result = LLMValidationFormat(**json.loads(validation_result))    
+    
     return validation_result
 
 def get_llm_validation_price(alert_request: AlertPromptCreateRequestBase, validation_result: LLMValidationFormat, llm_model: LLMModel) -> float:
@@ -34,12 +38,10 @@ def get_llm_validation_price(alert_request: AlertPromptCreateRequestBase, valida
     Get the price of the LLM validation
     """
     
-    input_token_count = tiktoken.count_tokens(alert_request.prompt) + tiktoken.count_tokens(str(alert_request.parsed_intent))
-    output_token_count = tiktoken.count_tokens(validation_result)
+    input_token_count = count_tokens(alert_request.prompt, llm_model.model_name) + count_tokens(str(alert_request.parsed_intent), llm_model.model_name)
+    output_token_count = count_tokens(str(validation_result.output_intent), llm_model.model_name)
     
     input_price = input_token_count * (llm_model.input_token_price/1000000)
     output_price = output_token_count * (llm_model.output_token_price/1000000)
     
     return input_price, output_price
-    
-    

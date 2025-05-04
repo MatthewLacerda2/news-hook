@@ -1,14 +1,13 @@
 from app.models.base import Base
 from sqlalchemy import Column, String, Float, Boolean, Integer, DateTime
-from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from sqlalchemy import ForeignKey
 
 class LLMVerification(Base):
     __tablename__ = "llm_verifications"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    alert_prompt_id = Column(UUID(as_uuid=True), ForeignKey('alert_prompts.id'), nullable=False)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    alert_prompt_id = Column(String(36), ForeignKey('alert_prompts.id'), nullable=False)
     
     approval = Column(Boolean, nullable=False)
     chance_score = Column(Float, nullable=False)

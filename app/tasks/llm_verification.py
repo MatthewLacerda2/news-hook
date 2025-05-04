@@ -5,12 +5,12 @@ from app.models.alert_prompt import AlertPrompt, AlertStatus
 from app.utils.llm_response_formats import LLMVerificationFormat
 from app.tasks.llm_apis.ollama import get_ollama_verification
 from app.tasks.llm_apis.gemini import get_gemini_verification
-from app.tasks.llm_generation import llm_generation
+from app.tasks.llm_generation import get_llm_generation
 from app.utils.sourced_data import SourcedData
-import tiktoken
+from app.utils.count_tokens import count_tokens
 from app.models.llm_verification import LLMVerification
-from sqlalchemy.orm import Session
 from app.models.llm_models import LLMModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
 async def verify_document_matches_alert(
     alert_id: str,
@@ -36,7 +36,7 @@ async def verify_document_matches_alert(
                 alert_prompt.prompt,
                 alert_prompt.parsed_intent,
             )
-        elif alert_prompt.llm_model == "gemini":
+        elif alert_prompt.llm_model == "gemini-2.5-pro":
             verification_result = await get_gemini_verification(
                 alert_prompt.prompt,
                 alert_prompt.parsed_intent,
@@ -48,10 +48,9 @@ async def verify_document_matches_alert(
         
         await register_llm_verification(alert_prompt, verification_result, alert_prompt.llm_model, db)
             
-        # Check if verification passes our criteria
         if verification_result.approval and verification_result.chance_score >= 0.85:
             # Pass to LLM generation
-            await llm_generation(alert_prompt, sourced_document, db)
+            await get_llm_generation(alert_prompt, sourced_document, db)
             
             # Update alert status
             alert_prompt.status = AlertStatus.TRIGGERED
@@ -60,14 +59,15 @@ async def verify_document_matches_alert(
     except Exception as e:
         print(f"Error in LLM verification: {str(e)}")
     finally:
-        db.close()
+        await db.close()
         
-async def register_llm_verification(alert_prompt: AlertPrompt, verification_result: LLMVerificationFormat, llm_model: str, db: Session):
+async def register_llm_verification(alert_prompt: AlertPrompt, verification_result: LLMVerificationFormat, llm_model: str, db: AsyncSession):
+    input_tokens_count = count_tokens(alert_prompt.prompt, alert_prompt.llm_model)
+    output_tokens_count = count_tokens(verification_result.output, alert_prompt.llm_model)
     
-    input_tokens_count = tiktoken.count_tokens(alert_prompt.prompt)
-    output_tokens_count = tiktoken.count_tokens(verification_result.output)
-    
-    llm_model_db = db.query(LLMModel).filter(LLMModel.model_name == llm_model).first()
+    stmt = select(LLMModel).where(LLMModel.model_name == llm_model)
+    result = await db.execute(stmt)
+    llm_model_db = result.scalar_one_or_none()
     
     llm_verification = LLMVerification(
         alert_prompt_id=alert_prompt.id,
@@ -82,4 +82,4 @@ async def register_llm_verification(alert_prompt: AlertPrompt, verification_resu
     )
     
     db.add(llm_verification)
-    db.commit()
+    await db.commit()

@@ -1,7 +1,5 @@
 from datetime import datetime, timedelta
-import uuid
 from fastapi import APIRouter, Depends, HTTPException, status, Header
-from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from app.core.config import settings
 from app.core.security import create_access_token, verify_google_token, verify_token, get_current_user
@@ -10,25 +8,26 @@ from app.schemas.agent_controller import OAuth2Request, TokenResponse
 from app.models.agent_controller import AgentController
 
 from jose import JWTError
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+import uuid
 
 router = APIRouter()
 
 @router.post("/signup", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def signup(
     oauth_data: OAuth2Request,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Sign up a new user using Google OAuth2 token.
     """
     try:
-        # Verify Google token and get user info
         user_info = verify_google_token(oauth_data.access_token)
         
-        # Check if user already exists
-        existing_user = db.query(AgentController).filter(
-            AgentController.google_id == user_info["sub"]
-        ).first()
+        stmt = select(AgentController).where(AgentController.google_id == user_info["sub"])
+        result = await db.execute(stmt)
+        existing_user = result.scalar_one_or_none()
         
         if existing_user:
             raise HTTPException(
@@ -36,21 +35,19 @@ async def signup(
                 detail="User already exists"
             )
         
-        # Create new user
         user = AgentController(
-            id=uuid.uuid4(),
+            id=str(uuid.uuid4()),
             email=user_info["email"],
             name=user_info.get("name"),
             google_id=user_info["sub"],
-            api_key=str(uuid.uuid4()),  # Generate a unique API key
-            credits=0
+            api_key=str(uuid.uuid4()),
+            credit_balance=1000
         )
         
         db.add(user)
-        db.commit()
-        db.refresh(user)
+        await db.commit()
+        await db.refresh(user)
         
-        # Create access token
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
             data={"sub": str(user.id)},
@@ -64,13 +61,18 @@ async def signup(
             agent_controller=user
         )
         
-    except IntegrityError:
+    except IntegrityError as e:
+        print(f"\nINTEGRITY ERROR IN SIGNUP: {type(e).__name__}: {str(e)}")
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="User already exists"
         )
+    except HTTPException:
+        # Re-raise HTTP exceptions without modifying them
+        raise
     except Exception as e:
+        print(f"\nEXCEPTION CAUGHT IN SIGNUP: {type(e).__name__}: {str(e)}")
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -80,7 +82,7 @@ async def signup(
 @router.post("/login", response_model=TokenResponse)
 async def login(
     oauth_data: OAuth2Request,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Login using Google OAuth2 token.
@@ -89,10 +91,10 @@ async def login(
         # Verify Google token and get user info
         user_info = verify_google_token(oauth_data.access_token)
         
-        # Check if user exists
-        user = db.query(AgentController).filter(
-            AgentController.google_id == user_info["sub"]
-        ).first()
+        # Check if user exists using async syntax
+        stmt = select(AgentController).where(AgentController.google_id == user_info["sub"])
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
         
         if not user:
             raise HTTPException(
@@ -114,15 +116,25 @@ async def login(
             agent_controller=user
         )
         
-    except Exception as e:
+    except HTTPException:
+        # Re-raise HTTP exceptions without modifying them
+        raise
+    except ValueError as e:
+        # Handle Google token verification errors
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid Google token"
         )
+    except Exception as e:
+        # Handle unexpected errors
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )
 
 @router.get("/credits")
 async def check_credits(
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     authorization: str = Header(None)
 ):
     """
@@ -135,22 +147,21 @@ async def check_credits(
         )
         
     try:
-        # Extract token from Authorization header
         scheme, token = authorization.split()
         if scheme.lower() != 'bearer':
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid authentication scheme"
             )
-            
-        # Verify token and get user ID
+
         payload = verify_token(token)
         user_id = payload.get("sub")
         
-        # Get user from database
-        user = db.query(AgentController).filter(
-            AgentController.id == user_id
-        ).first()
+        user_id = str(user_id)
+        
+        stmt = select(AgentController).where(AgentController.id == user_id)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
         
         if not user:
             raise HTTPException(
@@ -158,7 +169,7 @@ async def check_credits(
                 detail="User not found"
             )
             
-        return {"credits": user.credit_balance}
+        return {"credit_balance": user.credit_balance}
         
     except ValueError:
         raise HTTPException(
@@ -173,27 +184,15 @@ async def check_credits(
 
 @router.delete("/account", status_code=status.HTTP_200_OK)
 async def delete_account(
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: AgentController = Depends(get_current_user)
 ):
     """
     Delete user account and all associated data (alert prompts)
     """
     try:
-        # Get user with their relationships
-        user = db.query(AgentController).filter(
-            AgentController.id == current_user.id
-        ).first()
-        
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
-            
-        # Delete user (this will cascade delete alert_prompts due to relationship)
-        db.delete(user)
-        db.commit()
+        await db.delete(current_user)
+        await db.commit()
         
         return {"message": "Account successfully deleted"}
         

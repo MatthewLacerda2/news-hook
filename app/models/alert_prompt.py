@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from enum import Enum
 from sqlalchemy import Column, String, DateTime, JSON, Enum as SQLEnum, ForeignKey, Index
-from sqlalchemy.dialects.postgresql import UUID
+import uuid
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
 
@@ -29,15 +29,15 @@ class AlertPrompt(Base):
         Index('idx_prompt_embedding_cosine', 'prompt_embedding', postgresql_using='ivfflat', postgresql_ops={'prompt_embedding': 'vector_cosine_ops'}),
     )
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    agent_controller_id = Column(UUID(as_uuid=True), ForeignKey('agent_controllers.id'), nullable=False)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    agent_controller_id = Column(String(36), ForeignKey('agent_controllers.id'), nullable=False)
     prompt = Column(String, nullable=False)
     http_method = Column(SQLEnum(HttpMethod), nullable=False)
     http_url = Column(String, nullable=False)
     http_headers = Column(JSON, nullable=True)
     
     parsed_intent = Column(JSON, nullable=False)
-    parsed_intent_embedding = Column(Vector(384), nullable=False)
+    parsed_intent_embedding = Column(Vector(384), nullable=True)
     response_format = Column(JSON, nullable=False)
     
     tags = Column(JSON, nullable=True)

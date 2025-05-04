@@ -1,7 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, DateTime, JSON, ForeignKey, Index, Float, Integer
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, DateTime, JSON, ForeignKey, Index, Float, Integer, String
 from sqlalchemy.orm import relationship
 
 from app.models.base import Base
@@ -12,9 +11,9 @@ class AlertEvent(Base):
         Index('idx_triggered_at', 'triggered_at'),
     )
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    alert_prompt_id = Column(UUID(as_uuid=True), ForeignKey('alert_prompts.id'), nullable=False)
-    scraped_data_id = Column(UUID(as_uuid=True), ForeignKey('monitored_data.id'), nullable=False)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    alert_prompt_id = Column(String(36), ForeignKey('alert_prompts.id'), nullable=False)
+    scraped_data_id = Column(String(36), ForeignKey('monitored_data.id'), nullable=False)
     triggered_at = Column(DateTime, nullable=False, default=datetime.now())
     response = Column(JSON, nullable=True)
     input_tokens = Column(Integer, nullable=False)

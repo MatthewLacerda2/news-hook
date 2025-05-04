@@ -1,12 +1,10 @@
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Optional, Dict, Union
-from uuid import UUID
+from typing import Optional, Dict, Union, List
 from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict
 from app.models.alert_prompt import AlertStatus
 
-JsonPrimitive = Union[str, int, float, bool, None]
-
+JsonPrimitive = Union[str, int, float, bool, datetime]
 class HttpMethod(str, Enum):
     POST = "POST"
     PUT = "PUT"
@@ -21,7 +19,7 @@ class AlertPromptCreateRequestBase(BaseModel):
     
     # Optional fields
     parsed_intent: Optional[Dict[str, JsonPrimitive]] = Field(None, description="Parsed interpretation of the prompt. MUST BE FLAT JSON AND NOT NESTED")
-    schema_format: Dict[str, JsonPrimitive] = Field(..., description="The schema of the response. MUST BE FLAT JSON AND NOT NESTED")
+    schema_format: Optional[Dict[str, JsonPrimitive]] = Field(None, description="The schema of the response. MUST BE FLAT JSON AND NOT NESTED")
     max_datetime: Optional[datetime] = Field(None, description="Monitoring window. Must be within the next 300 days")
     
 
@@ -38,8 +36,26 @@ class AlertPromptCreateRequestBase(BaseModel):
             
         return v
 
+    @field_validator('parsed_intent')
+    @classmethod
+    def check_flat_json_parsed_intent(cls, v):
+        if v is not None:
+            for key, value in v.items():
+                if isinstance(value, (dict, list)):
+                    raise ValueError("parsed_intent must be flat (no nested objects or arrays)")
+        return v
+
+    @field_validator('schema_format')
+    @classmethod
+    def check_flat_json_schema_format(cls, v):
+        if v is not None:
+            for key, value in v.items():
+                if isinstance(value, (dict, list)):
+                    raise ValueError("schema_format must be flat (no nested objects or arrays)")
+        return v
+
 class AlertPromptCreateSuccessResponse(BaseModel):
-    id: UUID = Field(..., description="The ID of the alert")
+    id: str = Field(..., description="The ID of the alert")
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     output_intent: str = Field(..., description="What the LLM understood from the prompt")
     created_at: datetime
@@ -48,13 +64,14 @@ class AlertPromptCreateSuccessResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class AlertPromptItem(BaseModel):
-    id: UUID
+    id: str = Field(..., description="The ID of the alert")
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     http_method: HttpMethod
     http_url: HttpUrl
-    expire_datetime: datetime = Field(..., description="The date and time the alert will expire")
     http_headers: Optional[Dict[str, JsonPrimitive]] = Field(None, description="HTTP headers to send with the request")
-    tags: list[str] = Field(default=[], description="Tags for hinting")
+    expires_at: datetime = Field(..., description="The date and time the alert will expire")
+    response_format: Optional[Dict[str, JsonPrimitive]] = Field(None, description="The schema of the response. MUST BE FLAT JSON AND NOT NESTED")
+    tags: List[str] = Field(default_factory=list, description="Tags for hinting")
     status: AlertStatus 
     created_at: datetime = Field(..., lt=datetime.now(), description="The date and time the alert was created")
     llm_model: str = Field(..., description="The LLM model used to create the alert")
@@ -79,5 +96,5 @@ class AlertPromptPriceCheckSuccessResponse(BaseModel):
     output_intent: str = Field(..., description="What LLM understood from the prompt")
     
 class AlertCancelRequest(BaseModel):
-    alert_id: UUID = Field(..., description="The ID of the alert to cancel")
-    user_id: UUID = Field(..., description="The ID of the agent controller requesting to cancel the alert")
+    alert_id: str = Field(..., description="The ID of the alert to cancel")
+    user_id: str = Field(..., description="The ID of the agent controller requesting to cancel the alert")

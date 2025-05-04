@@ -1,14 +1,12 @@
-from sqlalchemy.dialects.postgresql import UUID
 from app.models.base import Base
 from datetime import datetime
 from pydantic import Field
 from typing import Dict, JsonPrimitive
 
-
 class NewsEvent(Base):
 
-    id: UUID = Field(..., description="The ID of the alert event")
-    alert_prompt_id: UUID = Field(..., description="The ID of the alert prompt")
+    id: str = Field(..., description="The ID of the alert event")
+    alert_prompt_id: str = Field(..., description="The ID of the alert prompt")
     triggered_at: datetime = Field(..., description="The datetime the alert event was triggered")
     
     output: str = Field(..., description="The LLM output on the matter")

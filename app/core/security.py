@@ -5,10 +5,11 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 from fastapi import HTTPException, status, Depends, Security
 from fastapi.security import HTTPBearer, APIKeyHeader, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.agent_controller import AgentController
+from sqlalchemy import select
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """
@@ -97,20 +98,10 @@ security = HTTPBearer()
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ) -> AgentController:
     """
     Get the current authenticated user from the JWT token.
-    
-    Args:
-        credentials: The HTTP Authorization credentials containing the JWT token
-        db: Database session
-        
-    Returns:
-        AgentController: The current authenticated user
-        
-    Raises:
-        HTTPException: If token is invalid or user not found
     """
     try:
         # Verify the JWT token and get the payload
@@ -124,10 +115,10 @@ async def get_current_user(
                 detail="Invalid token payload"
             )
             
-        # Get user from database
-        user = db.query(AgentController).filter(
-            AgentController.id == user_id
-        ).first()
+        # Get user from database using async syntax
+        stmt = select(AgentController).where(AgentController.id == user_id)
+        result = await db.execute(stmt)
+        user = result.scalar_one_or_none()
         
         if not user:
             raise HTTPException(
@@ -153,14 +144,14 @@ api_key_header = APIKeyHeader(name="X-API-Key")
 
 async def get_user_by_api_key(
     api_key: str = Security(api_key_header),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ) -> AgentController:
     """
     Get the current user based on their API key from the X-API-Key header.
     """
-    user = db.query(AgentController).filter(
-        AgentController.api_key == api_key
-    ).first()
+    stmt = select(AgentController).where(AgentController.api_key == api_key)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
     
     if not user:
         raise HTTPException(

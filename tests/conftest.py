@@ -1,17 +1,15 @@
 import os
 
-# Set test environment variables BEFORE importing anything
 os.environ["GOOGLE_CLIENT_ID"] = "dummy_client_id"
 os.environ["GOOGLE_CLIENT_SECRET"] = "dummy_client_secret"
 os.environ["GOOGLE_REDIRECT_URI"] = "http://localhost:8000/auth/callback"
-os.environ["SECRET_KEY"] = "your-secret-key-here"  # Match the key from app/core/config.py
+os.environ["SECRET_KEY"] = "your-secret-key-here"
 
 import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from unittest.mock import patch
-from uuid import UUID
 import app.models
 from httpx import AsyncClient
 from app.models.base import Base
@@ -19,6 +17,9 @@ from app.models.llm_models import LLMModel
 from app.main import app
 from app.core.database import get_db
 from httpx import ASGITransport
+from app.models.agent_controller import AgentController
+from sqlalchemy.sql import text
+from app.utils.llm_response_formats import LLMValidationFormat
 
 # Create a test database URL for SQLite in-memory database
 SQLALCHEMY_TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -76,37 +77,56 @@ async def client():
 @pytest.fixture
 def mock_google_verify():
     """Fixture to mock Google token verification"""
-    with patch('app.core.security.verify_google_token') as mock:
-        mock.return_value = {
-            'email': 'test@example.com',
-            'sub': '12345',  # This is Google's user ID
-            'name': 'Test User'
-        }
+    from google.oauth2 import id_token
+    
+    def mock_verify_oauth2_token(token, request, client_id):
+        if token == "valid_google_token" or token == "valid_google_token_1":
+            return {
+                "iss": "accounts.google.com",
+                "sub": "12345",
+                "email": "test1@example.com",
+                "email_verified": True,
+                "name": "Test User 1",
+                "aud": client_id
+            }
+        elif token == "valid_google_token_2":
+            return {
+                "iss": "accounts.google.com",
+                "sub": "67890",
+                "email": "test2@example.com",
+                "email_verified": True,
+                "name": "Test User 2",
+                "aud": client_id
+            }
+        raise ValueError("Invalid token")
+
+    # Mock the Google verification function instead
+    with patch('google.oauth2.id_token.verify_oauth2_token', side_effect=mock_verify_oauth2_token) as mock:
         yield mock
 
 @pytest_asyncio.fixture
 async def sample_llm_models(test_db):
     models = [
         LLMModel(
-            id=UUID("550e8400-e29b-41d4-a716-446655440001"),
+            id=str("550e8400-e29b-41d4-a716-446655440001"),
             model_name="gemini-2.5-pro",
             input_token_price=0.001,
             output_token_price=0.002,
             is_active=True
         ),
         LLMModel(
-            id=UUID("550e8400-e29b-41d4-a716-446655440002"),
+            id=str("550e8400-e29b-41d4-a716-446655440002"),
             model_name="llama3.1",
             input_token_price=0.003,
             output_token_price=0.004,
-            is_active=False
+            is_active=True
         ),
         LLMModel(
-            id=UUID("550e8400-e29b-41d4-a716-446655440000"),
+            id=str("550e8400-e29b-41d4-a716-446655440000"),
             model_name="gpt-4o",
             input_token_price=0.0015,
             output_token_price=0.0030,
-            is_active=True
+            is_active=False
         )
     ]
     
@@ -115,3 +135,56 @@ async def sample_llm_models(test_db):
     await test_db.commit()
     
     return models
+
+@pytest_asyncio.fixture
+async def verify_tables(test_db):
+    """Verify that all required tables are created"""
+    async with test_engine.connect() as conn:
+        # This will show all tables that exist in the database
+        result = await conn.execute(text("SELECT name FROM sqlite_master WHERE type='table';"))
+        tables = result.fetchall()
+        print("Created tables:", [table[0] for table in tables])
+
+@pytest_asyncio.fixture
+async def valid_user_with_credits(test_db, client, mock_google_verify):
+    mock_google_verify.return_value = {
+        'email': 'test@example.com',
+        'sub': '12345',
+        'name': 'Test User'
+    }
+    signup_response = await client.post(
+        "/api/v1/auth/signup",
+        json={"access_token": "valid_google_token"}
+    )
+    user_data = signup_response.json()["agent_controller"]
+
+    user = await test_db.get(AgentController, user_data["id"])
+    user.credit_balance = 10000
+    await test_db.commit()
+    await test_db.refresh(user)
+
+    return user_data
+
+@pytest_asyncio.fixture
+async def mock_llm_validation(monkeypatch):
+    async def fake_get_llm_validation(alert_request, llm_model_name):
+        approved_validation = LLMValidationFormat(
+            approval=True,
+            chance_score=0.99,
+            output_intent={"intent": "fake"},
+            keywords=["bitcoin", "price"]
+        )
+        
+        #return approved_validation.model_dump_json()
+        #{'detail': "Error creating alert: 'str' object has no attribute 'approval'"}
+        
+        #return approved_validation.model_dump()
+        #{'detail': "Error creating alert: 'dict' object has no attribute 'approval'"}
+        
+        #TODO: FIX THIS        
+        return approved_validation 
+        #{'detail': 'Error creating alert: expected string or buffer'}
+        
+
+    monkeypatch.setattr("app.api.v1.endpoints.alert.get_llm_validation", fake_get_llm_validation)
+    yield

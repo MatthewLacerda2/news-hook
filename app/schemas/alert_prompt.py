@@ -38,7 +38,7 @@ class AlertPromptCreateRequestBase(BaseModel):
 
     @field_validator('parsed_intent')
     @classmethod
-    def check_flat_json(cls, v):
+    def check_flat_json_parsed_intent(cls, v):
         if v is not None:
             for key, value in v.items():
                 if isinstance(value, (dict, list)):
@@ -47,7 +47,7 @@ class AlertPromptCreateRequestBase(BaseModel):
 
     @field_validator('schema_format')
     @classmethod
-    def check_flat_json(cls, v):
+    def check_flat_json_schema_format(cls, v):
         if v is not None:
             for key, value in v.items():
                 if isinstance(value, (dict, list)):

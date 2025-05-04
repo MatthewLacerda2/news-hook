@@ -1,5 +1,5 @@
 #async def post_document(
-#    content: str,
+#    user_document: UserDocument,
 #)
 
 #async def get_document(

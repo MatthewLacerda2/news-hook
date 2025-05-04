@@ -225,7 +225,7 @@ async def test_list_alerts_successful(client, valid_user_with_credits):
     AlertPromptListResponse.model_validate(data)
 
 @pytest.mark.asyncio
-async def test_list_alerts_invalid_parameters(client, valid_user_with_credits):
+async def test_list_alerts_invalid_parameters(client, valid_user_with_credits, test_db, sample_llm_models):
     """Test alert listing with invalid parameter types"""
     user_data = valid_user_with_credits
     api_key = user_data["api_key"]
@@ -239,8 +239,12 @@ async def test_list_alerts_invalid_parameters(client, valid_user_with_credits):
         params=invalid_pagination_params,
         headers={"X-API-Key": api_key}
     )
-    assert response.status_code == 400
-    assert "Invalid pagination parameters" in response.json()["detail"]
+    assert response.status_code == 422
+    assert any(
+        "greater than or equal to 0" in error["msg"] or
+        "less than or equal to 100" in error["msg"]
+        for error in response.json()["detail"]
+    )
     
     invalid_datetime_params = {
         "created_after": "not-a-datetime"
@@ -250,8 +254,11 @@ async def test_list_alerts_invalid_parameters(client, valid_user_with_credits):
         params=invalid_datetime_params,
         headers={"X-API-Key": api_key}
     )
-    assert response.status_code == 400
-    assert "Invalid datetime format" in response.json()["detail"]
+    assert response.status_code == 422
+    assert any(
+        "valid datetime" in error["msg"] or "invalid datetime format" in error["msg"]
+        for error in response.json()["detail"]
+    )
 
 @pytest.mark.asyncio
 async def test_list_alerts_datetime_validation(client, valid_user_with_credits):

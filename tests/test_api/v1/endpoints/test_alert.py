@@ -295,7 +295,17 @@ async def test_list_alerts_invalid_api_key(client, test_db):
     )
     assert response.status_code == 401
     assert "Invalid API key" in response.json()["detail"]
-
+    
+@pytest.mark.asyncio
+async def test_get_alert_invalid_api_key(client, test_db):
+    """Test alert retrieval with invalid API key"""
+    response = await client.get(
+        "/api/v1/alerts/123",
+        headers={"X-API-Key": "invalid_api_key"}
+    )
+    assert response.status_code == 401
+    assert "Invalid API key" in response.json()["detail"]
+    
 @pytest.mark.asyncio
 async def test_get_alert_successful(client, valid_user_with_credits, sample_llm_models, test_db):
     """Test successful alert retrieval"""

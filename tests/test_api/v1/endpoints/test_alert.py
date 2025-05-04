@@ -1,8 +1,9 @@
-from datetime import datetime, timedelta
 import uuid
-from app.schemas.alert_prompt import AlertPromptCreateSuccessResponse, AlertPromptListResponse, AlertPromptItem
-from app.models.alert_prompt import AlertStatus
 import pytest
+from datetime import datetime, timedelta
+from app.models.alert_prompt import AlertStatus
+from app.models.agent_controller import AgentController
+from app.schemas.alert_prompt import AlertPromptCreateSuccessResponse, AlertPromptListResponse, AlertPromptItem
 
 @pytest.mark.asyncio
 async def test_create_alert_successful(client, valid_user_with_credits, sample_llm_models):
@@ -21,8 +22,8 @@ async def test_create_alert_successful(client, valid_user_with_credits, sample_l
     
     response = await client.post(
         "/api/v1/alerts/",
-        headers={"X-API-Key": user_data["api_key"]},
-        json=alert_data
+        json=alert_data,
+        headers={"X-API-Key": user_data["api_key"]}
     )
     
     assert response.status_code == 201
@@ -85,20 +86,26 @@ async def test_create_alert_mismatched_user_api_key(client, mock_google_verify, 
     assert "Not authenticated" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_create_alert_insufficient_credits(client, valid_user_with_credits):
+async def test_create_alert_insufficient_credits(client, valid_user_with_credits, test_db):
     """Test alert creation with insufficient credits"""
     user_data = valid_user_with_credits
-    
-    alert_data = {
-        "api_key": user_data["api_key"],
-        "user_id": user_data["id"],
-        "prompt": "Test prompt",
-        "http_method": "POST",
-        "http_url": "https://webhook.example.com/test"
-    }
-    
-    response = await client.post("/api/v1/alerts/", json=alert_data)
-    assert response.status_code == 401
+
+    user = await test_db.get(AgentController, user_data["id"])
+    user.credit_balance = 0
+    await test_db.commit()
+    await test_db.refresh(user)
+
+    response = await client.post(
+        "/api/v1/alerts/",
+        json={
+            "user_id": user_data["id"],
+            "prompt": "Test prompt",
+            "http_method": "POST",
+            "http_url": "https://webhook.example.com/test"
+        },
+        headers={"X-API-Key": user_data["api_key"]}
+    )
+    assert response.status_code == 403
     assert "Insufficient credits" in response.json()["detail"]
 
 @pytest.mark.asyncio
@@ -207,7 +214,7 @@ async def test_list_alerts_successful(client, valid_user_with_credits):
     response = await client.get(
         "/api/v1/alerts/",
         params=list_params,
-        headers={"X-API-Key": user_data["api_key"]}
+        headers={"X-API-Key": valid_user_with_credits["api_key"]}
     )
     assert response.status_code == 200
     
@@ -257,7 +264,7 @@ async def test_list_alerts_datetime_validation(client, valid_user_with_credits):
     response = await client.get(
         "/api/v1/alerts/",
         params=params,
-        headers={"X-API-Key": user_data["api_key"]}
+        headers={"X-API-Key": valid_user_with_credits["api_key"]}
     )
     assert response.status_code == 400
     assert "created_after cannot be later than max_datetime" in response.json()["detail"]
@@ -269,7 +276,7 @@ async def test_list_alerts_minimal_parameters(client, valid_user_with_credits):
     
     response = await client.get(
         "/api/v1/alerts/",
-        headers={"X-API-Key": user_data["api_key"]}
+        headers={"X-API-Key": valid_user_with_credits["api_key"]}
     )
     assert response.status_code == 200
     
@@ -352,31 +359,32 @@ async def test_cancel_alert_successful(client, valid_user_with_credits, sample_l
         "http_url": "https://webhook.example.com/crypto-alert",
         "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
         "example_response": {"price": 50001, "alert": True},
-        "max_datetime": (datetime.now() + timedelta(days=30)).isoformat(),
+        "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
         "llm_model": "llama3.1"
     }
     
     create_response = await client.post(
         "/api/v1/alerts/", 
-        headers={"X-API-Key": api_key},
-        json=alert_data
+        json=alert_data,
+        headers={"X-API-Key": api_key}
     )
     
     assert create_response.status_code == 201
     alert_id = create_response.json()["id"]
-    
+    print("por enquanto aqui tá tudo tranquilo")
     # Now cancel the alert using PATCH
     response = await client.patch(
         f"/api/v1/alerts/{alert_id}/cancel",
         headers={"X-API-Key": api_key}
     )
     assert response.status_code == 200
-    
+    print("cancelado com sucesso")
     # Verify the alert is now cancelled by getting it
     list_response = await client.get(
         "/api/v1/alerts/",
         headers={"X-API-Key": api_key}
     )
+    print("listando com sucesso")
     assert list_response.status_code == 200
     alerts = list_response.json()["alerts"]
     cancelled_alert = next(alert for alert in alerts if alert["id"] == alert_id)

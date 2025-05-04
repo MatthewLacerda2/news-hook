@@ -36,7 +36,7 @@ async def create_alert(
 
     if user.credit_balance <= 0:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="Insufficient credits"
         )
     
@@ -68,7 +68,7 @@ async def create_alert(
         
         if user.credit_balance < tokens_price:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
+                status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient credits"
             )
             
@@ -227,7 +227,6 @@ async def cancel_alert(
 ):
     """Cancel an existing alert"""
     
-    # Find the alert and verify ownership
     stmt = select(AlertPrompt).where(
         AlertPrompt.id == alert_id,
         AlertPrompt.agent_controller_id == user.id
@@ -241,7 +240,6 @@ async def cancel_alert(
             detail="Not found"
         )
     
-    # Update alert status to cancelled
     alert.status = AlertStatus.CANCELLED
     await db.commit()
     

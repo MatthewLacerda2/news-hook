@@ -113,16 +113,18 @@ async def test_create_alert_invalid_url(client, valid_user_with_credits):
     user_data = valid_user_with_credits
 
     alert_data = {
-        "api_key": user_data["api_key"],
         "user_id": user_data["id"],
         "prompt": "Test prompt",
         "http_method": "POST",
         "http_url": "not-a-valid-url"
     }
 
-    response = await client.post("/api/v1/alerts/", json=alert_data)
-    assert response.status_code == 400
-    assert "Invalid URL" in response.json()["detail"]
+    response = await client.post("/api/v1/alerts/", json=alert_data, headers={"X-API-Key": user_data["api_key"]})
+    assert response.status_code == 422
+    # Check that the error message mentions "valid URL"
+    assert any(
+        "valid URL" in error["msg"] for error in response.json()["detail"]
+    )
 
 @pytest.mark.asyncio
 async def test_create_alert_invalid_parsed_intent(client, valid_user_with_credits):

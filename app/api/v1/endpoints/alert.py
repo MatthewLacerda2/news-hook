@@ -52,7 +52,7 @@ async def create_alert(
         if not llm_model:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"LLM model '{alert_data.llm_model}' not found"
+                detail=f"Invalid LLM model"
             )
 
         llm_validation_response = await get_llm_validation(alert_data, llm_model.model_name)
@@ -129,6 +129,8 @@ async def create_alert(
             keywords=llm_validation_response.keywords
         )
         
+    except HTTPException as e:
+        raise e  # re-raise HTTPExceptions so FastAPI can handle them
     except Exception as e:
         await db.rollback()
         raise HTTPException(

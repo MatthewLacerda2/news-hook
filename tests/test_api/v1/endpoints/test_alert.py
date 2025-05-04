@@ -178,7 +178,7 @@ async def test_create_alert_invalid_max_datetime(client, valid_user_with_credits
     assert "max_datetime cannot be more than 300 days in the future" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_create_alert_invalid_llm_model(client, valid_user_with_credits):
+async def test_create_alert_invalid_llm_model(client, valid_user_with_credits, sample_llm_models, test_db):
     user_data = valid_user_with_credits
 
     alert_data = {
@@ -200,7 +200,6 @@ async def test_create_alert_invalid_llm_model(client, valid_user_with_credits):
 @pytest.mark.asyncio
 async def test_list_alerts_successful(client, valid_user_with_credits):
     """Test successful alert listing with valid parameters"""
-    user_data = valid_user_with_credits
 
     list_params = {
         "offset": 0,

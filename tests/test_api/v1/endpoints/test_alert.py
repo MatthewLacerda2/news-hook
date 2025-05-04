@@ -374,20 +374,20 @@ async def test_cancel_alert_successful(client, valid_user_with_credits, sample_l
     
     assert create_response.status_code == 201
     alert_id = create_response.json()["id"]
-    print("por enquanto aqui tá tudo tranquilo")
+    
     # Now cancel the alert using PATCH
     response = await client.patch(
         f"/api/v1/alerts/{alert_id}/cancel",
         headers={"X-API-Key": api_key}
     )
     assert response.status_code == 200
-    print("cancelado com sucesso")
+    
     # Verify the alert is now cancelled by getting it
     list_response = await client.get(
         "/api/v1/alerts/",
         headers={"X-API-Key": api_key}
     )
-    print("listando com sucesso")
+    
     assert list_response.status_code == 200
     alerts = list_response.json()["alerts"]
     cancelled_alert = next(alert for alert in alerts if alert["id"] == alert_id)
@@ -401,8 +401,8 @@ async def test_cancel_alert_invalid_api_key(client, test_db):
         f"/api/v1/alerts/{str(uuid.uuid4())}/cancel",
         headers={"X-API-Key": "invalid_api_key"}
     )
-    assert response.status_code == 403
-    assert "Unauthorized" in response.json()["detail"]
+    assert response.status_code == 401
+    assert "Invalid API key" in response.json()["detail"]
 
 @pytest.mark.asyncio
 async def test_cancel_alert_wrong_user(client, valid_user_with_credits, mock_google_verify, sample_llm_models):

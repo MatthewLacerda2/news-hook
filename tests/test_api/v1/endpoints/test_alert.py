@@ -394,14 +394,14 @@ async def test_cancel_alert_successful(client, valid_user_with_credits, sample_l
     
     # Verify the alert is now cancelled by getting it
     list_response = await client.get(
-        "/api/v1/alerts/",
+        f"/api/v1/alerts/{alert_id}",
         headers={"X-API-Key": api_key}
     )
     
     assert list_response.status_code == 200
-    alerts = list_response.json()["alerts"]
-    cancelled_alert = next(alert for alert in alerts if alert["id"] == alert_id)
-    assert cancelled_alert["status"] == AlertStatus.CANCELLED
+    alert = list_response.json()
+    assert alert["id"] == alert_id
+    assert alert["status"] == "CANCELLED"
 
 @pytest.mark.asyncio
 async def test_cancel_alert_invalid_api_key(client, test_db):

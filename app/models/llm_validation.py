@@ -4,6 +4,7 @@ from sqlalchemy import ForeignKey
 from pgvector.sqlalchemy import Vector
 import uuid
 
+#TODO: we can remove the prompt, prompt_embedding, parsed_intent, parsed_intent_embedding columns
 class LLMValidation(Base):
     __tablename__ = "llm_validations"
     

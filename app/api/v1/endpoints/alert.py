@@ -20,7 +20,7 @@ from app.models.llm_validation import LLMValidation
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy import func
-from app.tasks.save_embedding import generate_and_save_alert_prompt_embeddings
+from app.tasks.save_embedding import generate_and_save_embeddings
 import json
 import uuid
 
@@ -113,12 +113,11 @@ async def create_alert(
         await db.refresh(new_alert)
         
         asyncio.create_task(
-            generate_and_save_alert_prompt_embeddings(
+            generate_and_save_embeddings(
                 new_alert.id,
                 alert_data.prompt,
                 alert_data.parsed_intent
-            ),
-            #TODO: save validation embeddings
+            )
         )
         
         return AlertPromptCreateSuccessResponse(

@@ -21,7 +21,6 @@ async def process_document_for_vector_search(sourced_document: SourcedData):
         md_document: The markdown text to process, as returned by docling
         source_id: The ID of the webscrape source that generated this document
     """
-    #TODO: we gotta order the alerts by their parsed_intent_embedding's cosine similarity
     try:
         db = SessionLocal()
         

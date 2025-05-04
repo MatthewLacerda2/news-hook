@@ -103,7 +103,7 @@ async def create_alert(
             output_tokens=count_tokens(llm_validation_response.output_intent, llm_model.model_name),
             output_price=output_price,
             llm_id=llm_model.id,
-            date_time=datetime.now()
+            date_time=now
         )
         user.credit_balance -= tokens_price
         db.add(llm_validation)

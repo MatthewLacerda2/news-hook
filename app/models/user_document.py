@@ -12,11 +12,10 @@ class UserDocument(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     agent_controller_id = Column(String(36), ForeignKey('agent_controllers.id'), nullable=False)
     name = Column(String(36), nullable=False)
-    uploaded_datetime = Column(DateTime, nullable=False, default=datetime.now())
+    uploaded_datetime = Column(DateTime, nullable=False)
     content = Column(String, nullable=False)
     content_embedding = Column(Vector(384), nullable=True)
     
     model_config = ConfigDict(from_attributes=True)
 
-    agent_controller = relationship("AgentController", back_populates="document_chunks")
-    user_document = relationship("UserDocument", back_populates="chunks")
+    agent_controller = relationship("AgentController", back_populates="documents")

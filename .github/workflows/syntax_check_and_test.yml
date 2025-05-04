@@ -1,0 +1,53 @@
+name: Python Syntax Check and Tests
+
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+    branches: [ main ]  # or your default branch
+
+permissions:
+  pull-requests: write  # Needed to update PR status
+
+jobs:
+  syntax-check-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest flake8
+          # If you have a requirements.txt or pyproject.toml, add:
+          # pip install -r requirements.txt
+
+      - name: Check Python syntax
+        run: |
+          find . -name "*.py" -print0 | xargs -0 python -m py_compile
+
+      - name: Lint with flake8 (warn only)
+        continue-on-error: true
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --max-complexity=10 --max-line-length=127 --statistics
+
+      - name: Run pytest
+        run: |
+          pytest
+
+      - name: Mark PR as draft if checks fail
+        if: failure()  # This step runs only if previous steps failed
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gh jq
+          PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
+          gh pr ready $PR_NUMBER --undo --repo ${{ github.repository }}

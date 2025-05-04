@@ -19,6 +19,7 @@ from app.core.database import get_db
 from httpx import ASGITransport
 from app.models.agent_controller import AgentController
 from sqlalchemy.sql import text
+from app.utils.llm_response_formats import LLMValidationFormat
 
 # Create a test database URL for SQLite in-memory database
 SQLALCHEMY_TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -164,16 +165,26 @@ async def valid_user_with_credits(test_db, client, mock_google_verify):
 
     return user_data
 
-@pytest_asyncio.fixture(autouse=True)
+@pytest_asyncio.fixture
 async def mock_llm_validation(monkeypatch):
-    class FakeLLMValidationResponse:
-        approval = True
-        chance_score = 0.99
-        output_intent = {"intent": "fake"}
-        keywords = ["bitcoin", "price"]
-
     async def fake_get_llm_validation(alert_request, llm_model_name):
-        return FakeLLMValidationResponse()
+        approved_validation = LLMValidationFormat(
+            approval=True,
+            chance_score=0.99,
+            output_intent={"intent": "fake"},
+            keywords=["bitcoin", "price"]
+        )
+        
+        #return approved_validation.model_dump_json()
+        #{'detail': "Error creating alert: 'str' object has no attribute 'approval'"}
+        
+        #return approved_validation.model_dump()
+        #{'detail': "Error creating alert: 'dict' object has no attribute 'approval'"}
+        
+        #TODO: FIX THIS        
+        return approved_validation 
+        #{'detail': 'Error creating alert: expected string or buffer'}
+        
 
-    monkeypatch.setattr("app.utils.llm_validator.get_llm_validation", fake_get_llm_validation)
+    monkeypatch.setattr("app.api.v1.endpoints.alert.get_llm_validation", fake_get_llm_validation)
     yield

@@ -6,7 +6,7 @@ from app.models.agent_controller import AgentController
 from app.schemas.alert_prompt import AlertPromptCreateSuccessResponse, AlertPromptListResponse, AlertPromptItem
 
 @pytest.mark.asyncio
-async def test_create_alert_successful(client, valid_user_with_credits, sample_llm_models):
+async def test_create_alert_successful(client, valid_user_with_credits, sample_llm_models, mock_llm_validation):
     """Test successful alert creation with valid data"""
     user_data = valid_user_with_credits
 
@@ -26,8 +26,13 @@ async def test_create_alert_successful(client, valid_user_with_credits, sample_l
         headers={"X-API-Key": user_data["api_key"]}
     )
     
+    print(response)
+    print(response.json())
+    print(response.status_code)
+    
     assert response.status_code == 201
     AlertPromptCreateSuccessResponse.model_validate(response.json())
+    
 
 @pytest.mark.asyncio
 async def test_create_alert_invalid_api_key(client, test_db):
@@ -202,7 +207,7 @@ async def test_create_alert_invalid_llm_model(client, valid_user_with_credits, s
     assert "Invalid LLM model" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_list_alerts_successful(client, valid_user_with_credits):
+async def test_list_alerts_successful(client, valid_user_with_credits, mock_llm_validation):
     """Test successful alert listing with valid parameters"""
 
     list_params = {
@@ -225,7 +230,7 @@ async def test_list_alerts_successful(client, valid_user_with_credits):
     AlertPromptListResponse.model_validate(data)
 
 @pytest.mark.asyncio
-async def test_list_alerts_invalid_parameters(client, valid_user_with_credits, test_db, sample_llm_models):
+async def test_list_alerts_invalid_parameters(client, valid_user_with_credits, test_db, sample_llm_models, mock_llm_validation):
     """Test alert listing with invalid parameter types"""
     user_data = valid_user_with_credits
     api_key = user_data["api_key"]
@@ -261,7 +266,7 @@ async def test_list_alerts_invalid_parameters(client, valid_user_with_credits, t
     )
 
 @pytest.mark.asyncio
-async def test_list_alerts_datetime_validation(client, valid_user_with_credits):
+async def test_list_alerts_datetime_validation(client, valid_user_with_credits, mock_llm_validation):
     """Test datetime validation between created_after and max_datetime"""
     user_data = valid_user_with_credits
     
@@ -314,7 +319,7 @@ async def test_get_alert_invalid_api_key(client, test_db):
     assert "Invalid API key" in response.json()["detail"]
     
 @pytest.mark.asyncio
-async def test_get_alert_successful(client, valid_user_with_credits, sample_llm_models, test_db):
+async def test_get_alert_successful(client, valid_user_with_credits, sample_llm_models, test_db, mock_llm_validation):
     """Test successful alert retrieval"""
     user_data = valid_user_with_credits
     api_key = user_data["api_key"]
@@ -368,7 +373,7 @@ async def test_get_alert_not_found(client, valid_user_with_credits):
     assert "Not found" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_cancel_alert_successful(client, valid_user_with_credits, sample_llm_models, test_db):
+async def test_cancel_alert_successful(client, valid_user_with_credits, sample_llm_models, test_db, mock_llm_validation):
     """Test successful alert cancellation"""
     user_data = valid_user_with_credits
     api_key = user_data["api_key"]
@@ -422,7 +427,7 @@ async def test_cancel_alert_invalid_api_key(client, test_db):
     assert "Invalid API key" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_cancel_alert_wrong_user(client, valid_user_with_credits, mock_google_verify, sample_llm_models):
+async def test_cancel_alert_wrong_user(client, valid_user_with_credits, mock_google_verify, sample_llm_models, test_db, mock_llm_validation):
     """Test attempting to cancel an alert belonging to another user"""
     user_data = valid_user_with_credits
     api_key = user_data["api_key"]

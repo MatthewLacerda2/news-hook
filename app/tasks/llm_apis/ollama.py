@@ -23,6 +23,7 @@ async def get_ollama_validation(alert_prompt: str, alert_parsed_intent: str) -> 
     response = client.chat.completions.create(
         model="llama3.1",
         temperature=ollama_temperature,
+        stream=False,
         messages=[
             {"role": "user", "content": full_prompt},
         ],
@@ -37,6 +38,7 @@ async def get_ollama_verification(alert_prompt: str, alert_parsed_intent: str, d
     response = client.chat.completions.create(
         model="llama3.1",
         temperature=ollama_temperature,
+        stream=False,
         messages=[
             {"role": "user", "content": full_prompt},
         ],
@@ -51,6 +53,7 @@ async def get_ollama_alert_generation(alert_parsed_intent: str, document: str, e
     response = client.chat.completions.create(
         model="llama3.1",
         temperature=ollama_temperature,
+        stream=False,
         messages=[
             {"role": "user", "content": full_prompt},
         ],

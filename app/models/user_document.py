@@ -19,4 +19,3 @@ class UserDocument(Base):
     model_config = ConfigDict(from_attributes=True)
 
     agent_controller = relationship("AgentController", back_populates="documents")
-    user = relationship("AgentController", back_populates="documents")

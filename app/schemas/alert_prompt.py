@@ -4,8 +4,7 @@ from typing import Optional, Dict, Union, List
 from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict
 from app.models.alert_prompt import AlertStatus
 
-JsonPrimitive = Union[str, int, float, bool, None]
-
+JsonPrimitive = Union[str, int, float, bool, datetime]
 class HttpMethod(str, Enum):
     POST = "POST"
     PUT = "PUT"
@@ -35,6 +34,24 @@ class AlertPromptCreateRequestBase(BaseModel):
         if v > max_allowed:
             raise ValueError("max_datetime cannot be more than 300 days in the future")
             
+        return v
+
+    @field_validator('parsed_intent')
+    @classmethod
+    def check_flat_json(cls, v):
+        if v is not None:
+            for key, value in v.items():
+                if isinstance(value, (dict, list)):
+                    raise ValueError("parsed_intent must be flat (no nested objects or arrays)")
+        return v
+
+    @field_validator('schema_format')
+    @classmethod
+    def check_flat_json(cls, v):
+        if v is not None:
+            for key, value in v.items():
+                if isinstance(value, (dict, list)):
+                    raise ValueError("schema_format must be flat (no nested objects or arrays)")
         return v
 
 class AlertPromptCreateSuccessResponse(BaseModel):

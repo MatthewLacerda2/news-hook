@@ -163,19 +163,22 @@ async def test_create_alert_invalid_max_datetime(client, valid_user_with_credits
     user_data = valid_user_with_credits
 
     alert_data = {
-        "api_key": user_data["api_key"],
-        "user_id": user_data["id"],
-        "prompt": "Test prompt",
+        "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
         "http_method": "POST",
-        "http_url": "https://webhook.example.com/test",
+        "http_url": "https://webhook.example.com/crypto-alert",
+        "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
+        "example_response": {"price": 50001, "alert": True},
         "max_datetime": (datetime.now() + timedelta(days=365)).isoformat(),
         "llm_model": "llama3.1"
     }
-
-    alert_data["max_datetime"] = (datetime.now() + timedelta(days=400)).isoformat()
-    response = await client.post("/api/v1/alerts/", json=alert_data)
-    assert response.status_code == 400
-    assert "max_datetime cannot be more than 300 days in the future" in response.json()["detail"]
+    
+    response = await client.post("/api/v1/alerts/", json=alert_data, headers={"X-API-Key": user_data["api_key"]})
+    
+    assert response.status_code == 422
+    assert any(
+        "max_datetime cannot be more than 300 days in the future" in err["msg"]
+        for err in response.json()["detail"]
+    )
 
 @pytest.mark.asyncio
 async def test_create_alert_invalid_llm_model(client, valid_user_with_credits, sample_llm_models, test_db):

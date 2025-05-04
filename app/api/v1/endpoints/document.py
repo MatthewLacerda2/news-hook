@@ -16,7 +16,6 @@ async def post_document(
     user_document: UserDocumentCreateRequest,
     db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key),
-    x_user_id: str = Header(..., alias="X-User-Id")
 ):
     """
     Create a new document
@@ -27,12 +26,9 @@ async def post_document(
     if len(user_document.content) < 16:
         raise HTTPException(status_code=400, detail="content must be at least 16 characters long")
 
-    # Check user id matches header
-    if user.id != x_user_id:
-        raise HTTPException(status_code=400, detail="Not authenticated: API key does not match user id")
-
     try:
-        embedding = await get_nomic_embeddings(user_document.content)
+        embedding_response = await get_nomic_embeddings(user_document.content)
+        embedding = embedding_response.data[0].embedding
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Embedding failed: {str(e)}")
 
@@ -48,6 +44,8 @@ async def post_document(
     db.add(new_doc)
     await db.commit()
     await db.refresh(new_doc)
+    
+    #TODO: async task to verify for alerts
 
     return UserDocumentCreateResponse(
         id=new_doc.id,

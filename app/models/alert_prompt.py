@@ -37,12 +37,12 @@ class AlertPrompt(Base):
     http_headers = Column(JSON, nullable=True)
     
     parsed_intent = Column(JSON, nullable=False)
-    parsed_intent_embedding = Column(Vector(384), nullable=True)
+    parsed_intent_embedding = Column(Vector(768), nullable=True)
     response_format = Column(JSON, nullable=False)
     
     tags = Column(JSON, nullable=True)
     keywords = Column(JSON, nullable=False)
-    prompt_embedding = Column(Vector(384), nullable=True)
+    prompt_embedding = Column(Vector(768), nullable=True)
     status = Column(SQLEnum(AlertStatus), nullable=False, default=AlertStatus.ACTIVE)
     created_at = Column(DateTime, nullable=False, default=datetime.now())
     expires_at = Column(DateTime, nullable=False)

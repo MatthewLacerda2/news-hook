@@ -14,8 +14,9 @@ class UserDocument(Base):
     name = Column(String(36), nullable=False)
     uploaded_datetime = Column(DateTime, nullable=False)
     content = Column(String, nullable=False)
-    content_embedding = Column(Vector(384), nullable=True)
+    content_embedding = Column(Vector(768), nullable=True)
     
     model_config = ConfigDict(from_attributes=True)
 
     agent_controller = relationship("AgentController", back_populates="documents")
+    user = relationship("AgentController", back_populates="documents")

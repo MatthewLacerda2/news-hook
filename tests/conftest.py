@@ -159,7 +159,7 @@ async def valid_user_with_credits(test_db, client, mock_google_verify):
     user_data = signup_response.json()["agent_controller"]
 
     user = await test_db.get(AgentController, user_data["id"])
-    user.credit_balance = 10000
+    user.credit_balance = 5000
     await test_db.commit()
     await test_db.refresh(user)
 

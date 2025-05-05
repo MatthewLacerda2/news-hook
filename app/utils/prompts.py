@@ -4,24 +4,23 @@ validation_prompt = """
 You are a helpful assistant that validates if an alert's request is reasonable.
 
 Alert request is when someone asks us to alert when and if an event does happen.
-The request carries a prompt and a parsed intent.
 
 
-The alert's prompt is:
-<alert_prompt>
+The alert's request was:
+<alert_request>
 {alert_prompt}
-</alert_prompt>
+</alert_request>
 
 
-The alerts have to be:
+The alert has to be:
 - Clear
 - Specific
 - Have a plausible chance of happening
-- Unambiguous (not leave room for interpretation)
+- Unambiguous (not leave multiple interpretations)
 - Self-contained (not requiring multiple documents)
 - NOT vague
-- NOT subjective
-- NOT require external tools or APIs
+- NOT subjective nor matter of opinion
+- NOT require complex reasoning
 
 
 Your job is to validate if the alert's request is reasonable.

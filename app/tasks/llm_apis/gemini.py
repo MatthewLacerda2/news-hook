@@ -13,7 +13,7 @@ async def get_gemini_validation(alert_prompt: str) -> LLMValidationFormat:
     response = client.models.generate_content(
         model="gemini-2.5-pro", contents=full_prompt, config=types.GenerateContentConfig(
         response_mime_type='application/json',
-        response_schema=LLMValidationFormat,
+        response_schema=LLMValidationFormat.model_json_schema(),
         temperature=gemini_temperature,
     ),)
     
@@ -25,19 +25,19 @@ async def get_gemini_verification(alert_prompt: str, document: str) -> LLMVerifi
     response = client.models.generate_content(
         model="gemini-2.5-pro", contents=full_prompt, config=types.GenerateContentConfig(
         response_mime_type='application/json',
-        response_schema=LLMVerificationFormat,
+        response_schema=LLMVerificationFormat.model_json_schema(),
         temperature=gemini_temperature,
     ),)
 
     return response.text
 
-async def get_gemini_alert_generation(document: str, payload_format: str) -> LLMGenerationFormat:
+async def get_gemini_alert_generation(document: str, payload_format: str, source_url: str) -> LLMGenerationFormat:
     
-    full_prompt = get_generation_prompt(document, payload_format)
+    full_prompt = get_generation_prompt(document, payload_format, source_url)
     response = client.models.generate_content(
         model="gemini-2.5-pro", contents=full_prompt, config=types.GenerateContentConfig(
         response_mime_type='application/json',
-        response_schema=LLMGenerationFormat,
+        response_schema=LLMGenerationFormat.model_json_schema(),
         temperature=gemini_temperature,
     ),)
     

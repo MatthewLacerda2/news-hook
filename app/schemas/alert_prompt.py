@@ -60,7 +60,7 @@ class AlertPromptItem(BaseModel):
     http_url: HttpUrl
     http_headers: Optional[Dict[str, JsonPrimitive]] = Field(None, description="HTTP headers to send with the request")
     expires_at: datetime = Field(..., description="The date and time the alert will expire")
-    payload_format: Optional[Dict[str, JsonPrimitive]] = Field(None, description="The schema of the response. MUST BE FLAT JSON AND NOT NESTED")
+    payload_format: Optional[Dict[str, JsonPrimitive]] = Field(None, description="The json schema for the alert. MUST BE FLAT JSON AND NOT NESTED")
     tags: List[str] = Field(default_factory=list, description="Tags for hinting")
     status: AlertStatus 
     created_at: datetime = Field(..., lt=datetime.now(), description="The date and time the alert was created")

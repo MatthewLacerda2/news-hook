@@ -32,7 +32,7 @@ async def get_ollama_validation(alert_prompt: str) -> LLMValidationFormat:
     
     return response.choices[0].message.content
 
-async def get_ollama_verification(alert_prompt: str, str, document: str) -> LLMVerificationFormat:
+async def get_ollama_verification(alert_prompt: str, document: str) -> LLMVerificationFormat:
         
     full_prompt = get_verification_prompt(alert_prompt, document)    
     response = client.chat.completions.create(
@@ -47,9 +47,9 @@ async def get_ollama_verification(alert_prompt: str, str, document: str) -> LLMV
     
     return response.choices[0].message.content
 
-async def get_ollama_alert_generation(document: str, payload_format: str) -> LLMGenerationFormat:
+async def get_ollama_alert_generation(document: str, payload_format: str, source_url: str) -> LLMGenerationFormat:
     
-    full_prompt = get_generation_prompt(document, payload_format)    
+    full_prompt = get_generation_prompt(document, payload_format, source_url)
     response = client.chat.completions.create(
         model="llama3.1",
         temperature=ollama_temperature,

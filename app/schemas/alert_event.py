@@ -13,6 +13,6 @@ class NewsEvent(Base):
     output: str = Field(..., description="The LLM output on the matter")
     tags: list[str] = Field(..., description="The tags for the alert")
     source_url: str = Field(..., description="The URL of the source that triggered the alert")
-    structured_data: Dict[str, JsonPrimitive] = Field(..., description="The structured JSON response as requested by the alert requester")
+    structured_data: Dict[str, JsonPrimitive] = Field(..., description="The json schema requested for the alert")
     
     model_config = ConfigDict(from_attributes=True)

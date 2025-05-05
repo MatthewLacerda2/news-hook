@@ -23,23 +23,9 @@ from sqlalchemy import func
 from app.tasks.save_embedding import generate_and_save_embeddings
 import json
 import uuid
-from mcp.server.fastmcp import FastMCP
-
-mcp = FastMCP(
-    "News Hook - Alert API",
-    instructions={
-        "overview": "This service allows ai-agents to have news and content updates monitored for any important matters.",
-        "authentication": "Agents must use a JWT in the header for all requests.",
-        "capabilities": [
-            "alerts:create",
-            "alerts:cancel",
-        ],
-    }
-)
 
 router = APIRouter()
 
-@mcp.prompt(name="create_alert", description="Setup for monitoring of news or content updates. Be informed when the alert is triggered")
 @router.post("/", response_model=AlertPromptCreateSuccessResponse, status_code=status.HTTP_201_CREATED)
 async def create_alert(
     alert_data: AlertPromptCreateRequestBase,
@@ -229,7 +215,6 @@ def alert_to_schema(alert: AlertPrompt) -> AlertPromptItem:
     )
 
 #Alert can not be 'deleted'. They costed credits and thus have to be kept register of.
-@mcp.tool(name="cancel_alert", description="Cancel an existing alert")
 @router.patch("/{alert_id}/cancel", status_code=status.HTTP_200_OK)
 async def cancel_alert(
     alert_id: str,

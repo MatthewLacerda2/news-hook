@@ -39,7 +39,7 @@ mcp = FastMCP(
 
 router = APIRouter()
 
-@mcp.prompt()
+@mcp.prompt(name="create_alert", description="Setup for monitoring of news or content updates. Be informed when the alert is triggered")
 @router.post("/", response_model=AlertPromptCreateSuccessResponse, status_code=status.HTTP_201_CREATED)
 async def create_alert(
     alert_data: AlertPromptCreateRequestBase,
@@ -229,6 +229,7 @@ def alert_to_schema(alert: AlertPrompt) -> AlertPromptItem:
     )
 
 #Alert can not be 'deleted'. They costed credits and thus have to be kept register of.
+@mcp.tool(name="cancel_alert", description="Cancel an existing alert")
 @router.patch("/{alert_id}/cancel", status_code=status.HTTP_200_OK)
 async def cancel_alert(
     alert_id: str,

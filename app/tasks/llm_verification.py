@@ -34,12 +34,12 @@ async def verify_document_matches_alert(
         if alert_prompt.llm_model == "llama3.1":
             verification_result = await get_ollama_verification(
                 alert_prompt.prompt,
-                alert_prompt.parsed_intent,
+                sourced_document.content,
             )
         elif alert_prompt.llm_model == "gemini-2.5-pro":
             verification_result = await get_gemini_verification(
                 alert_prompt.prompt,
-                alert_prompt.parsed_intent,
+                sourced_document.content,
             )
         else:
             msg = "This shouldn't even be possible, as the LLM model is checked before the alert is created"

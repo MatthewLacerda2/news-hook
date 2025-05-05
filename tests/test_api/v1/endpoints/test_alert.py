@@ -1,7 +1,6 @@
 import uuid
 import pytest
 from datetime import datetime, timedelta
-from app.models.alert_prompt import AlertStatus
 from app.models.agent_controller import AgentController
 from app.schemas.alert_prompt import AlertPromptCreateSuccessResponse, AlertPromptListResponse, AlertPromptItem
 from pydantic import BaseModel
@@ -15,7 +14,6 @@ test_alert_data = {
     "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
     "http_method": "POST",
     "http_url": "https://webhook.example.com/crypto-alert",
-    "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
     "payload_format": TestPayload.model_json_schema(),
     "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
     "llm_model": "llama3.1"
@@ -30,7 +28,6 @@ async def test_create_alert_successful(client, valid_user_with_credits, sample_l
         "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/crypto-alert",
-        "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
         "payload_format": {"price": 50001, "alert": True},
         "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
         "llm_model": "llama3.1"
@@ -147,23 +144,6 @@ async def test_create_alert_invalid_url(client, valid_user_with_credits):
     )
 
 @pytest.mark.asyncio
-async def test_create_alert_invalid_parsed_intent(client, valid_user_with_credits):
-    user_data = valid_user_with_credits
-
-    alert_data = {
-        "prompt": "Test prompt",
-        "http_method": "POST",
-        "http_url": "https://webhook.example.com/test",
-        "parsed_intent": "not-a-valid-json"
-    }
-
-    response = await client.post("/api/v1/alerts/", json=alert_data, headers={"X-API-Key": user_data["api_key"]})
-    assert response.status_code == 422
-    assert any(
-        "valid dictionary" in error["msg"] for error in response.json()["detail"]
-    )
-
-@pytest.mark.asyncio
 async def test_create_alert_invalid_payload_format(client, valid_user_with_credits):
     user_data = valid_user_with_credits
 
@@ -188,7 +168,6 @@ async def test_create_alert_invalid_max_datetime(client, valid_user_with_credits
         "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/crypto-alert",
-        "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
         "payload_format": {"price": 50001, "alert": True},
         "max_datetime": (datetime.now() + timedelta(days=365)).isoformat(),
         "llm_model": "llama3.1"
@@ -344,7 +323,6 @@ async def test_get_alert_successful(client, valid_user_with_credits, sample_llm_
         "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/crypto-alert",
-        "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
         "payload_format": {"price": 50001, "alert": True},
         "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
         "llm_model": "llama3.1"
@@ -398,7 +376,6 @@ async def test_cancel_alert_successful(client, valid_user_with_credits, sample_l
         "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/crypto-alert",
-        "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
         "payload_format": {"price": 50001, "alert": True},
         "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
         "llm_model": "llama3.1"
@@ -452,7 +429,6 @@ async def test_cancel_alert_wrong_user(client, valid_user_with_credits, mock_goo
         "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/test",
-        "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
         "payload_format": {"price": 50001, "alert": True},
         "max_datetime": (datetime.now() + timedelta(days=30)).isoformat(),
         "llm_model": "llama3.1",

@@ -80,8 +80,6 @@ async def create_alert(
             http_method=alert_data.http_method,
             http_url=str(alert_data.http_url),
             http_headers=alert_data.http_headers or {},
-            parsed_intent=json.dumps(alert_data.parsed_intent) if alert_data.parsed_intent else {},
-            parsed_intent_embedding = None,
             payload_format=json.dumps(alert_data.payload_format) if alert_data.payload_format else {},
             expires_at=alert_data.max_datetime or (now + timedelta(days=300)),
             llm_model=alert_data.llm_model,
@@ -94,11 +92,9 @@ async def create_alert(
             prompt=alert_data.prompt,
             prompt_embedding=None,
             prompt_id=new_alert.id,
-            parsed_intent=json.dumps(alert_data.parsed_intent),
-            parsed_intent_embedding=None,
             approval=llm_validation_response.approval,
             chance_score=llm_validation_response.chance_score,
-            input_tokens=count_tokens(alert_data.prompt, llm_model.model_name) + count_tokens(str(alert_data.parsed_intent), llm_model.model_name),
+            input_tokens=count_tokens(alert_data.prompt, llm_model.model_name),
             input_price=input_price,
             output_tokens=count_tokens(llm_validation_response.output_intent, llm_model.model_name),
             output_price=output_price,
@@ -116,7 +112,6 @@ async def create_alert(
             generate_and_save_embeddings(
                 new_alert.id,
                 alert_data.prompt,
-                alert_data.parsed_intent
             )
         )
         

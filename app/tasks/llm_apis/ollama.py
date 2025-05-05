@@ -17,9 +17,9 @@ async def get_nomic_embeddings(text: str):
     )
     return embeddings
 
-async def get_ollama_validation(alert_prompt: str, alert_parsed_intent: str) -> LLMValidationFormat:
+async def get_ollama_validation(alert_prompt: str) -> LLMValidationFormat:
     
-    full_prompt = get_validation_prompt(alert_prompt, alert_parsed_intent)    
+    full_prompt = get_validation_prompt(alert_prompt)    
     response = client.chat.completions.create(
         model="llama3.1",
         temperature=ollama_temperature,
@@ -32,9 +32,9 @@ async def get_ollama_validation(alert_prompt: str, alert_parsed_intent: str) -> 
     
     return response.choices[0].message.content
 
-async def get_ollama_verification(alert_prompt: str, alert_parsed_intent: str, document: str) -> LLMVerificationFormat:
+async def get_ollama_verification(alert_prompt: str, str, document: str) -> LLMVerificationFormat:
         
-    full_prompt = get_verification_prompt(alert_prompt, alert_parsed_intent, document)    
+    full_prompt = get_verification_prompt(alert_prompt, document)    
     response = client.chat.completions.create(
         model="llama3.1",
         temperature=ollama_temperature,
@@ -47,9 +47,9 @@ async def get_ollama_verification(alert_prompt: str, alert_parsed_intent: str, d
     
     return response.choices[0].message.content
 
-async def get_ollama_alert_generation(alert_parsed_intent: str, document: str, payload_format: str) -> LLMGenerationFormat:
+async def get_ollama_alert_generation(document: str, payload_format: str) -> LLMGenerationFormat:
     
-    full_prompt = get_generation_prompt(alert_parsed_intent, document, payload_format)    
+    full_prompt = get_generation_prompt(document, payload_format)    
     response = client.chat.completions.create(
         model="llama3.1",
         temperature=ollama_temperature,

@@ -12,11 +12,6 @@ The alert's prompt is:
 {alert_prompt}
 </alert_prompt>
 
-The alert's parsed intent is:
-<alert_parsed_intent>
-{alert_parsed_intent}
-</alert_parsed_intent>
-
 
 The alerts have to be:
 - Clear
@@ -40,30 +35,21 @@ You will respond in a structure format, with the following fields:
 Current date and time: {current_date_time}
 """
 
-def get_validation_prompt(alert_prompt: str, alert_parsed_intent: str):
+def get_validation_prompt(alert_prompt: str):
     current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return validation_prompt.format(
         alert_prompt=alert_prompt,
-        alert_parsed_intent=alert_parsed_intent,
         current_date_time=current_date_time
     )
 
 verification_prompt = """
 You are a helpful assistant that verifies if a document matches an alert's request.
-
 Alert request is when someone asks us to alert when and if an event does happen.
-The request carries a prompt and a parsed intent.
 
-
-The alert's prompt is:
-<alert_prompt>
+The alert's request is:
+<alert_request>
 {alert_prompt}
-</alert_prompt>
-
-The alert's parsed intent is:
-<alert_parsed_intent>
-{alert_parsed_intent}
-</alert_parsed_intent>
+</alert_request>
 
 The document is:
 <document>
@@ -80,11 +66,10 @@ You will respond in a structure format, with the following fields:
 Current date and time: {current_date_time}
 """
 
-def get_verification_prompt(alert_prompt: str, alert_parsed_intent: str, document: str):
+def get_verification_prompt(alert_prompt: str, document: str):
     current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return verification_prompt.format(
         alert_prompt=alert_prompt,
-        alert_parsed_intent=alert_parsed_intent,
         document=document,
         current_date_time=current_date_time
     )
@@ -97,10 +82,10 @@ We received a document that matches the alert's request and the event.
 The payload is to inform the user as he wanted to.
 
 
-The alert request carried the parsed intent:
-<alert_parsed_intent>
-{alert_parsed_intent}
-</alert_parsed_intent>
+The alert request was:
+<alert_request>
+{alert_prompt}
+</alert_request>
 
 The document was:
 <document>
@@ -123,10 +108,9 @@ Write in the language of the user's request.
 Current date and time: {current_date_time}
 """
 
-def get_generation_prompt(alert_parsed_intent: str, document: str, payload_format: str):
+def get_generation_prompt(document: str, payload_format: str):
     current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return generation_prompt.format(
-        alert_parsed_intent=alert_parsed_intent,
         document=document,
         payload_format=payload_format,
         current_date_time=current_date_time

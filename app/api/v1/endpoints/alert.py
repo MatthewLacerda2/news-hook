@@ -23,9 +23,23 @@ from sqlalchemy import func
 from app.tasks.save_embedding import generate_and_save_embeddings
 import json
 import uuid
+from mcp.server.fastmcp import FastMCP
+
+mcp = FastMCP(
+    "News Hook - Alert API",
+    instructions={
+        "overview": "This service allows ai-agents to have news and content updates monitored for any important matters.",
+        "authentication": "Agents must use a JWT in the header for all requests.",
+        "capabilities": [
+            "alerts:create",
+            "alerts:cancel",
+        ],
+    }
+)
 
 router = APIRouter()
 
+@mcp.prompt()
 @router.post("/", response_model=AlertPromptCreateSuccessResponse, status_code=status.HTTP_201_CREATED)
 async def create_alert(
     alert_data: AlertPromptCreateRequestBase,

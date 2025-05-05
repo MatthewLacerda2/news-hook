@@ -4,6 +4,22 @@ from datetime import datetime, timedelta
 from app.models.alert_prompt import AlertStatus
 from app.models.agent_controller import AgentController
 from app.schemas.alert_prompt import AlertPromptCreateSuccessResponse, AlertPromptListResponse, AlertPromptItem
+from pydantic import BaseModel
+
+#TODO: use this for all tests
+class TestPayload(BaseModel):
+    price: int
+    date: datetime
+    currency: str
+test_alert_data = {
+    "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
+    "http_method": "POST",
+    "http_url": "https://webhook.example.com/crypto-alert",
+    "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
+    "payload_format": TestPayload.model_json_schema(),
+    "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
+    "llm_model": "llama3.1"
+}
 
 @pytest.mark.asyncio
 async def test_create_alert_successful(client, valid_user_with_credits, sample_llm_models, mock_llm_validation):

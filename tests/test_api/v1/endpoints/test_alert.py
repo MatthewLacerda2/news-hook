@@ -15,7 +15,7 @@ async def test_create_alert_successful(client, valid_user_with_credits, sample_l
         "http_method": "POST",
         "http_url": "https://webhook.example.com/crypto-alert",
         "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
-        "example_response": {"price": 50001, "alert": True},
+        "payload_format": {"price": 50001, "alert": True},
         "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
         "llm_model": "llama3.1"
     }
@@ -148,14 +148,14 @@ async def test_create_alert_invalid_parsed_intent(client, valid_user_with_credit
     )
 
 @pytest.mark.asyncio
-async def test_create_alert_invalid_schema_format(client, valid_user_with_credits):
+async def test_create_alert_invalid_payload_format(client, valid_user_with_credits):
     user_data = valid_user_with_credits
 
     alert_data = {
         "prompt": "Test prompt",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/test",
-        "schema_format": "not-a-valid-json"
+        "payload_format": "not-a-valid-json"
     }
 
     response = await client.post("/api/v1/alerts/", json=alert_data, headers={"X-API-Key": user_data["api_key"]})
@@ -173,7 +173,7 @@ async def test_create_alert_invalid_max_datetime(client, valid_user_with_credits
         "http_method": "POST",
         "http_url": "https://webhook.example.com/crypto-alert",
         "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
-        "example_response": {"price": 50001, "alert": True},
+        "payload_format": {"price": 50001, "alert": True},
         "max_datetime": (datetime.now() + timedelta(days=365)).isoformat(),
         "llm_model": "llama3.1"
     }
@@ -329,7 +329,7 @@ async def test_get_alert_successful(client, valid_user_with_credits, sample_llm_
         "http_method": "POST",
         "http_url": "https://webhook.example.com/crypto-alert",
         "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
-        "example_response": {"price": 50001, "alert": True},
+        "payload_format": {"price": 50001, "alert": True},
         "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
         "llm_model": "llama3.1"
     }
@@ -383,7 +383,7 @@ async def test_cancel_alert_successful(client, valid_user_with_credits, sample_l
         "http_method": "POST",
         "http_url": "https://webhook.example.com/crypto-alert",
         "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
-        "example_response": {"price": 50001, "alert": True},
+        "payload_format": {"price": 50001, "alert": True},
         "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
         "llm_model": "llama3.1"
     }
@@ -437,7 +437,7 @@ async def test_cancel_alert_wrong_user(client, valid_user_with_credits, mock_goo
         "http_method": "POST",
         "http_url": "https://webhook.example.com/test",
         "parsed_intent": {"price_threshold": 50000, "currency": "BTC"},
-        "example_response": {"price": 50001, "alert": True},
+        "payload_format": {"price": 50001, "alert": True},
         "max_datetime": (datetime.now() + timedelta(days=30)).isoformat(),
         "llm_model": "llama3.1",
     }

@@ -21,13 +21,13 @@ async def llm_generation(alert_prompt: AlertPrompt, sourced_document: SourcedDat
         generated_response = await get_ollama_alert_generation(
             alert_prompt.parsed_intent,
             sourced_document.content,
-            alert_prompt.response_format,
+            alert_prompt.payload_format,
         )
     elif alert_prompt.llm_model == "gemini-2.5-pro":
         generated_response = await get_gemini_alert_generation(
             alert_prompt.parsed_intent,
             sourced_document.content,
-            alert_prompt.response_format,
+            alert_prompt.payload_format,
         )
     else:
         msg = "This shouldn't even be possible, as the LLM model is checked before the alert is created"

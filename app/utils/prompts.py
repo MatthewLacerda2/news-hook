@@ -109,10 +109,10 @@ The document was:
 
 
 With the above information, write the payload for an http POST request, based on the alert's request.
-The payload shall be a JSON object in the given example format:
-<example_payload>
-{example_response}
-</example_payload>
+The payload shall be a JSON object in the given payload format:
+<payload_format>
+{payload_format}
+</payload_format>
 
 
 You answer must be self-contained, using the document as the source of truth and respond fully to the Query.
@@ -123,11 +123,11 @@ Write in the language of the user's request.
 Current date and time: {current_date_time}
 """
 
-def get_generation_prompt(alert_parsed_intent: str, document: str, example_response: str):
+def get_generation_prompt(alert_parsed_intent: str, document: str, payload_format: str):
     current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return generation_prompt.format(
         alert_parsed_intent=alert_parsed_intent,
         document=document,
-        example_response=example_response,
+        payload_format=payload_format,
         current_date_time=current_date_time
     )

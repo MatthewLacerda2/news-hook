@@ -38,7 +38,7 @@ class AlertPrompt(Base):
     
     parsed_intent = Column(JSON, nullable=False)
     parsed_intent_embedding = Column(Vector(768), nullable=True)
-    response_format = Column(JSON, nullable=False)
+    payload_format = Column(JSON, nullable=False)
     
     tags = Column(JSON, nullable=True)
     keywords = Column(JSON, nullable=False)

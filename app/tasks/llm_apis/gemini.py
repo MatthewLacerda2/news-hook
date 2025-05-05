@@ -31,9 +31,9 @@ async def get_gemini_verification(alert_prompt: str, alert_parsed_intent: str, d
 
     return response.text
 
-async def get_gemini_alert_generation(alert_parsed_intent: str, document: str, example_response: str) -> LLMGenerationFormat:
+async def get_gemini_alert_generation(alert_parsed_intent: str, document: str, payload_format: str) -> LLMGenerationFormat:
     
-    full_prompt = get_generation_prompt(alert_parsed_intent, document, example_response)
+    full_prompt = get_generation_prompt(alert_parsed_intent, document, payload_format)
     response = client.models.generate_content(
         model="gemini-2.5-pro", contents=full_prompt, config=types.GenerateContentConfig(
         response_mime_type='application/json',

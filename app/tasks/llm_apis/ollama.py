@@ -47,9 +47,9 @@ async def get_ollama_verification(alert_prompt: str, alert_parsed_intent: str, d
     
     return response.choices[0].message.content
 
-async def get_ollama_alert_generation(alert_parsed_intent: str, document: str, example_response: str) -> LLMGenerationFormat:
+async def get_ollama_alert_generation(alert_parsed_intent: str, document: str, payload_format: str) -> LLMGenerationFormat:
     
-    full_prompt = get_generation_prompt(alert_parsed_intent, document, example_response)    
+    full_prompt = get_generation_prompt(alert_parsed_intent, document, payload_format)    
     response = client.chat.completions.create(
         model="llama3.1",
         temperature=ollama_temperature,

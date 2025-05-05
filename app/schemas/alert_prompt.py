@@ -35,26 +35,10 @@ class AlertPromptCreateRequestBase(BaseModel):
             
         return v
 
-    @field_validator('payload_format')
-    @classmethod
-    def check_json_schema_format(cls, v):
-        if v is not None:
-            # Check for required top-level keys
-            required_keys = ['title', 'type', 'properties']
-            for key in required_keys:
-                if key not in v:
-                    raise ValueError(f"payload_format must contain '{key}' key")
-            # Check types
-            if not isinstance(v['title'], str):
-                raise ValueError("payload_format['title'] must be a string")
-            if v['type'] != 'object':
-                raise ValueError("payload_format['type'] must be 'object'")
-            if not isinstance(v['properties'], dict):
-                raise ValueError("payload_format['properties'] must be a dict")
-            # 'required' is optional, but if present, must be a list
-            if 'required' in v and not isinstance(v['required'], list):
-                raise ValueError("payload_format['required'] must be a list if present")
-        return v
+    #TODO:
+    #@field_validator('payload_format')
+    #@classmethod
+    #def check_json_schema_format(cls, v):
 
 class AlertPromptCreateSuccessResponse(BaseModel):
     id: str = Field(..., description="The ID of the alert")

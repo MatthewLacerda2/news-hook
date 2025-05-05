@@ -24,24 +24,16 @@ async def process_document_for_vector_search(sourced_document: SourcedData):
     try:
         db = SessionLocal()
         
-        active_alerts = await find_matching_alerts(db, sourced_document.content)
+        document_embedding = await get_nomic_embeddings(sourced_document.content)
         
-        # Sort alerts by keyword overlap before processing
+        active_alerts = await find_matching_alerts_by_embedding(db, document_embedding)
         active_alerts = sort_alerts_by_keyword_overlap(active_alerts)
         
         for alert in active_alerts:
-            document_embedding = await get_nomic_embeddings(sourced_document.content)
-            
-            similarity_score = calculate_cosine_similarity(
-                document_embedding, 
-                alert.prompt_embedding
+            await verify_document_matches_alert(
+                alert_id=str(alert.id),
+                document=sourced_document,
             )
-            
-            if similarity_score >= 0.85:
-                await verify_document_matches_alert(
-                    alert_id=str(alert.id),
-                    document=sourced_document,
-                )
                 
     except Exception as e:
         # Log error but don't raise to avoid breaking the scraping pipeline
@@ -49,34 +41,18 @@ async def process_document_for_vector_search(sourced_document: SourcedData):
     finally:
         await db.close()
 
-async def find_matching_alerts(db: AsyncSession, document_content: str) -> List[AlertPrompt]:
-    """Find active alerts where all keywords are present in the document and user has sufficient credits"""
-    active_alerts = db.execute(
-        select(AlertPrompt).where(
-            AlertPrompt.status == AlertStatus.ACTIVE,
-            AlertPrompt.expires_at > datetime.now()
-        )
-    ).scalars().all()
-    
-    matching_alerts = []
-    for alert in active_alerts:
-        stmt = select(AgentController).where(AgentController.id == alert.agent_controller_id)
-        result = await db.execute(stmt)
-        user = result.scalar_one_or_none()
-        
-        if user and user.credit_balance > 0:
-            alert_keywords = set(alert.keywords)
-            if alert_keywords.issubset(document_content):
-                matching_alerts.append(alert)
-            
-    return matching_alerts
-
-def calculate_cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
-    """Calculate cosine similarity between two vectors"""
-    dot_product = np.dot(vec1, vec2)
-    norm1 = np.linalg.norm(vec1)
-    norm2 = np.linalg.norm(vec2)
-    return dot_product / (norm1 * norm2)
+async def find_matching_alerts_by_embedding(db: AsyncSession, document_embedding: np.ndarray, threshold: float = 0.85) -> List[AlertPrompt]:
+    """
+    Find active alerts where the prompt_embedding is similar to the document_embedding using PostgreSQL vector search.
+    """
+    embedding_list = document_embedding.tolist()
+    stmt = select(AlertPrompt).where(
+        AlertPrompt.status == AlertStatus.ACTIVE,
+        AlertPrompt.expires_at > datetime.now(),
+        text(f"prompt_embedding <=> :embedding <= {1 - threshold}")
+    ).params(embedding=embedding_list)
+    result = await db.execute(stmt)
+    return result.scalars().all()
 
 def count_keyword_matches(alert_keywords, reference_keywords):
     count = 0
@@ -100,7 +76,6 @@ def sort_alerts_by_keyword_overlap(active_alerts):
         alert_keywords = [str(k) for k in alert_keywords]
         return count_keyword_matches(alert_keywords, reference_keywords)
 
-    # Sort by match count (descending), but keep the first element at the top
     sorted_alerts = [active_alerts[0]] + sorted(
         active_alerts[1:], key=match_count, reverse=True
     )

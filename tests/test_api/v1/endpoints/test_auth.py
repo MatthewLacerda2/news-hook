@@ -5,15 +5,12 @@ from datetime import timedelta
 from app.core.security import create_access_token
 
 @pytest.mark.asyncio
-async def test_signup_successful(client, test_db, mock_google_verify):
+async def test_signup_successful(client):
     """Test successful signup with valid Google token"""
     response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
-    
-    print("\nResponse status:", response.status_code)
-    print("Response body:", response.json())
     
     assert response.status_code == 201
     token_response = TokenResponse.model_validate(response.json())
@@ -46,16 +43,12 @@ async def test_signup_existing_user(client, mock_google_verify, test_db):
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
-    print(f"\nFirst signup response: {first_response.status_code}")
-    print(f"First signup body: {first_response.json()}")
     
     # Try to signup again with same Google account
     second_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
-    print(f"\nSecond signup response: {second_response.status_code}")
-    print(f"Second signup body: {second_response.json()}")
     
     assert second_response.status_code == 409
     assert second_response.json()["detail"] == "User already exists"
@@ -71,7 +64,7 @@ async def test_signup_missing_token(client):
     assert response.status_code == 422
 
 @pytest.mark.asyncio
-async def test_login_successful(client, mock_google_verify, test_db):
+async def test_login_successful(client, test_db):
     """Test successful login with valid Google token for existing user"""
     
     await client.post(
@@ -144,7 +137,6 @@ async def test_check_credits_successful(client, mock_google_verify, test_db):
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
-    print("Signup response:", signup_response.json())
     
     access_token = signup_response.json()["access_token"]
     
@@ -196,7 +188,7 @@ async def test_check_credits_user_not_found(client, verify_tables):
     assert response.json()["detail"] == "User not found"
 
 @pytest.mark.asyncio
-async def test_delete_account_successful(client, mock_google_verify, test_db):
+async def test_delete_account_successful(client, test_db):
     """Test successful account deletion with valid token"""
     
     signup_response = await client.post(

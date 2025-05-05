@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Optional, Dict, Union, List
+from typing import Optional, Dict, Union, List, Any
 from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict
 from app.models.alert_prompt import AlertStatus
 
@@ -18,7 +18,7 @@ class AlertPromptCreateRequestBase(BaseModel):
     llm_model: str = Field("gemini-2.5-pro", description="The LLM model to use for the alert")
     
     # Optional fields
-    payload_format: Optional[Dict[str, JsonPrimitive]] = Field(None, description="The schema of the response. MUST BE FLAT JSON AND NOT NESTED")
+    payload_format: dict[str, Any] = Field(None, description="A JSON schema describing the expected payload (e.g., from .model_json_schema())")
     max_datetime: Optional[datetime] = Field(None, description="Monitoring window. Must be within the next 300 days")
     
 
@@ -37,11 +37,23 @@ class AlertPromptCreateRequestBase(BaseModel):
 
     @field_validator('payload_format')
     @classmethod
-    def check_flat_json_payload_format(cls, v):
+    def check_json_schema_format(cls, v):
         if v is not None:
-            for key, value in v.items():
-                if isinstance(value, (dict, list)):
-                    raise ValueError("payload_format must be flat (no nested objects or arrays)")
+            # Check for required top-level keys
+            required_keys = ['title', 'type', 'properties']
+            for key in required_keys:
+                if key not in v:
+                    raise ValueError(f"payload_format must contain '{key}' key")
+            # Check types
+            if not isinstance(v['title'], str):
+                raise ValueError("payload_format['title'] must be a string")
+            if v['type'] != 'object':
+                raise ValueError("payload_format['type'] must be 'object'")
+            if not isinstance(v['properties'], dict):
+                raise ValueError("payload_format['properties'] must be a dict")
+            # 'required' is optional, but if present, must be a list
+            if 'required' in v and not isinstance(v['required'], list):
+                raise ValueError("payload_format['required'] must be a list if present")
         return v
 
 class AlertPromptCreateSuccessResponse(BaseModel):
@@ -60,7 +72,7 @@ class AlertPromptItem(BaseModel):
     http_url: HttpUrl
     http_headers: Optional[Dict[str, JsonPrimitive]] = Field(None, description="HTTP headers to send with the request")
     expires_at: datetime = Field(..., description="The date and time the alert will expire")
-    payload_format: Optional[Dict[str, JsonPrimitive]] = Field(None, description="The json schema for the alert. MUST BE FLAT JSON AND NOT NESTED")
+    payload_format: dict[str, Any] = Field(None, description="A JSON schema describing the expected payload (e.g., from .model_json_schema())")
     tags: List[str] = Field(default_factory=list, description="Tags for hinting")
     status: AlertStatus 
     created_at: datetime = Field(..., lt=datetime.now(), description="The date and time the alert was created")
@@ -76,7 +88,7 @@ class AlertPromptListResponse(BaseModel):
 
 class AlertPromptPriceCheckRequest(BaseModel):
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
-    payload_format: Optional[Dict[str, JsonPrimitive]] = Field(None, description="The schema of the response. MUST BE FLAT JSON AND NOT NESTED")
+    payload_format: dict[str, Any] = Field(None, description="A JSON schema describing the expected payload (e.g., from .model_json_schema())")
 
 class AlertPromptPriceCheckSuccessResponse(BaseModel):
     price_in_credits: int

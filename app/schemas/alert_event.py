@@ -1,7 +1,7 @@
 from app.models.base import Base
 from datetime import datetime
 from pydantic import Field
-from typing import Dict, JsonPrimitive
+from typing import Dict, Any
 from pydantic import ConfigDict
 
 class NewsEvent(Base):
@@ -13,6 +13,6 @@ class NewsEvent(Base):
     output: str = Field(..., description="The LLM output on the matter")
     tags: list[str] = Field(..., description="The tags for the alert")
     source_url: str = Field(..., description="The URL of the source that triggered the alert")
-    structured_data: Dict[str, JsonPrimitive] = Field(..., description="The json schema requested for the alert")
+    structured_data: Dict[str, Any] = Field(..., description="The json schema requested for the alert")
     
     model_config = ConfigDict(from_attributes=True)

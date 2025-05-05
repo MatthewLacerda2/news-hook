@@ -80,7 +80,7 @@ async def create_alert(
             http_method=alert_data.http_method,
             http_url=str(alert_data.http_url),
             http_headers=alert_data.http_headers or {},
-            payload_format=json.dumps(alert_data.payload_format) if alert_data.payload_format else {},
+            payload_format=alert_data.payload_format if alert_data.payload_format else "",
             expires_at=alert_data.max_datetime or (now + timedelta(days=300)),
             llm_model=alert_data.llm_model,
             keywords=llm_validation_response.keywords,

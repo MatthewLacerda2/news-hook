@@ -20,7 +20,7 @@ test_alert_data = {
 }
 
 @pytest.mark.asyncio
-async def test_create_alert_successful(client, valid_user_with_credits, sample_llm_models, mock_llm_validation):
+async def test_create_alert_successful(client, valid_user_with_credits, sample_llm_models, mock_llm_validation, test_db):
     """Test successful alert creation with valid data"""
     user_data = valid_user_with_credits
 
@@ -28,7 +28,7 @@ async def test_create_alert_successful(client, valid_user_with_credits, sample_l
         "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/crypto-alert",
-        "payload_format": {"price": 50001, "alert": True},
+        "payload_format": "{}",
         "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
         "llm_model": "llama3.1"
     }
@@ -168,7 +168,7 @@ async def test_create_alert_invalid_max_datetime(client, valid_user_with_credits
         "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/crypto-alert",
-        "payload_format": {"price": 50001, "alert": True},
+        "payload_format": TestPayload.model_json_schema(),
         "max_datetime": (datetime.now() + timedelta(days=365)).isoformat(),
         "llm_model": "llama3.1"
     }
@@ -323,7 +323,7 @@ async def test_get_alert_successful(client, valid_user_with_credits, sample_llm_
         "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/crypto-alert",
-        "payload_format": {"price": 50001, "alert": True},
+        "payload_format": TestPayload.model_json_schema(),
         "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
         "llm_model": "llama3.1"
     }
@@ -376,7 +376,7 @@ async def test_cancel_alert_successful(client, valid_user_with_credits, sample_l
         "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/crypto-alert",
-        "payload_format": {"price": 50001, "alert": True},
+        "payload_format": TestPayload.model_json_schema(),
         "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
         "llm_model": "llama3.1"
     }
@@ -429,7 +429,7 @@ async def test_cancel_alert_wrong_user(client, valid_user_with_credits, mock_goo
         "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
         "http_method": "POST",
         "http_url": "https://webhook.example.com/test",
-        "payload_format": {"price": 50001, "alert": True},
+        "payload_format": TestPayload.model_json_schema(),
         "max_datetime": (datetime.now() + timedelta(days=30)).isoformat(),
         "llm_model": "llama3.1",
     }

@@ -33,8 +33,7 @@ async def post_document(
         raise HTTPException(status_code=401, detail="content must be at least 16 characters long")
 
     try:
-        embedding_response = await get_nomic_embeddings(user_document.content)
-        embedding = embedding_response.data[0].embedding
+        embedding = await get_nomic_embeddings(user_document.content)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Embedding failed: {str(e)}")
 

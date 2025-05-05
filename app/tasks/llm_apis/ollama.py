@@ -1,6 +1,7 @@
 from openai import OpenAI
 from app.utils.prompts import get_validation_prompt, get_verification_prompt, get_generation_prompt
 from app.utils.llm_response_formats import LLMValidationFormat, LLMVerificationFormat, LLMGenerationFormat
+import numpy as np
 
 
 client = OpenAI(
@@ -15,7 +16,14 @@ async def get_nomic_embeddings(text: str):
         model="nomic-embed-text",
         input=text,
     )
-    return embeddings
+    
+    vector = np.array(embeddings.data[0].embedding)
+    norm = np.linalg.norm(vector)
+    if norm == 0:
+        normalized_vector = vector
+    else:
+        normalized_vector = vector / norm
+    return normalized_vector
 
 async def get_ollama_validation(alert_prompt: str) -> LLMValidationFormat:
     

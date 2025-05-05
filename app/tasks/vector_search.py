@@ -1,6 +1,6 @@
 from typing import List
 from datetime import datetime
-from sqlalchemy import select
+from sqlalchemy import select, text
 import numpy as np
 
 from app.core.database import SessionLocal

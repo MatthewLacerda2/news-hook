@@ -20,9 +20,8 @@ test_alert_data = {
     "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
     "http_method": "POST",
     "http_url": "https://webhook.example.com/crypto-alert",
-    "payload_format": random_test_payload.model_json_schema(),
+    "llm_model": "llama3.1",
     "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
-    "llm_model": "llama3.1"
 }
 
 @pytest.mark.asyncio

@@ -36,7 +36,7 @@ class AlertPrompt(Base):
     http_url = Column(String, nullable=False)
     http_headers = Column(JSON, nullable=True)
     
-    payload_format = Column(JSON, nullable=False)
+    payload_format = Column(JSON, nullable=True)
     
     tags = Column(JSON, nullable=True)
     keywords = Column(JSON, nullable=False)

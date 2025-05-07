@@ -6,7 +6,7 @@ import numpy as np
 
 client = OpenAI(
     base_url = 'http://localhost:11434/v1',
-    api_key='ollama', # required, but unused
+    api_key='ollama',
 )
 
 ollama_temperature = 0.0

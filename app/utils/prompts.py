@@ -114,3 +114,28 @@ def get_generation_prompt(document: str, payload_format: str):
         payload_format=payload_format,
         current_date_time=current_date_time
     )
+
+summarization_prompt = """
+You are a helpful assistant that summarizes a document.
+
+
+The document is:
+<document>
+{document}
+</document>
+
+
+Your job is to simplify remove whatever is not relevant to the main content of the document.
+Simply remove the non-relevant parts and what is not important to the main content.
+
+
+Current date and time: {current_date_time}
+"""
+
+def get_summarization_prompt(document: str):
+    current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return summarization_prompt.format(
+        document=document,
+        current_date_time=current_date_time
+    )
+

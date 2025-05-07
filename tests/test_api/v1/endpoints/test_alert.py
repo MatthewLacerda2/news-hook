@@ -20,6 +20,10 @@ test_alert_data = {
     "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
     "http_method": "POST",
     "http_url": "https://webhook.example.com/crypto-alert",
+    "http_headers": {
+        "Content-Type": "application/json"
+    },
+    "payload_format": TestPayload.model_json_schema(),    
     "llm_model": "llama3.1",
     "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
 }
@@ -46,16 +50,11 @@ async def test_create_alert_successful(client, valid_user_with_credits, sample_l
 @pytest.mark.asyncio
 async def test_create_alert_invalid_api_key(client, test_db):
     """Test alert creation with invalid API key"""
-    alert_data = {
-        "prompt": "Test prompt",
-        "http_method": "POST",
-        "http_url": "https://webhook.example.com/test"
-    }
     
     response = await client.post(
         "/api/v1/alerts/",
         headers={"X-API-Key": "invalid_api_key"},
-        json=alert_data
+        json=test_alert_data
     )
     
     assert response.status_code == 401
@@ -315,19 +314,10 @@ async def test_get_alert_successful(client, valid_user_with_credits, sample_llm_
     user_data = valid_user_with_credits
     api_key = user_data["api_key"]
     
-    alert_data = {
-        "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
-        "http_method": "POST",
-        "http_url": "https://webhook.example.com/crypto-alert",
-        "payload_format": TestPayload.model_json_schema(),
-        "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
-        "llm_model": "llama3.1"
-    }
-    
     create_response = await client.post(
         "/api/v1/alerts/",
         headers={"X-API-Key": api_key},
-        json=alert_data
+        json=test_alert_data
     )
     
     assert create_response.status_code == 201
@@ -343,9 +333,9 @@ async def test_get_alert_successful(client, valid_user_with_credits, sample_llm_
     
     AlertPromptItem.model_validate(alert)
     
-    assert alert["prompt"] == alert_data["prompt"]
-    assert alert["http_method"] == alert_data["http_method"]
-    assert alert["http_url"] == alert_data["http_url"]
+    assert alert["prompt"] == test_alert_data["prompt"]
+    assert alert["http_method"] == test_alert_data["http_method"]
+    assert alert["http_url"] == test_alert_data["http_url"]
 
 @pytest.mark.asyncio
 async def test_get_alert_not_found(client, valid_user_with_credits):
@@ -368,18 +358,9 @@ async def test_cancel_alert_successful(client, valid_user_with_credits, sample_l
     user_data = valid_user_with_credits
     api_key = user_data["api_key"]
     
-    alert_data = {
-        "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
-        "http_method": "POST",
-        "http_url": "https://webhook.example.com/crypto-alert",
-        "payload_format": TestPayload.model_json_schema(),
-        "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
-        "llm_model": "llama3.1"
-    }
-    
     create_response = await client.post(
         "/api/v1/alerts/", 
-        json=alert_data,
+        json=test_alert_data,
         headers={"X-API-Key": api_key}
     )
     
@@ -420,20 +401,11 @@ async def test_cancel_alert_wrong_user(client, valid_user_with_credits, mock_goo
     """Test attempting to cancel an alert belonging to another user"""
     user_data = valid_user_with_credits
     api_key = user_data["api_key"]
-    
-    alert_data = {
-        "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
-        "http_method": "POST",
-        "http_url": "https://webhook.example.com/test",
-        "payload_format": TestPayload.model_json_schema(),
-        "max_datetime": (datetime.now() + timedelta(days=30)).isoformat(),
-        "llm_model": "llama3.1",
-    }
-    
+        
     create_response = await client.post(
         "/api/v1/alerts/",
         headers={"X-API-Key": api_key},
-        json=alert_data
+        json=test_alert_data
     )
     alert_id = create_response.json()["id"]
     

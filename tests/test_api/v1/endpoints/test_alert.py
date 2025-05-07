@@ -4,17 +4,23 @@ from datetime import datetime, timedelta
 from app.models.agent_controller import AgentController
 from app.schemas.alert_prompt import AlertPromptCreateSuccessResponse, AlertPromptListResponse, AlertPromptItem
 from pydantic import BaseModel
+import random
 
 #TODO: use this for all tests
 class TestPayload(BaseModel):
     price: int
     date: datetime
     currency: str
+random_test_payload = TestPayload(
+    price=random.randint(1000, 100000),
+    date=datetime.now() - timedelta(days=random.randint(0, 30)),
+    currency=random.choice(["USD", "EUR", "BTC", "ETH"])
+)
 test_alert_data = {
     "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
     "http_method": "POST",
     "http_url": "https://webhook.example.com/crypto-alert",
-    "payload_format": TestPayload.model_json_schema(),
+    "payload_format": random_test_payload.model_json_schema(),
     "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
     "llm_model": "llama3.1"
 }
@@ -24,18 +30,9 @@ async def test_create_alert_successful(client, valid_user_with_credits, sample_l
     """Test successful alert creation with valid data"""
     user_data = valid_user_with_credits
 
-    alert_data = {
-        "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
-        "http_method": "POST",
-        "http_url": "https://webhook.example.com/crypto-alert",
-        "payload_format": "{}",
-        "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
-        "llm_model": "llama3.1"
-    }
-    
     response = await client.post(
         "/api/v1/alerts/",
-        json=alert_data,
+        json=test_alert_data,
         headers={"X-API-Key": user_data["api_key"]}
     )
     

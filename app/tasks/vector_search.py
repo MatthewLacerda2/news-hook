@@ -2,6 +2,7 @@ from typing import List
 from datetime import datetime
 from sqlalchemy import select, text
 import numpy as np
+import logging
 
 from app.core.database import SessionLocal
 from app.models.alert_prompt import AlertPrompt, AlertStatus
@@ -9,6 +10,8 @@ from app.tasks.llm_verification import verify_document_matches_alert
 from app.utils.sourced_data import SourcedData
 from app.tasks.llm_apis.ollama import get_nomic_embeddings
 from sqlalchemy.ext.asyncio import AsyncSession
+
+logger = logging.getLogger(__name__)
 
 async def process_document_for_vector_search(sourced_document: SourcedData):
     """
@@ -36,7 +39,7 @@ async def process_document_for_vector_search(sourced_document: SourcedData):
                 
     except Exception as e:
         # Log error but don't raise to avoid breaking the scraping pipeline
-        print(f"Error in vector search processing: {str(e)}")
+        logger.error(f"Error in vector search processing: {str(e)}", exc_info=True)
     finally:
         await db.close()
 

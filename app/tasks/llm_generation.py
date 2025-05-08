@@ -58,7 +58,7 @@ def send_alert_event(alert_event: NewsEvent, db: AsyncSession):
     result = db.execute(stmt)
     alert_prompt = result.scalar_one_or_none()
     
-    #TODO: add retries or backoff, and log the failures
+    #TODO: add retries or backoff
     if alert_prompt.http_method == "POST":
         requests.post(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
     elif alert_prompt.http_method == "PUT":

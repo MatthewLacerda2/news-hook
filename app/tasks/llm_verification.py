@@ -11,6 +11,10 @@ from app.utils.count_tokens import count_tokens
 from app.models.llm_verification import LLMVerification
 from app.models.llm_models import LLMModel
 from sqlalchemy.ext.asyncio import AsyncSession
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 async def verify_document_matches_alert(
     alert_id: str,
@@ -57,7 +61,7 @@ async def verify_document_matches_alert(
             db.commit()
             
     except Exception as e:
-        print(f"Error in LLM verification: {str(e)}")
+        logger.error(f"Error in LLM verification: {str(e)}", exc_info=True)
     finally:
         await db.close()
         

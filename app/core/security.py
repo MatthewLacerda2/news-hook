@@ -10,6 +10,9 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.models.agent_controller import AgentController
 from sqlalchemy import select
+import logging
+
+logger = logging.getLogger(__name__)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """
@@ -61,11 +64,13 @@ def verify_google_token(token: str) -> dict:
         }
         
     except ValueError as e:
+        logger.error("Invalid Google token", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e)
         )
     except Exception as e:
+        logger.error("Invalid Google token", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid Google token"
@@ -88,6 +93,7 @@ def verify_token(token: str) -> dict:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         return payload
     except JWTError:
+        logger.error("Invalid token", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token"
@@ -129,11 +135,13 @@ async def get_current_user(
         return user
         
     except JWTError:
+        logger.error("Invalid token", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token"
         )
     except Exception as e:
+        logger.error("Could not validate credentials", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials"

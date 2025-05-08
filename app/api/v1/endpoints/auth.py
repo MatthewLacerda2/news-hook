@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status, Header
-from sqlalchemy.exc import IntegrityError
 from app.core.config import settings
 from app.core.security import create_access_token, verify_google_token, verify_token, get_current_user
 from app.core.database import get_db
@@ -9,6 +8,7 @@ from app.models.agent_controller import AgentController
 
 from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 import uuid
 
@@ -41,7 +41,7 @@ async def signup(
             name=user_info.get("name"),
             google_id=user_info["sub"],
             api_key=str(uuid.uuid4()),
-            credit_balance=1000
+            credit_balance=5000
         )
         
         db.add(user)

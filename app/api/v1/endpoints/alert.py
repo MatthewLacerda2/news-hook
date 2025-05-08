@@ -21,7 +21,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy import func
 from app.tasks.save_embedding import generate_and_save_embeddings
-import json
 import uuid
 
 router = APIRouter()
@@ -76,34 +75,26 @@ async def create_alert(
             id=str(uuid.uuid4()),
             agent_controller_id=user.id,
             prompt=alert_data.prompt,
-            prompt_embedding = None,
             http_method=alert_data.http_method,
             http_url=str(alert_data.http_url),
             http_headers=alert_data.http_headers or {},
-            parsed_intent=json.dumps(alert_data.parsed_intent) if alert_data.parsed_intent else {},
-            parsed_intent_embedding = None,
-            response_format=json.dumps(alert_data.schema_format) if alert_data.schema_format else {},
-            expires_at=alert_data.max_datetime or (now + timedelta(days=300)),
-            llm_model=alert_data.llm_model,
+            payload_format=alert_data.payload_format or {},
             keywords=llm_validation_response.keywords,
-            status=AlertStatus.ACTIVE
+            expires_at=alert_data.max_datetime or (now + timedelta(days=300)),
+            llm_model=alert_data.llm_model
         )
 
         llm_validation = LLMValidation(
             id=str(uuid.uuid4()),
-            prompt=alert_data.prompt,
-            prompt_embedding=None,
             prompt_id=new_alert.id,
-            parsed_intent=json.dumps(alert_data.parsed_intent),
-            parsed_intent_embedding=None,
             approval=llm_validation_response.approval,
             chance_score=llm_validation_response.chance_score,
-            input_tokens=count_tokens(alert_data.prompt, llm_model.model_name) + count_tokens(str(alert_data.parsed_intent), llm_model.model_name),
+            input_tokens=count_tokens(alert_data.prompt, llm_model.model_name),
             input_price=input_price,
             output_tokens=count_tokens(llm_validation_response.output_intent, llm_model.model_name),
             output_price=output_price,
             llm_id=llm_model.id,
-            date_time=datetime.now()
+            date_time=now
         )
         user.credit_balance -= tokens_price
         db.add(llm_validation)
@@ -116,7 +107,6 @@ async def create_alert(
             generate_and_save_embeddings(
                 new_alert.id,
                 alert_data.prompt,
-                alert_data.parsed_intent
             )
         )
         
@@ -210,12 +200,12 @@ def alert_to_schema(alert: AlertPrompt) -> AlertPromptItem:
         prompt=alert.prompt,
         http_method=alert.http_method,
         http_url=alert.http_url,
-        http_headers=alert.http_headers,
-        expires_at=alert.expires_at,
-        response_format=alert.response_format,
-        tags=alert.tags or [],
+        http_headers=alert.http_headers or {},
+        payload_format=alert.payload_format or {},
+        tags=alert.keywords,
         status=alert.status,
         created_at=alert.created_at,
+        expires_at=alert.expires_at,
         llm_model=alert.llm_model
     )
 

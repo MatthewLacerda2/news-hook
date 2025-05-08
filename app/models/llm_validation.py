@@ -4,17 +4,11 @@ from sqlalchemy import ForeignKey
 from pgvector.sqlalchemy import Vector
 import uuid
 
-#TODO: we can remove the prompt, prompt_embedding, parsed_intent, parsed_intent_embedding columns
 class LLMValidation(Base):
     __tablename__ = "llm_validations"
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    prompt = Column(String, nullable=False)
-    prompt_embedding = Column(Vector(384), nullable=True)
     prompt_id = Column(String(36), ForeignKey('alert_prompts.id'), nullable=False)
-    
-    parsed_intent = Column(String, nullable=False)
-    parsed_intent_embedding = Column(Vector(384), nullable=True)
     
     approval = Column(Boolean, nullable=False)
     chance_score = Column(Float, nullable=False)

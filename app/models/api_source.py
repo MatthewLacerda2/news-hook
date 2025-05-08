@@ -11,7 +11,6 @@ class APISource(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String, nullable=False)
     url = Column(String, nullable=False)
-    method = Column(String, default="GET")
     headers = Column(JSON, nullable=True)
     query_params = Column(JSON, nullable=True)
     request_body = Column(JSON, nullable=True)
@@ -19,7 +18,6 @@ class APISource(Base):
     last_requested_at = Column(DateTime, nullable=True)
     num_requests = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=datetime.now())
-    updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())
     is_active = Column(Boolean, default=True)
     
     # Relationship with MonitoredData

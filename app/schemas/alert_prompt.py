@@ -1,10 +1,9 @@
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Optional, Dict, Union, List
-from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict
+from typing import Optional, Dict, Union, List, Any
+from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict, Json
 from app.models.alert_prompt import AlertStatus
 
-JsonPrimitive = Union[str, int, float, bool, datetime]
 class HttpMethod(str, Enum):
     POST = "POST"
     PUT = "PUT"
@@ -14,12 +13,11 @@ class AlertPromptCreateRequestBase(BaseModel):
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     http_method: HttpMethod = Field(..., description="HTTP method to alert at")
     http_url: HttpUrl = Field(..., description="The URL to alert at")
-    http_headers: Optional[Dict[str, JsonPrimitive]] = Field(None, description="HTTP headers to send with the request")
+    http_headers: Optional[Dict] = Field(None, description="HTTP headers to send with the request")
     llm_model: str = Field("gemini-2.5-pro", description="The LLM model to use for the alert")
     
     # Optional fields
-    parsed_intent: Optional[Dict[str, JsonPrimitive]] = Field(None, description="Parsed interpretation of the prompt. MUST BE FLAT JSON AND NOT NESTED")
-    schema_format: Optional[Dict[str, JsonPrimitive]] = Field(None, description="The schema of the response. MUST BE FLAT JSON AND NOT NESTED")
+    payload_format: Optional[Dict] = Field(None, description="A JSON schema describing the expected payload (e.g., from .model_json_schema())")
     max_datetime: Optional[datetime] = Field(None, description="Monitoring window. Must be within the next 300 days")
     
 
@@ -35,31 +33,15 @@ class AlertPromptCreateRequestBase(BaseModel):
             raise ValueError("max_datetime cannot be more than 300 days in the future")
             
         return v
-
-    @field_validator('parsed_intent')
-    @classmethod
-    def check_flat_json_parsed_intent(cls, v):
-        if v is not None:
-            for key, value in v.items():
-                if isinstance(value, (dict, list)):
-                    raise ValueError("parsed_intent must be flat (no nested objects or arrays)")
-        return v
-
-    @field_validator('schema_format')
-    @classmethod
-    def check_flat_json_schema_format(cls, v):
-        if v is not None:
-            for key, value in v.items():
-                if isinstance(value, (dict, list)):
-                    raise ValueError("schema_format must be flat (no nested objects or arrays)")
-        return v
+    
+    #TODO: headers and payload validators
 
 class AlertPromptCreateSuccessResponse(BaseModel):
     id: str = Field(..., description="The ID of the alert")
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     output_intent: str = Field(..., description="What the LLM understood from the prompt")
     created_at: datetime
-    keywords: Optional[list[str]] = Field(None, description="Keywords that will be expected to be in the data that triggers the alert")
+    keywords: Optional[list[str]] = Field(None, description="Keywords that MUST be in the data that triggers the alert")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -68,12 +50,12 @@ class AlertPromptItem(BaseModel):
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     http_method: HttpMethod
     http_url: HttpUrl
-    http_headers: Optional[Dict[str, JsonPrimitive]] = Field(None, description="HTTP headers to send with the request")
-    expires_at: datetime = Field(..., description="The date and time the alert will expire")
-    response_format: Optional[Dict[str, JsonPrimitive]] = Field(None, description="The schema of the response. MUST BE FLAT JSON AND NOT NESTED")
+    http_headers: Optional[Dict] = Field(None, description="HTTP headers to send with the request")
+    payload_format: Optional[Dict] = Field(None, description="A JSON schema describing the expected payload")
     tags: List[str] = Field(default_factory=list, description="Tags for hinting")
     status: AlertStatus 
     created_at: datetime = Field(..., lt=datetime.now(), description="The date and time the alert was created")
+    expires_at: datetime = Field(..., description="The date and time the alert will expire")
     llm_model: str = Field(..., description="The LLM model used to create the alert")
 
     model_config = ConfigDict(from_attributes=True)
@@ -86,9 +68,7 @@ class AlertPromptListResponse(BaseModel):
 
 class AlertPromptPriceCheckRequest(BaseModel):
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
-    # Optional fields
-    parsed_intent: Optional[Dict[str, JsonPrimitive]] = Field(None, description="Parsed interpretation of the prompt")
-    response_format: Optional[Dict[str, JsonPrimitive]] = Field(None, description="The schema of the response. MUST BE FLAT JSON AND NOT NESTED")
+    payload_format: dict[str, Any] = Field(None, description="A JSON schema describing the expected payload (e.g., from .model_json_schema())")
 
 class AlertPromptPriceCheckSuccessResponse(BaseModel):
     price_in_credits: int

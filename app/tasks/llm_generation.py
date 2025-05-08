@@ -19,15 +19,15 @@ async def llm_generation(alert_prompt: AlertPrompt, sourced_document: SourcedDat
     
     if alert_prompt.llm_model == "llama3.1":
         generated_response = await get_ollama_alert_generation(
-            alert_prompt.parsed_intent,
             sourced_document.content,
-            alert_prompt.response_format,
+            alert_prompt.payload_format,
+            sourced_document.source_url
         )
     elif alert_prompt.llm_model == "gemini-2.5-pro":
         generated_response = await get_gemini_alert_generation(
-            alert_prompt.parsed_intent,
             sourced_document.content,
-            alert_prompt.response_format,
+            alert_prompt.payload_format,
+            sourced_document.source_url
         )
     else:
         msg = "This shouldn't even be possible, as the LLM model is checked before the alert is created"
@@ -58,7 +58,7 @@ def send_alert_event(alert_event: NewsEvent, db: AsyncSession):
     result = db.execute(stmt)
     alert_prompt = result.scalar_one_or_none()
     
-    #TODO: add retries or backoff, and log the failures
+    #TODO: add retries or backoff
     if alert_prompt.http_method == "POST":
         requests.post(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
     elif alert_prompt.http_method == "PUT":

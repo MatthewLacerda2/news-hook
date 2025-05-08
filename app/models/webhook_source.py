@@ -12,7 +12,7 @@ class WebhookSource(Base):
     name = Column(String, nullable=False)
     endpoint_path = Column(String, nullable=False, unique=True)
     secret_key = Column(String, nullable=False)
-    expected_format = Column(JSON, nullable=True)
+    schema_format = Column(JSON, nullable=True)
     validation_rules = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.now())
     updated_at = Column(DateTime, default=datetime.now(), onupdate=datetime.now())

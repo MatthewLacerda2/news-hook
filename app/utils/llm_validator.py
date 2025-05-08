@@ -16,12 +16,10 @@ async def get_llm_validation(alert_request: AlertPromptCreateRequestBase, llm_mo
     if llm_model == "llama3.1":
         validation_result = await get_ollama_validation(
             alert_request.prompt,
-            alert_request.parsed_intent,
         )
     elif llm_model == "gemini-2.5-pro":
         validation_result = await get_gemini_validation(
             alert_request.prompt,
-            alert_request.parsed_intent,
         )
     else:
         msg = "This shouldn't even be possible, as the LLM model is checked before the alert is created"
@@ -38,7 +36,7 @@ def get_llm_validation_price(alert_request: AlertPromptCreateRequestBase, valida
     Get the price of the LLM validation
     """
     
-    input_token_count = count_tokens(alert_request.prompt, llm_model.model_name) + count_tokens(str(alert_request.parsed_intent), llm_model.model_name)
+    input_token_count = count_tokens(alert_request.prompt, llm_model.model_name)
     output_token_count = count_tokens(str(validation_result.output_intent), llm_model.model_name)
     
     input_price = input_token_count * (llm_model.input_token_price/1000000)

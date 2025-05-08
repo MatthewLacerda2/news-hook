@@ -44,13 +44,13 @@ async def process_webscrape_source(source: WebscrapeSource, db: AsyncSession):
             source=DataSource.WEBSCRAPE,
             source_id=source.id,
             content=result,
-            content_embedding=np.zeros(384)
+            content_embedding=np.zeros(768)
         )
         
         await process_document_for_vector_search(sourced_document=sourced_data)
         
     except Exception as e:
-        logger.error(f"Error processing source {source.id}: {str(e)}")
+        logger.error(f"Error processing source {source.id}: {str(e)}", exc_info=True)
         # Don't raise the exception - we want to continue with other sources
         
 async def check_and_process_sources():
@@ -78,7 +78,7 @@ async def check_and_process_sources():
         await asyncio.gather(*tasks)
         
     except Exception as e:
-        logger.error(f"Error in check_and_process_sources: {str(e)}")
+        logger.error(f"Error in check_and_process_sources: {str(e)}", exc_info=True)
     finally:
         await db.close()
 

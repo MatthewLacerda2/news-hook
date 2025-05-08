@@ -4,66 +4,51 @@ validation_prompt = """
 You are a helpful assistant that validates if an alert's request is reasonable.
 
 Alert request is when someone asks us to alert when and if an event does happen.
-The request carries a prompt and a parsed intent.
 
 
-The alert's prompt is:
-<alert_prompt>
+The alert's request was:
+<alert_request>
 {alert_prompt}
-</alert_prompt>
-
-The alert's parsed intent is:
-<alert_parsed_intent>
-{alert_parsed_intent}
-</alert_parsed_intent>
+</alert_request>
 
 
-The alerts have to be:
+The alert has to be:
 - Clear
 - Specific
 - Have a plausible chance of happening
-- Unambiguous (not leave room for interpretation)
+- Unambiguous (not leave multiple interpretations)
 - Self-contained (not requiring multiple documents)
 - NOT vague
-- NOT subjective
-- NOT require external tools or APIs
+- NOT subjective nor matter of opinion
+- NOT require complex reasoning
 
 
 Your job is to validate if the alert's request is reasonable.
 You will respond in a structure format, with the following fields:
-- approval: Whether the alert's request is a valid one
-- chance_score: Validation estimate ranging from 0.0 to 1.0. Must be at least 0.85 to approve.
-- output_intent: What the LLM understood from the alert request
-- keywords: The keywords that MUST be in the data that triggers the alert
+- approval: bool = Whether the alert's request is a valid one
+- chance_score: float = Validation estimate ranging from 0.0 to 1.0. Must be at least 0.85 to approve.
+- output_intent: str = What the LLM understood from the alert request
+- keywords: list[str] = The keywords that MUST be in the data that triggers the alert
 
 
 Current date and time: {current_date_time}
 """
 
-def get_validation_prompt(alert_prompt: str, alert_parsed_intent: str):
+def get_validation_prompt(alert_prompt: str):
     current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return validation_prompt.format(
         alert_prompt=alert_prompt,
-        alert_parsed_intent=alert_parsed_intent,
         current_date_time=current_date_time
     )
 
 verification_prompt = """
 You are a helpful assistant that verifies if a document matches an alert's request.
-
 Alert request is when someone asks us to alert when and if an event does happen.
-The request carries a prompt and a parsed intent.
 
-
-The alert's prompt is:
-<alert_prompt>
+The alert's request is:
+<alert_request>
 {alert_prompt}
-</alert_prompt>
-
-The alert's parsed intent is:
-<alert_parsed_intent>
-{alert_parsed_intent}
-</alert_parsed_intent>
+</alert_request>
 
 The document is:
 <document>
@@ -73,18 +58,17 @@ The document is:
 
 Your job is to verify if the document matches the alert's request.
 You will respond in a structure format, with the following fields:
-- approval: Whether the document matches the alert's request
-- chance_score: Validation estimate ranging from 0.0 to 1.0. Must be at least 0.85 to approve.
+- approval: bool = Whether the document matches the alert's request
+- chance_score: float = Validation estimate ranging from 0.0 to 1.0. Must be at least 0.85 to approve.
 
 
 Current date and time: {current_date_time}
 """
 
-def get_verification_prompt(alert_prompt: str, alert_parsed_intent: str, document: str):
+def get_verification_prompt(alert_prompt: str, document: str):
     current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return verification_prompt.format(
         alert_prompt=alert_prompt,
-        alert_parsed_intent=alert_parsed_intent,
         document=document,
         current_date_time=current_date_time
     )
@@ -97,10 +81,10 @@ We received a document that matches the alert's request and the event.
 The payload is to inform the user as he wanted to.
 
 
-The alert request carried the parsed intent:
-<alert_parsed_intent>
-{alert_parsed_intent}
-</alert_parsed_intent>
+The alert request was:
+<alert_request>
+{alert_prompt}
+</alert_request>
 
 The document was:
 <document>
@@ -109,10 +93,10 @@ The document was:
 
 
 With the above information, write the payload for an http POST request, based on the alert's request.
-The payload shall be a JSON object in the given example format:
-<example_payload>
-{example_response}
-</example_payload>
+The payload shall be a JSON object in the given payload format:
+<payload_format>
+{payload_format}
+</payload_format>
 
 
 You answer must be self-contained, using the document as the source of truth and respond fully to the Query.
@@ -123,11 +107,35 @@ Write in the language of the user's request.
 Current date and time: {current_date_time}
 """
 
-def get_generation_prompt(alert_parsed_intent: str, document: str, example_response: str):
+def get_generation_prompt(document: str, payload_format: str):
     current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return generation_prompt.format(
-        alert_parsed_intent=alert_parsed_intent,
         document=document,
-        example_response=example_response,
+        payload_format=payload_format,
         current_date_time=current_date_time
     )
+
+summarization_prompt = """
+You are a helpful assistant that summarizes a document.
+
+
+The document is:
+<document>
+{document}
+</document>
+
+
+Your job is to simplify remove whatever is not relevant to the main content of the document.
+Simply remove the non-relevant parts and what is not important to the main content.
+
+
+Current date and time: {current_date_time}
+"""
+
+def get_summarization_prompt(document: str):
+    current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return summarization_prompt.format(
+        document=document,
+        current_date_time=current_date_time
+    )
+

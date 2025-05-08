@@ -25,7 +25,7 @@ class MonitoredData(Base):
     content = Column(JSON, nullable=False)
     scraped_datetime = Column(DateTime, nullable=False, default=datetime.now())
     
-    content_embedding = Column(Vector(384), nullable=True)
+    content_embedding = Column(Vector(768), nullable=True)
     
     # Foreign keys for different source types
     webhook_source_id = Column(String(36), ForeignKey('webhook_sources.id'), nullable=True)

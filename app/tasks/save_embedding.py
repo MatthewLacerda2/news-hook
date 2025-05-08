@@ -3,12 +3,11 @@ from app.core.database import get_db
 from app.models.alert_prompt import AlertPrompt
 from sqlalchemy import select
 
-async def generate_and_save_embeddings(alert_id, prompt, parsed_intent):
+async def generate_and_save_embeddings(alert_id, prompt):
     prompt_embedding = await get_nomic_embeddings(prompt)
-    parsed_intent_embedding = await get_nomic_embeddings(str(parsed_intent))
-    await save_embeddings_to_db(alert_id, prompt_embedding, parsed_intent_embedding)
+    await save_embeddings_to_db(alert_id, prompt_embedding)
 
-async def save_embeddings_to_db(alert_id, prompt_embedding, parsed_intent_embedding):
+async def save_embeddings_to_db(alert_id, prompt_embedding):
     async for session in get_db():
         result = await session.execute(
             select(AlertPrompt).where(AlertPrompt.id == alert_id)
@@ -17,6 +16,5 @@ async def save_embeddings_to_db(alert_id, prompt_embedding, parsed_intent_embedd
         
         if alert:
             alert.prompt_embedding = prompt_embedding
-            alert.parsed_intent_embedding = parsed_intent_embedding
             await session.commit()
             break  # Only need one session

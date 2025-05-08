@@ -11,6 +11,10 @@ from app.utils.count_tokens import count_tokens
 from app.models.llm_verification import LLMVerification
 from app.models.llm_models import LLMModel
 from sqlalchemy.ext.asyncio import AsyncSession
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 async def verify_document_matches_alert(
     alert_id: str,
@@ -34,12 +38,12 @@ async def verify_document_matches_alert(
         if alert_prompt.llm_model == "llama3.1":
             verification_result = await get_ollama_verification(
                 alert_prompt.prompt,
-                alert_prompt.parsed_intent,
+                sourced_document.content,
             )
         elif alert_prompt.llm_model == "gemini-2.5-pro":
             verification_result = await get_gemini_verification(
                 alert_prompt.prompt,
-                alert_prompt.parsed_intent,
+                sourced_document.content,
             )
         else:
             msg = "This shouldn't even be possible, as the LLM model is checked before the alert is created"
@@ -57,7 +61,7 @@ async def verify_document_matches_alert(
             db.commit()
             
     except Exception as e:
-        print(f"Error in LLM verification: {str(e)}")
+        logger.error(f"Error in LLM verification: {str(e)}", exc_info=True)
     finally:
         await db.close()
         

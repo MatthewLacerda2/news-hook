@@ -6,7 +6,6 @@ from app.schemas.alert_prompt import AlertPromptCreateSuccessResponse, AlertProm
 from pydantic import BaseModel
 import random
 
-#TODO: use this for all tests
 class TestPayload(BaseModel):
     price: int
     date: datetime
@@ -81,13 +80,9 @@ async def test_create_alert_mismatched_user_api_key(client, mock_google_verify, 
     user2_data = signup2.json()["agent_controller"]
     
     # Try to create alert with user1's API key but user2's ID
-    alert_data = {
-        "api_key": user1_data["api_key"],
-        "user_id": user2_data["id"],
-        "prompt": "Test prompt",
-        "http_method": "POST",
-        "http_url": "https://webhook.example.com/test"
-    }
+    alert_data = test_alert_data
+    alert_data["api_key"] = user1_data["api_key"]
+    alert_data["user_id"] = user2_data["id"]    
     
     response = await client.post("/api/v1/alerts/", json=alert_data)
     assert response.status_code == 403
@@ -120,12 +115,9 @@ async def test_create_alert_insufficient_credits(client, valid_user_with_credits
 async def test_create_alert_invalid_url(client, valid_user_with_credits):
     user_data = valid_user_with_credits
 
-    alert_data = {
-        "user_id": user_data["id"],
-        "prompt": "Test prompt",
-        "http_method": "POST",
-        "http_url": "not-a-valid-url"
-    }
+    alert_data = test_alert_data
+    alert_data["user_id"] = user_data["id"]
+    alert_data["http_url"] = "not-a-valid-url"
 
     response = await client.post("/api/v1/alerts/", json=alert_data, headers={"X-API-Key": user_data["api_key"]})
     assert response.status_code == 422
@@ -154,14 +146,8 @@ async def test_create_alert_invalid_payload_format(client, valid_user_with_credi
 async def test_create_alert_invalid_max_datetime(client, valid_user_with_credits):
     user_data = valid_user_with_credits
 
-    alert_data = {
-        "prompt": "Monitor Bitcoin price and alert if it goes above $50,000",
-        "http_method": "POST",
-        "http_url": "https://webhook.example.com/crypto-alert",
-        "payload_format": TestPayload.model_json_schema(),
-        "max_datetime": (datetime.now() + timedelta(days=365)).isoformat(),
-        "llm_model": "llama3.1"
-    }
+    alert_data = test_alert_data
+    alert_data["max_datetime"] = (datetime.now() + timedelta(days=365)).isoformat()
     
     response = await client.post("/api/v1/alerts/", json=alert_data, headers={"X-API-Key": user_data["api_key"]})
     
@@ -175,12 +161,8 @@ async def test_create_alert_invalid_max_datetime(client, valid_user_with_credits
 async def test_create_alert_invalid_llm_model(client, valid_user_with_credits, sample_llm_models, test_db):
     user_data = valid_user_with_credits
 
-    alert_data = {
-        "prompt": "Test prompt",
-        "http_method": "POST",
-        "http_url": "https://webhook.example.com/test",
-        "llm_model": "nonexistent_model_name"
-    }
+    alert_data = test_alert_data
+    alert_data["llm_model"] = "not-a-valid-llm-model"
 
     response = await client.post(
         "/api/v1/alerts/",

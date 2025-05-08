@@ -5,8 +5,6 @@ class LLMValidationFormat(BaseModel):
     
     approval: bool = Field(default=False, description="Is the alert's request valid?")
     chance_score: float = Field(default=0.0, ge=0.0, le=1.0, description="Estimation of the quality of the request. Ranging from 0.0 to 1.0. Must be at least 0.85 to approve.")
-    
-    output_intent: Any = Field(description="What the LLM understood from the alert request")    #TODO: remove
     keywords: list[str] = Field(description="The keywords that MUST be in the data that triggers the alert")
 
 

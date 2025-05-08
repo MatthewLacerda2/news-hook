@@ -17,12 +17,28 @@ The alert-prompt could come in json format, since those fit natural-language
 
 # How to run:
 
-_No point in running this yet_
-_The db will be on AWS at a later date..._
+## Database Setup (Local Development)
+1. Start PostgreSQL using Docker:
+```bash
+docker run --name news-hook-db \
+    -e POSTGRES_DB=news_hook \
+    -e POSTGRES_USER=postgres \
+    -e POSTGRES_PASSWORD=postgres \
+    -p 5432:5432 \
+    -d postgres:latest
 ```
+
+2. Install dependencies:
+```bash
 pip install -r requirements.txt
-uvicorn main:app --reload
 ```
+
+3. Start the application:
+```bash
+uvicorn app.main:app --reload
+```
+
+_Note: The db will be on AWS at a later date..._
 
 For build-and-test-ing, you can run `build-and-test.bat` on Windows
 For simple testing, you can run `pytest`

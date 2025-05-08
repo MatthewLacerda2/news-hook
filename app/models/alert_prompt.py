@@ -34,11 +34,9 @@ class AlertPrompt(Base):
     prompt = Column(String, nullable=False)
     http_method = Column(SQLEnum(HttpMethod), nullable=False)
     http_url = Column(String, nullable=False)
-    http_headers = Column(JSON, nullable=True)
-    
+    http_headers = Column(JSON, nullable=True)    
     payload_format = Column(JSON, nullable=True)
     
-    tags = Column(JSON, nullable=True)
     keywords = Column(JSON, nullable=False)
     prompt_embedding = Column(Vector(768), nullable=True)
     status = Column(SQLEnum(AlertStatus), nullable=False, default=AlertStatus.ACTIVE)

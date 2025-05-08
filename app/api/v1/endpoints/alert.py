@@ -79,10 +79,9 @@ async def create_alert(
             http_url=str(alert_data.http_url),
             http_headers=alert_data.http_headers or {},
             payload_format=alert_data.payload_format or {},
-            expires_at=alert_data.max_datetime or (now + timedelta(days=300)),
-            llm_model=alert_data.llm_model,
             keywords=llm_validation_response.keywords,
-            status=AlertStatus.ACTIVE
+            expires_at=alert_data.max_datetime or (now + timedelta(days=300)),
+            llm_model=alert_data.llm_model
         )
 
         llm_validation = LLMValidation(
@@ -202,11 +201,11 @@ def alert_to_schema(alert: AlertPrompt) -> AlertPromptItem:
         http_method=alert.http_method,
         http_url=alert.http_url,
         http_headers=alert.http_headers or {},
-        expires_at=alert.expires_at,
         payload_format=alert.payload_format or {},
-        tags=alert.tags or [],
+        tags=alert.keywords,
         status=alert.status,
         created_at=alert.created_at,
+        expires_at=alert.expires_at,
         llm_model=alert.llm_model
     )
 

@@ -165,3 +165,5 @@ async def valid_user_with_credits(test_db, client, mock_google_verify):
     await test_db.refresh(user)
 
     return user_data
+
+#TODO: mock_llm_validation and mock_generate_embeddings

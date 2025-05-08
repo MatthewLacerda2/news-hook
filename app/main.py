@@ -7,10 +7,10 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s"
-)
+#logging.basicConfig(
+#    level=logging.INFO,
+#    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s"
+#)
 
 # Initialize the rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -26,7 +26,7 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
-app.add_middleware(LoggingMiddleware)
+#app.add_middleware(LoggingMiddleware)
 app.include_router(api_v1_router, prefix="/api/v1")
 
 @app.get("/")

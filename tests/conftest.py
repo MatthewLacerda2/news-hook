@@ -1,4 +1,5 @@
 import os
+import json
 
 os.environ["GOOGLE_CLIENT_ID"] = "dummy_client_id"
 os.environ["GOOGLE_CLIENT_SECRET"] = "dummy_client_secret"
@@ -164,27 +165,3 @@ async def valid_user_with_credits(test_db, client, mock_google_verify):
     await test_db.refresh(user)
 
     return user_data
-
-@pytest_asyncio.fixture
-async def mock_llm_validation(monkeypatch):
-    async def fake_get_llm_validation(alert_request, llm_model_name):
-        approved_validation = LLMValidationFormat(
-            approval=True,
-            chance_score=0.99,
-            output_intent={"intent": "fake"},
-            keywords=["bitcoin", "price"]
-        )
-        
-        #return approved_validation.model_dump_json()
-        #{'detail': "Error creating alert: 'str' object has no attribute 'approval'"}
-        
-        #return approved_validation.model_dump()
-        #{'detail': "Error creating alert: 'dict' object has no attribute 'approval'"}
-        
-        #TODO: FIX THIS        
-        return approved_validation 
-        #{'detail': 'Error creating alert: expected string or buffer'}
-        
-
-    monkeypatch.setattr("app.api.v1.endpoints.alert.get_llm_validation", fake_get_llm_validation)
-    yield

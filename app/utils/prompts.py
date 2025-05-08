@@ -25,10 +25,10 @@ The alert has to be:
 
 Your job is to validate if the alert's request is reasonable.
 You will respond in a structure format, with the following fields:
-- approval: Whether the alert's request is a valid one
-- chance_score: Validation estimate ranging from 0.0 to 1.0. Must be at least 0.85 to approve.
-- output_intent: What the LLM understood from the alert request
-- keywords: The keywords that MUST be in the data that triggers the alert
+- approval: bool = Whether the alert's request is a valid one
+- chance_score: float = Validation estimate ranging from 0.0 to 1.0. Must be at least 0.85 to approve.
+- output_intent: str = What the LLM understood from the alert request
+- keywords: list[str] = The keywords that MUST be in the data that triggers the alert
 
 
 Current date and time: {current_date_time}
@@ -58,8 +58,8 @@ The document is:
 
 Your job is to verify if the document matches the alert's request.
 You will respond in a structure format, with the following fields:
-- approval: Whether the document matches the alert's request
-- chance_score: Validation estimate ranging from 0.0 to 1.0. Must be at least 0.85 to approve.
+- approval: bool = Whether the document matches the alert's request
+- chance_score: float = Validation estimate ranging from 0.0 to 1.0. Must be at least 0.85 to approve.
 
 
 Current date and time: {current_date_time}

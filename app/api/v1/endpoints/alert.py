@@ -21,7 +21,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy import func
 from app.tasks.save_embedding import generate_and_save_embeddings
-import json
 import uuid
 
 router = APIRouter()
@@ -76,7 +75,6 @@ async def create_alert(
             id=str(uuid.uuid4()),
             agent_controller_id=user.id,
             prompt=alert_data.prompt,
-            prompt_embedding = None,
             http_method=alert_data.http_method,
             http_url=str(alert_data.http_url),
             http_headers=alert_data.http_headers or {},
@@ -89,8 +87,6 @@ async def create_alert(
 
         llm_validation = LLMValidation(
             id=str(uuid.uuid4()),
-            prompt=alert_data.prompt,
-            prompt_embedding=None,
             prompt_id=new_alert.id,
             approval=llm_validation_response.approval,
             chance_score=llm_validation_response.chance_score,

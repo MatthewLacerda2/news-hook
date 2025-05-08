@@ -19,11 +19,12 @@ The alert-prompt could come in json format, since those fit natural-language
 
 ## Database Setup (Local Development)
 1. Start PostgreSQL using Docker:
+docker run --name news-hook-db -e POSTGRES_DB=news_hook -e POSTGRES_USER=lendacerda -e POSTGRES_PASSWORD=l3ndacerd@ -p 5432:5432 -d postgres:latest
 ```bash
 docker run --name news-hook-db \
     -e POSTGRES_DB=news_hook \
-    -e POSTGRES_USER=postgres \
-    -e POSTGRES_PASSWORD=postgres \
+    -e POSTGRES_USER=lendacerda \
+    -e POSTGRES_PASSWORD=l3ndacerd@ \
     -p 5432:5432 \
     -d postgres:latest
 ```

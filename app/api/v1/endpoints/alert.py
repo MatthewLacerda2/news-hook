@@ -21,6 +21,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy import func
 from app.tasks.save_embedding import generate_and_save_embeddings
+from app.utils.env import MAX_DATETIME
+
 import uuid
 
 router = APIRouter()
@@ -80,7 +82,7 @@ async def create_alert(
             http_headers=alert_data.http_headers or {},
             payload_format=alert_data.payload_format or {},
             keywords=llm_validation_response.keywords,
-            expires_at=alert_data.max_datetime or (now + timedelta(days=300)),
+            expires_at=alert_data.max_datetime or (now + timedelta(days=MAX_DATETIME)),
             llm_model=alert_data.llm_model
         )
 

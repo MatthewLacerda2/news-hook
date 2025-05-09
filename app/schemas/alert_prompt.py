@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Optional, Dict, Union, List, Any
-from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict, Json
+from typing import Optional, Dict, List, Any
+from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict
 from app.models.alert_prompt import AlertStatus
+from app.utils.env import MAX_DATETIME
 
 class HttpMethod(str, Enum):
     POST = "POST"
@@ -18,7 +19,7 @@ class AlertPromptCreateRequestBase(BaseModel):
     
     # Optional fields
     payload_format: Optional[Dict] = Field(None, description="A JSON schema describing the expected payload (e.g., from .model_json_schema())")
-    max_datetime: Optional[datetime] = Field(None, description="Monitoring window. Must be within the next 300 days")
+    max_datetime: Optional[datetime] = Field(None, description="Monitoring window. Must be within the next 365 days")
     
 
     @field_validator('max_datetime')
@@ -28,9 +29,9 @@ class AlertPromptCreateRequestBase(BaseModel):
             return v
             
         now = datetime.now()
-        max_allowed = now + timedelta(days=300)
+        max_allowed = now + timedelta(days=MAX_DATETIME)
         if v > max_allowed:
-            raise ValueError("max_datetime cannot be more than 300 days in the future")
+            raise ValueError("max_datetime cannot be more than 365 days in the future")
             
         return v
     

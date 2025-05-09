@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from app.models.agent_controller import AgentController
 from app.schemas.alert_prompt import AlertPromptCreateSuccessResponse, AlertPromptListResponse, AlertPromptItem
 from pydantic import BaseModel
-import random
+from app.utils.env import MAX_DATETIME
 
 class TestPayload(BaseModel):
     price: int
@@ -19,7 +19,7 @@ test_alert_data = {
     },
     "payload_format": TestPayload.model_json_schema(),
     "llm_model": "llama3.1",
-    "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
+    "max_datetime": (datetime.now() + timedelta(days=MAX_DATETIME)).isoformat(),
 }
 
 @pytest.mark.asyncio
@@ -147,13 +147,13 @@ async def test_create_alert_invalid_max_datetime(client, valid_user_with_credits
     user_data = valid_user_with_credits
 
     alert_data = test_alert_data
-    alert_data["max_datetime"] = (datetime.now() + timedelta(days=365)).isoformat()
+    alert_data["max_datetime"] = (datetime.now() + timedelta(days=MAX_DATETIME)).isoformat()
     
     response = await client.post("/api/v1/alerts/", json=alert_data, headers={"X-API-Key": user_data["api_key"]})
     
     assert response.status_code == 422
     assert any(
-        "max_datetime cannot be more than 300 days in the future" in err["msg"]
+        "max_datetime cannot be more than 365 days in the future" in err["msg"]
         for err in response.json()["detail"]
     )
 
@@ -182,7 +182,7 @@ async def test_list_alerts_successful(client, valid_user_with_credits):
         "limit": 50,
         "prompt_contains": "bitcoin",
         "created_after": datetime.now().isoformat(),
-        "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
+        "max_datetime": (datetime.now() + timedelta(days=MAX_DATETIME)).isoformat(),
         "llm_model": "llama3.1"
     }
     

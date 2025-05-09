@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import alert, auth, llm_models, document
+from app.api.v1.endpoints import alert, auth, llm_models, document, notification
 from app.core.rate_limiter import limiter
 
 router = APIRouter()

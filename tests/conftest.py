@@ -1,10 +1,13 @@
 import os
-import json
 
+# Set test environment variables before any imports
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 os.environ["GOOGLE_CLIENT_ID"] = "dummy_client_id"
 os.environ["GOOGLE_CLIENT_SECRET"] = "dummy_client_secret"
 os.environ["GOOGLE_REDIRECT_URI"] = "http://localhost:8000/auth/callback"
 os.environ["SECRET_KEY"] = "your-secret-key-here"
+
+import json
 
 import pytest
 import pytest_asyncio
@@ -20,7 +23,6 @@ from app.core.database import get_db
 from httpx import ASGITransport
 from app.models.agent_controller import AgentController
 from sqlalchemy.sql import text
-from app.utils.llm_response_formats import LLMValidationFormat
 
 # Create a test database URL for SQLite in-memory database
 SQLALCHEMY_TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"

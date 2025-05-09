@@ -22,9 +22,9 @@ class Settings(BaseSettings):
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = "postgres"
     POSTGRES_DB: str = "news_hook"
-    SQLALCHEMY_DATABASE_URI: Optional[str] = None
+    DATABASE_URL: Optional[str] = None
     
-    @field_validator("SQLALCHEMY_DATABASE_URI", mode="before")
+    @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def assemble_db_connection(cls, v: Optional[str], info) -> str:
         if isinstance(v, str):

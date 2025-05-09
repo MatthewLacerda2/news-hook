@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     GOOGLE_REDIRECT_URI: str
     
     # Database
+    DATABASE_URL: Optional[str] = None  # Add this line
     POSTGRES_SERVER: str = "localhost"
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = "postgres"
@@ -29,6 +30,8 @@ class Settings(BaseSettings):
     def assemble_db_connection(cls, v: Optional[str], info) -> str:
         if isinstance(v, str):
             return v
+        if info.data.get("DATABASE_URL"):  # Add this condition
+            return info.data.get("DATABASE_URL")
         return f"postgresql://{info.data.get('POSTGRES_USER')}:{info.data.get('POSTGRES_PASSWORD')}@{info.data.get('POSTGRES_SERVER')}/{info.data.get('POSTGRES_DB')}"
     
     model_config = ConfigDict(case_sensitive=True, env_file=".env")

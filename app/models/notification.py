@@ -10,7 +10,7 @@ from app.models.alert_prompt import HttpMethod
 
 class NotificationStatus(Enum):
     ACTIVE = "ACTIVE"
-    CANCELLED = "CANCELLED"
+    DEACTIVATED = "DEACTIVATED"
     EXPIRED = "EXPIRED"
     
 

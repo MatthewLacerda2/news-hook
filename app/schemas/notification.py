@@ -5,7 +5,7 @@ from app.models.alert_prompt import AlertStatus
 from app.utils.env import MAX_DATETIME
 from app.models.alert_prompt import HttpMethod
 
-class AlertPromptCreateRequestBase(BaseModel):
+class NotificationCreateRequestBase(BaseModel):
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     http_method: HttpMethod = Field(..., description="HTTP method to alert at")
     http_url: HttpUrl = Field(..., description="The URL to alert at")
@@ -32,7 +32,7 @@ class AlertPromptCreateRequestBase(BaseModel):
     
     #TODO: headers and payload validators
 
-class AlertPromptCreateSuccessResponse(BaseModel):
+class NotificationCreateSuccessResponse(BaseModel):
     id: str = Field(..., description="The ID of the alert")
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     output_intent: str = Field(..., description="What the LLM understood from the prompt")
@@ -41,7 +41,7 @@ class AlertPromptCreateSuccessResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-class AlertPromptItem(BaseModel):
+class NotificationItem(BaseModel):
     id: str = Field(..., description="The ID of the alert")
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     http_method: HttpMethod
@@ -56,12 +56,12 @@ class AlertPromptItem(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-class AlertPromptListResponse(BaseModel):
-    alerts: list[AlertPromptItem]
+class NotificationListResponse(BaseModel):
+    notifications: list[NotificationItem]
     total_count: int
 
     model_config = ConfigDict(from_attributes=True)
-    
-class AlertCancelRequest(BaseModel):
-    alert_id: str = Field(..., description="The ID of the alert to cancel")
-    user_id: str = Field(..., description="The ID of the agent controller requesting to cancel the alert")
+
+class NotificationCancelRequest(BaseModel):
+    notification_id: str = Field(..., description="The ID of the notification to cancel")
+    user_id: str = Field(..., description="The ID of the agent controller requesting to cancel the notification")

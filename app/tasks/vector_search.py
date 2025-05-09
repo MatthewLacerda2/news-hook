@@ -10,6 +10,7 @@ from app.tasks.llm_verification import verify_document_matches_alert
 from app.utils.sourced_data import SourcedData
 from app.tasks.llm_apis.ollama import get_nomic_embeddings
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.utils.env import LLM_APPROVAL_THRESHOLD
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ async def process_document_for_vector_search(sourced_document: SourcedData):
     finally:
         await db.close()
 
-async def find_matching_alerts_by_embedding(db: AsyncSession, document_embedding: np.ndarray, threshold: float = 0.85) -> List[AlertPrompt]:
+async def find_matching_alerts_by_embedding(db: AsyncSession, document_embedding: np.ndarray, threshold: float = LLM_APPROVAL_THRESHOLD) -> List[AlertPrompt]:
     """
     Find active alerts where the prompt_embedding is similar to the document_embedding using PostgreSQL vector search.
     """

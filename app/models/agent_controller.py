@@ -19,4 +19,5 @@ class AgentController(Base):
 
     # Relationships
     alert_prompts = relationship("AlertPrompt", back_populates="user")
+    notifications = relationship("Notification", back_populates="user")
     documents = relationship("UserDocument", back_populates="agent_controller")

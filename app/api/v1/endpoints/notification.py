@@ -23,18 +23,20 @@ from sqlalchemy import func
 from app.tasks.save_embedding import generate_and_save_embeddings
 from app.utils.env import MAX_DATETIME, LLM_APPROVAL_THRESHOLD
 from app.schemas.alert_prompt import AlertCancelRequest
+from app.models.notification import Notification
+from app.schemas.notification import NotificationCreateRequestBase, NotificationCreateSuccessResponse, NotificationListResponse, NotificationItem
 
 import uuid
 
 router = APIRouter()
 
-@router.post("/", response_model=AlertPromptCreateSuccessResponse, status_code=status.HTTP_201_CREATED)
-async def create_alert(
-    alert_data: AlertPromptCreateRequestBase,
+@router.post("/", response_model=NotificationCreateSuccessResponse, status_code=status.HTTP_201_CREATED)
+async def create_notification(
+    notification_data: NotificationCreateRequestBase,
     db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key)
 ):
-    """Create a new alert for monitoring"""
+    """Create a new notification"""
 
     if user.credit_balance <= 0:
         raise HTTPException(
@@ -46,7 +48,7 @@ async def create_alert(
         now = datetime.now()
         
         stmt = select(LLMModel).where(
-            LLMModel.model_name == alert_data.llm_model,
+            LLMModel.model_name == notification_data.llm_model,
             LLMModel.is_active == True
         )
         result = await db.execute(stmt)
@@ -57,7 +59,8 @@ async def create_alert(
                 detail=f"Invalid LLM model"
             )
 
-        llm_validation_response = await get_llm_validation(alert_data, llm_model.model_name)
+        #TODO: switch from 'validation' for notification specific prompt
+        llm_validation_response = await get_llm_validation(notification_data, llm_model.model_name)
 
         if not llm_validation_response.approval or llm_validation_response.chance_score < LLM_APPROVAL_THRESHOLD:
             raise HTTPException(
@@ -65,7 +68,7 @@ async def create_alert(
                 detail="Invalid alert request"
             )
         
-        input_price, output_price = get_llm_validation_price(alert_data, llm_validation_response, llm_model)
+        input_price, output_price = get_llm_validation_price(notification_data, llm_validation_response, llm_model)
         tokens_price = input_price + output_price
         
         if user.credit_balance < tokens_price:
@@ -74,25 +77,25 @@ async def create_alert(
                 detail="Insufficient credits"
             )
             
-        new_alert = AlertPrompt(
+        new_notification = Notification(
             id=str(uuid.uuid4()),
             agent_controller_id=user.id,
-            prompt=alert_data.prompt,
-            http_method=alert_data.http_method,
-            http_url=str(alert_data.http_url),
-            http_headers=alert_data.http_headers or {},
-            payload_format=alert_data.payload_format or {},
+            prompt=notification_data.prompt,
+            http_method=notification_data.http_method,
+            http_url=str(notification_data.http_url),
+            http_headers=notification_data.http_headers or {},
+            payload_format=notification_data.payload_format or {},
             keywords=llm_validation_response.keywords,
-            expires_at=alert_data.max_datetime or (now + timedelta(days=MAX_DATETIME)),
-            llm_model=alert_data.llm_model
+            expires_at=notification_data.max_datetime or (now + timedelta(days=MAX_DATETIME)),
+            llm_model=notification_data.llm_model
         )
 
         llm_validation = LLMValidation(
             id=str(uuid.uuid4()),
-            prompt_id=new_alert.id,
+            prompt_id=new_notification.id,
             approval=llm_validation_response.approval,
             chance_score=llm_validation_response.chance_score,
-            input_tokens=count_tokens(alert_data.prompt, llm_model.model_name),
+            input_tokens=count_tokens(notification_data.prompt, llm_model.model_name),
             input_price=input_price,
             output_tokens=count_tokens(llm_validation_response.output_intent, llm_model.model_name),
             output_price=output_price,
@@ -101,22 +104,22 @@ async def create_alert(
         )
         user.credit_balance -= tokens_price
         db.add(llm_validation)
-        db.add(new_alert)
+        db.add(new_notification)
         
         await db.commit()
-        await db.refresh(new_alert)
+        await db.refresh(new_notification)
         
         asyncio.create_task(
             generate_and_save_embeddings(
-                new_alert.id,
-                alert_data.prompt,
+                new_notification.id,
+                notification_data.prompt,
             )
         )
         
         return AlertPromptCreateSuccessResponse(
-            id=new_alert.id,
-            prompt=new_alert.prompt,
-            created_at=new_alert.created_at,
+            id=new_notification.id,
+            prompt=new_notification.prompt,
+            created_at=new_notification.created_at,
             output_intent=llm_validation_response.output_intent,
             keywords=llm_validation_response.keywords
         )
@@ -130,8 +133,8 @@ async def create_alert(
             detail=f"Error creating alert: {str(e)}"
         )
 
-@router.get("/", response_model=AlertPromptListResponse)
-async def list_alerts(
+@router.get("/", response_model=NotificationListResponse)
+async def list_notifications(
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=100),
     prompt_contains: Optional[str] = None,
@@ -140,7 +143,7 @@ async def list_alerts(
     db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key)
 ):
-    """List alerts for the authenticated user with filtering and pagination"""
+    """List notifications for the authenticated user with filtering and pagination"""
     
     if created_after and max_datetime and created_after > max_datetime:
         raise HTTPException(
@@ -148,18 +151,18 @@ async def list_alerts(
             detail="created_after cannot be later than max_datetime"
         )
     
-    stmt = select(AlertPrompt).where(AlertPrompt.agent_controller_id == user.id)
-    count_stmt = select(func.count()).select_from(AlertPrompt).where(AlertPrompt.agent_controller_id == user.id)
+    stmt = select(Notification).where(Notification.agent_controller_id == user.id)
+    count_stmt = select(func.count()).select_from(Notification).where(Notification.agent_controller_id == user.id)
 
     if prompt_contains:
-        stmt = stmt.filter(AlertPrompt.prompt.ilike(f"%{prompt_contains}%"))
-        count_stmt = count_stmt.filter(AlertPrompt.prompt.ilike(f"%{prompt_contains}%"))
+        stmt = stmt.filter(Notification.prompt.ilike(f"%{prompt_contains}%"))
+        count_stmt = count_stmt.filter(Notification.prompt.ilike(f"%{prompt_contains}%"))
     if max_datetime:
-        stmt = stmt.filter(AlertPrompt.expires_at <= max_datetime)
-        count_stmt = count_stmt.filter(AlertPrompt.expires_at <= max_datetime)
+        stmt = stmt.filter(Notification.expires_at <= max_datetime)
+        count_stmt = count_stmt.filter(Notification.expires_at <= max_datetime)
     if created_after:
-        stmt = stmt.filter(AlertPrompt.created_at >= created_after)
-        count_stmt = count_stmt.filter(AlertPrompt.created_at >= created_after)
+        stmt = stmt.filter(Notification.created_at >= created_after)
+        count_stmt = count_stmt.filter(Notification.created_at >= created_after)
 
     alerts = await db.execute(stmt.offset(offset).limit(limit))
     
@@ -173,68 +176,68 @@ async def list_alerts(
         total_count=total_count
     )
 
-@router.get("/{alert_id}", response_model=AlertPromptItem)
-async def get_alert(
-    alert_id: str,
+@router.get("/{notification_id}", response_model=NotificationItem)
+async def get_notification(
+    notification_id: str,
     db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key)
 ):
     """Get a specific alert by ID"""
     
     # Find the alert and verify ownership
-    stmt = select(AlertPrompt).where(
-        AlertPrompt.id == alert_id,
-        AlertPrompt.agent_controller_id == user.id
+    stmt = select(Notification).where(
+        Notification.id == notification_id,
+        Notification.agent_controller_id == user.id
     )
     result = await db.execute(stmt)
-    alert = result.scalar_one_or_none()
+    notification = result.scalar_one_or_none()
     
-    if not alert:
+    if not notification:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Not found"
         )
     
-    return alert_to_schema(alert)
+    return notification_to_schema(notification)
 
-def alert_to_schema(alert: AlertPrompt) -> AlertPromptItem:
-    return AlertPromptItem(
-        id=alert.id,
-        prompt=alert.prompt,
-        http_method=alert.http_method,
-        http_url=alert.http_url,
-        http_headers=alert.http_headers or {},
-        payload_format=alert.payload_format or {},
-        tags=alert.keywords,
-        status=alert.status,
-        created_at=alert.created_at,
-        expires_at=alert.expires_at,
-        llm_model=alert.llm_model
+def notification_to_schema(notification: Notification) -> NotificationItem:
+    return NotificationItem(
+        id=notification.id,
+        prompt=notification.prompt,
+        http_method=notification.http_method,
+        http_url=notification.http_url,
+        http_headers=notification.http_headers or {},
+        payload_format=notification.payload_format or {},
+        tags=notification.keywords,
+        status=notification.status,
+        created_at=notification.created_at,
+        expires_at=notification.expires_at,
+        llm_model=notification.llm_model
     )
 
 #Alert can not be 'deleted'. They costed credits and thus have to be kept register of.
-@router.patch("/{alert_id}/cancel", status_code=status.HTTP_200_OK)
-async def cancel_alert(
-    alert_id: str,
+@router.patch("/{notification_id}/cancel", status_code=status.HTTP_200_OK)
+async def cancel_notification(
+    notification_id: str,
     db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key)
 ):
-    """Cancel an existing alert"""
+    """Cancel an existing notification"""
     
-    stmt = select(AlertPrompt).where(
-        AlertPrompt.id == alert_id,
-        AlertPrompt.agent_controller_id == user.id
+    stmt = select(Notification).where(
+        Notification.id == notification_id,
+        Notification.agent_controller_id == user.id
     )
     result = await db.execute(stmt)
-    alert = result.scalar_one_or_none()
+    notification = result.scalar_one_or_none()
     
-    if not alert:
+    if not notification:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Not found"
         )
     
-    alert.status = AlertStatus.CANCELLED
+    notification.status = AlertStatus.CANCELLED
     await db.commit()
     
-    return {"message": "Alert cancelled successfully"}
+    return {"message": "Notification cancelled successfully"}

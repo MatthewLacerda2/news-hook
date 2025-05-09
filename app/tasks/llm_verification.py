@@ -12,7 +12,7 @@ from app.models.llm_verification import LLMVerification
 from app.models.llm_models import LLMModel
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
-
+from app.utils.env import LLM_APPROVAL_THRESHOLD
 logger = logging.getLogger(__name__)
 
 
@@ -52,7 +52,7 @@ async def verify_document_matches_alert(
         
         await register_llm_verification(alert_prompt, verification_result, alert_prompt.llm_model, db)
             
-        if verification_result.approval and verification_result.chance_score >= 0.85:
+        if verification_result.approval and verification_result.chance_score >= LLM_APPROVAL_THRESHOLD:
             # Pass to LLM generation
             await get_llm_generation(alert_prompt, sourced_document, db)
             

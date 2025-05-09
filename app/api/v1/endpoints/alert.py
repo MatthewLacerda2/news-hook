@@ -21,7 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy import func
 from app.tasks.save_embedding import generate_and_save_embeddings
-from app.utils.env import MAX_DATETIME
+from app.utils.env import MAX_DATETIME, LLM_APPROVAL_THRESHOLD
 
 import uuid
 
@@ -58,7 +58,7 @@ async def create_alert(
 
         llm_validation_response = await get_llm_validation(alert_data, llm_model.model_name)
 
-        if not llm_validation_response.approval or llm_validation_response.chance_score < 0.85:
+        if not llm_validation_response.approval or llm_validation_response.chance_score < LLM_APPROVAL_THRESHOLD:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid alert request"

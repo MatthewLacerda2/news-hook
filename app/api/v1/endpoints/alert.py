@@ -213,7 +213,7 @@ def alert_to_schema(alert: AlertPrompt) -> AlertPromptItem:
     )
 
 #Alert can not be 'deleted'. They costed credits and thus have to be kept register of.
-@router.patch("/{alert_id}/cancel", response_model=AlertCancelRequest, status_code=status.HTTP_200_OK)
+@router.patch("/{alert_id}/cancel", status_code=status.HTTP_200_OK)
 async def cancel_alert(
     alert_id: str,
     db: AsyncSession = Depends(get_db),

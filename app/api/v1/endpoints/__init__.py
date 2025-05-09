@@ -12,5 +12,6 @@ router.dependency_overrides = {
 # Include routers with their prefixes
 router.include_router(auth.router, prefix="/auth", tags=["auth"])
 router.include_router(alert.router, prefix="/alerts", tags=["alerts"])
-router.include_router(llm_models.router, prefix="/llm-models", tags=["llm_models"])
 router.include_router(document.router, prefix="/documents", tags=["documents"])
+router.include_router(llm_models.router, prefix="/llm-models", tags=["llm_models"])
+router.include_router(notification.router, prefix="/notifications", tags=["notifications"])

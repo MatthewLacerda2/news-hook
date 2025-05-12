@@ -20,6 +20,7 @@ test_alert_data = {
     "payload_format": TestPayload.model_json_schema(),
     "llm_model": "llama3.1",
     "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
+    "is_recurring": False,
 }
 
 @pytest.mark.asyncio

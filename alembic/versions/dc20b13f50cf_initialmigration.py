@@ -1,8 +1,8 @@
-"""Initial migration
+"""initialmigration
 
-Revision ID: 580c9797c2c3
+Revision ID: dc20b13f50cf
 Revises: 
-Create Date: 2025-05-08 19:45:33.876226
+Create Date: 2025-05-12 18:38:55.268112
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import pgvector
 
 
 # revision identifiers, used by Alembic.
-revision: str = '580c9797c2c3'
+revision: str = 'dc20b13f50cf'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -93,6 +93,7 @@ def upgrade() -> None:
     sa.Column('http_url', sa.String(), nullable=False),
     sa.Column('http_headers', sa.JSON(), nullable=True),
     sa.Column('payload_format', sa.JSON(), nullable=True),
+    sa.Column('is_recurring', sa.Boolean(), nullable=False),
     sa.Column('keywords', sa.JSON(), nullable=False),
     sa.Column('prompt_embedding', pgvector.sqlalchemy.vector.VECTOR(dim=768), nullable=True),
     sa.Column('status', sa.Enum('ACTIVE', 'TRIGGERED', 'CANCELLED', 'WARNED', 'EXPIRED', name='alertstatus'), nullable=False),

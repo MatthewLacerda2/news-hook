@@ -18,7 +18,14 @@ The alert-prompt could come in json format, since those fit natural-language
 # How to run:
 
 ```bash
-docker run --name news-hook-db -e POSTGRES_DB=news_hook -e POSTGRES_USER=lendacerda -e POSTGRES_PASSWORD=l3ndacerda -p 5432:5432 -d postgres:latest
+docker run --name news-hook-db -e POSTGRES_DB=news_hook -e POSTGRES_USER=lendacerda -e POSTGRES_PASSWORD=l3ndacerda -p 5432:5432 -d ankane/pgvector:latest
+```
+Before proceeding, create the 'vector' extension in the db:
+```bash
+CREATE EXTENSION IF NOT EXISTS vector;
+```
+Than, run the server:
+```bash
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```

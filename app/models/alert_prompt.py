@@ -1,13 +1,12 @@
 import uuid
 from datetime import datetime
 from enum import Enum
-from sqlalchemy import Column, String, DateTime, JSON, Enum as SQLEnum, ForeignKey, Index
+from sqlalchemy import Column, String, DateTime, JSON, Enum as SQLEnum, ForeignKey, Index, Boolean, Integer
 import uuid
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
 
 from app.models.base import Base
-from app.models.alert_event import AlertEvent
 
 class AlertStatus(Enum):
     ACTIVE = "ACTIVE"
@@ -36,6 +35,8 @@ class AlertPrompt(Base):
     http_url = Column(String, nullable=False)
     http_headers = Column(JSON, nullable=True)    
     payload_format = Column(JSON, nullable=True)
+    
+    is_recurring = Column(Boolean, nullable=False, default=False)
     
     keywords = Column(JSON, nullable=False)
     prompt_embedding = Column(Vector(768), nullable=True)

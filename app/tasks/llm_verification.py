@@ -57,7 +57,8 @@ async def verify_document_matches_alert(
             await get_llm_generation(alert_prompt, sourced_document, db)
             
             # Update alert status
-            alert_prompt.status = AlertStatus.TRIGGERED
+            if not alert_prompt.is_recurring:
+                alert_prompt.status = AlertStatus.TRIGGERED
             db.commit()
             
     except Exception as e:

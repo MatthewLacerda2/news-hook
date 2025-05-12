@@ -52,6 +52,7 @@ class AlertPromptItem(BaseModel):
     http_url: HttpUrl
     http_headers: Optional[Dict] = Field(None, description="HTTP headers to send with the request")
     payload_format: Optional[Dict] = Field(None, description="A JSON schema describing the expected payload")
+    is_recurring: bool = Field(..., description="Whether the alert is recurring")
     tags: List[str] = Field(default_factory=list, description="Tags for hinting")
     status: AlertStatus 
     created_at: datetime = Field(..., lt=datetime.now(), description="The date and time the alert was created")

@@ -11,7 +11,7 @@ router = APIRouter()
 
 @router.get("/", response_model=LLMModelListResponse)
 async def list_llm_models(
-    actives_only: bool = True,
+    actives_only: bool = True,  #TODO: remove essa bosta
     db: AsyncSession = Depends(get_db)
 ):
     """

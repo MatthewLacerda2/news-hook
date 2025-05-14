@@ -17,7 +17,7 @@ async def get_llm_validation(alert_request: AlertPromptCreateRequestBase, llm_mo
         validation_result = await get_ollama_validation(
             alert_request.prompt,
         )
-    elif llm_model == "gemini-2.5-pro":
+    elif llm_model == "gemini-2.5-pro-preview-05-06":
         validation_result = await get_gemini_validation(
             alert_request.prompt,
         )

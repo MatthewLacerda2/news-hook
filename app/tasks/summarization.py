@@ -36,6 +36,6 @@ async def get_summarization_by_ollama(document: str) -> str:
 
 async def get_summarization_by_gemini(document: str) -> str:    
     response = client.models.generate_content(
-        model="gemini-2.5-pro", contents=get_summarization_prompt(document)
+        model="gemini-2.5-pro-preview-05-06", contents=get_summarization_prompt(document)
     )    
     return response.text

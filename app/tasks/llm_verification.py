@@ -40,7 +40,7 @@ async def verify_document_matches_alert(
                 alert_prompt.prompt,
                 sourced_document.content,
             )
-        elif alert_prompt.llm_model == "gemini-2.5-pro":
+        elif alert_prompt.llm_model == "gemini-2.5-pro-preview-05-06":
             verification_result = await get_gemini_verification(
                 alert_prompt.prompt,
                 sourced_document.content,

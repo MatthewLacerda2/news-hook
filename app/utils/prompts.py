@@ -19,7 +19,7 @@ The alert has to be:
 - Unambiguous (not leave multiple interpretations)
 - Self-contained (not requiring multiple documents)
 - NOT vague
-- NOT subjective nor matter of opinion
+- NOT a matter of personal opinion or preference
 - NOT require long reasoning
 
 

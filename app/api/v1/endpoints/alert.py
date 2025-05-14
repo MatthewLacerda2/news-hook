@@ -174,24 +174,8 @@ async def list_alerts(
     count_stmt = select(func.count()).select_from(AlertPrompt).where(AlertPrompt.agent_controller_id == user.id)
 
     if prompt_contains:
-        # Get embedding for the search query
-        search_embedding = await get_nomic_embeddings(prompt_contains)
-        
-        # Combine text search and semantic search
-        stmt = stmt.filter(
-            or_(
-                AlertPrompt.prompt.ilike(f"%{prompt_contains}%"),
-                text(f"prompt_embedding <=> :embedding <= {1 - semantic_threshold}")
-            )
-        ).params(embedding=search_embedding.tolist())
-        
-        count_stmt = count_stmt.filter(
-            or_(
-                AlertPrompt.prompt.ilike(f"%{prompt_contains}%"),
-                text(f"prompt_embedding <=> :embedding <= {1 - semantic_threshold}")
-            )
-        ).params(embedding=search_embedding.tolist())
-
+        stmt = stmt.filter(AlertPrompt.prompt.ilike(f"%{prompt_contains}%"))
+        count_stmt = count_stmt.filter(AlertPrompt.prompt.ilike(f"%{prompt_contains}%"))
     if max_datetime:
         stmt = stmt.filter(AlertPrompt.expires_at <= max_datetime)
         count_stmt = count_stmt.filter(AlertPrompt.expires_at <= max_datetime)

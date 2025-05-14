@@ -56,12 +56,35 @@ async def create_alert(
                 detail=f"Invalid LLM model"
             )
 
+        new_alert_id = str(uuid.uuid4())
         llm_validation_response = await get_llm_validation(alert_data, llm_model.model_name)
+        llm_validation = LLMValidation(
+            id=str(uuid.uuid4()),
+            prompt_id=new_alert_id,
+            approval=llm_validation_response.approval,
+            chance_score=llm_validation_response.chance_score,
+            input_tokens=count_tokens(alert_data.prompt, llm_model.model_name),
+            input_price=input_price,
+            output_tokens=count_tokens(llm_validation_response.output_intent, llm_model.model_name),
+            output_price=output_price,
+            llm_id=llm_model.id,
+            date_time=now
+        )
+        db.add(llm_validation)
 
         if not llm_validation_response.approval or llm_validation_response.chance_score < 0.85:
+            
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid alert request"
+                detail={
+                    "message": "Invalid alert request",
+                    "validation": {
+                        "approval": llm_validation_response.approval,
+                        "chance_score": llm_validation_response.chance_score,
+                        "output_intent": llm_validation_response.output_intent,
+                        "keywords": llm_validation_response.keywords
+                    }
+                }
             )
         
         input_price, output_price = get_llm_validation_price(alert_data, llm_validation_response, llm_model)
@@ -74,7 +97,7 @@ async def create_alert(
             )
             
         new_alert = AlertPrompt(
-            id=str(uuid.uuid4()),
+            id=new_alert_id,
             agent_controller_id=user.id,
             prompt=alert_data.prompt,
             http_method=alert_data.http_method,
@@ -87,20 +110,7 @@ async def create_alert(
             llm_model=alert_data.llm_model
         )
 
-        llm_validation = LLMValidation(
-            id=str(uuid.uuid4()),
-            prompt_id=new_alert.id,
-            approval=llm_validation_response.approval,
-            chance_score=llm_validation_response.chance_score,
-            input_tokens=count_tokens(alert_data.prompt, llm_model.model_name),
-            input_price=input_price,
-            output_tokens=count_tokens(llm_validation_response.output_intent, llm_model.model_name),
-            output_price=output_price,
-            llm_id=llm_model.id,
-            date_time=now
-        )
         user.credit_balance -= tokens_price
-        db.add(llm_validation)
         db.add(new_alert)
         
         await db.commit()

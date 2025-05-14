@@ -16,15 +16,10 @@ async def post_document(
     user_document: UserDocumentCreateRequest,
     db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key),
-    x_user_id: str = Header(..., alias="X-User-Id"),
 ):
     """
     Create a new document
     """
-    
-    #TODO: do like create_alert and have this delegated to someone else
-    if user.id != x_user_id:
-        raise HTTPException(status_code=403, detail="Not authenticated: user_id and api_key mismatch")
     
     # Validate name and content length
     if len(user_document.name) < 3:
@@ -41,9 +36,9 @@ async def post_document(
         id=str(uuid.uuid4()),
         agent_controller_id=user.id,
         name=user_document.name,
-        uploaded_datetime=datetime.now(),
         content=user_document.content,
-        content_embedding=embedding
+        content_embedding=embedding,
+        uploaded_datetime=datetime.now()
     )
     
     db.add(new_doc)

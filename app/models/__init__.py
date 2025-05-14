@@ -6,5 +6,6 @@ from app.models.llm_models import LLMModel
 from app.models.llm_validation import LLMValidation
 from app.models.llm_verification import LLMVerification
 from app.models.monitored_data import MonitoredData
+from app.models.user_document import UserDocument
 from app.models.webhook_source import WebhookSource
 from app.models.webscrape_source import WebscrapeSource

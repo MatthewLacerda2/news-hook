@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 import asyncio
-from sqlalchemy import or_
 
 from app.core.database import get_db
 from app.models.agent_controller import AgentController
@@ -19,10 +18,9 @@ from app.utils.llm_validator import get_llm_validation, get_llm_validation_price
 from app.utils.count_tokens import count_tokens
 from app.models.llm_validation import LLMValidation
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, text
+from sqlalchemy import select
 from sqlalchemy import func
 from app.tasks.save_embedding import generate_and_save_embeddings
-from app.tasks.llm_apis.ollama import get_nomic_embeddings
 import uuid
 from app.utils.env import MAX_DATETIME
 

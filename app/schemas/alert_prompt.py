@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Optional, Dict, Union, List, Any
-from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict, Json
+from typing import Optional, Dict, List
+from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict
 from app.models.alert_prompt import AlertStatus
 
 class HttpMethod(str, Enum):

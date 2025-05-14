@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Header
-from app.schemas.user_document import UserDocumentCreateRequest, UserDocumentCreateResponse
+from app.schemas.user_document import UserDocumentCreateRequest, UserDocumentCreateSuccessResponse
 from app.core.database import get_db
 from app.models.agent_controller import AgentController
 from app.core.security import get_user_by_api_key
@@ -11,7 +11,7 @@ from datetime import datetime
 
 router = APIRouter()
 
-@router.post("/", response_model=UserDocumentCreateResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=UserDocumentCreateSuccessResponse, status_code=status.HTTP_201_CREATED)
 async def post_document(
     user_document: UserDocumentCreateRequest,
     db: AsyncSession = Depends(get_db),
@@ -47,7 +47,7 @@ async def post_document(
     
     #TODO: async task to verify for alerts
 
-    return UserDocumentCreateResponse(
+    return UserDocumentCreateSuccessResponse(
         id=new_doc.id,
         name=new_doc.name,
         created_at=new_doc.uploaded_datetime

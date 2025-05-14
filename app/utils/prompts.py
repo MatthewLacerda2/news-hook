@@ -20,7 +20,7 @@ The alert has to be:
 - Self-contained (not requiring multiple documents)
 - NOT vague
 - NOT subjective nor matter of opinion
-- NOT require complex reasoning
+- NOT require long reasoning
 
 
 Your job is to validate if the alert's request is reasonable.

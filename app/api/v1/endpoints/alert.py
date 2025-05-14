@@ -22,6 +22,7 @@ from sqlalchemy import select
 from sqlalchemy import func
 from app.tasks.save_embedding import generate_and_save_embeddings
 import uuid
+from app.utils.env import MAX_DATETIME
 
 router = APIRouter()
 
@@ -112,7 +113,7 @@ async def create_alert(
             payload_format=alert_data.payload_format or {},
             is_recurring=alert_data.is_recurring or False,
             keywords=llm_validation_response.keywords,
-            expires_at=alert_data.max_datetime or (now + timedelta(days=300)),
+            expires_at=alert_data.max_datetime.replace(tzinfo=None) if alert_data.max_datetime else (now + timedelta(days=MAX_DATETIME)),
             llm_model=alert_data.llm_model
         )
         

@@ -31,6 +31,11 @@ uvicorn app.main:app --reload
 ```
 _Note: The db will be on AWS at a later date..._
 
+Also, to generate the client-sdk for the front-end, you just need to:
+- Go in localhost:8000/docs
+- Save the openai.json
+- Run ```openapi-generator-cli generate -i ../../../openapi.json -g typescript-fetch -o client-sdk``` from the '/src' folder
+
 For build-and-test-ing, you can run `build-and-test.bat` on Windows
 For simple testing, you can run `pytest`
 

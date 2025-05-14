@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str
     GOOGLE_REDIRECT_URI: str
     
+    # LLM API Keys
+    GEMINI_API_KEY: str
+    
     # Database
     DATABASE_URL: Optional[str] = None  # Add this line
     POSTGRES_SERVER: str = "localhost"

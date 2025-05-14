@@ -32,6 +32,8 @@ async def create_alert(
     user: AgentController = Depends(get_user_by_api_key)
 ):
     """Create a new alert for monitoring"""
+    
+    print(alert_data.model_dump_json())
 
     if user.credit_balance <= 0:
         raise HTTPException(

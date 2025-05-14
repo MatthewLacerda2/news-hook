@@ -27,8 +27,10 @@ class AlertPromptCreateRequestBase(BaseModel):
         if v is None:
             return v
             
-        now = datetime.now()
+        # Create timezone-aware now() if input is timezone-aware
+        now = datetime.now(v.tzinfo) if v.tzinfo else datetime.now()
         max_allowed = now + timedelta(days=300)
+        
         if v > max_allowed:
             raise ValueError("max_datetime cannot be more than 300 days in the future")
             

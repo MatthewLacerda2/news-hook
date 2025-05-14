@@ -1,5 +1,6 @@
 import logging
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.endpoints import router as api_v1_router
 from app.core.logging_middleware import LoggingMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -19,6 +20,15 @@ app = FastAPI(
     title="News Hook API",
     description="API for monitoring and alerting on news and content updates",
     version="1.0.0"
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
 )
 
 # Add rate limit exceeded handler

@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 import asyncio
+from sqlalchemy import or_
 
 from app.core.database import get_db
 from app.models.agent_controller import AgentController
@@ -18,9 +19,10 @@ from app.utils.llm_validator import get_llm_validation, get_llm_validation_price
 from app.utils.count_tokens import count_tokens
 from app.models.llm_validation import LLMValidation
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy import func
 from app.tasks.save_embedding import generate_and_save_embeddings
+from app.tasks.llm_apis.ollama import get_nomic_embeddings
 import uuid
 from app.utils.env import MAX_DATETIME
 
@@ -156,6 +158,7 @@ async def list_alerts(
     prompt_contains: Optional[str] = None,
     max_datetime: Optional[datetime] = None,
     created_after: Optional[datetime] = None,
+    semantic_threshold: float = Query(default=0.85, ge=0.0, le=1.0),
     db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key)
 ):
@@ -171,8 +174,24 @@ async def list_alerts(
     count_stmt = select(func.count()).select_from(AlertPrompt).where(AlertPrompt.agent_controller_id == user.id)
 
     if prompt_contains:
-        stmt = stmt.filter(AlertPrompt.prompt.ilike(f"%{prompt_contains}%"))
-        count_stmt = count_stmt.filter(AlertPrompt.prompt.ilike(f"%{prompt_contains}%"))
+        # Get embedding for the search query
+        search_embedding = await get_nomic_embeddings(prompt_contains)
+        
+        # Combine text search and semantic search
+        stmt = stmt.filter(
+            or_(
+                AlertPrompt.prompt.ilike(f"%{prompt_contains}%"),
+                text(f"prompt_embedding <=> :embedding <= {1 - semantic_threshold}")
+            )
+        ).params(embedding=search_embedding.tolist())
+        
+        count_stmt = count_stmt.filter(
+            or_(
+                AlertPrompt.prompt.ilike(f"%{prompt_contains}%"),
+                text(f"prompt_embedding <=> :embedding <= {1 - semantic_threshold}")
+            )
+        ).params(embedding=search_embedding.tolist())
+
     if max_datetime:
         stmt = stmt.filter(AlertPrompt.expires_at <= max_datetime)
         count_stmt = count_stmt.filter(AlertPrompt.expires_at <= max_datetime)

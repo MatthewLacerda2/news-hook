@@ -37,7 +37,7 @@ def get_llm_validation_price(alert_request: AlertPromptCreateRequestBase, valida
     """
     
     input_token_count = count_tokens(alert_request.prompt, llm_model.model_name)
-    output_token_count = count_tokens(str(validation_result.output_intent), llm_model.model_name)
+    output_token_count = count_tokens(str(validation_result.reason), llm_model.model_name)
     
     input_price = input_token_count * (llm_model.input_token_price/1000000)
     output_price = output_token_count * (llm_model.output_token_price/1000000)

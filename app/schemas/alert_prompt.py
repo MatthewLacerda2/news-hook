@@ -15,6 +15,7 @@ class AlertPromptCreateRequestBase(BaseModel):
     http_url: HttpUrl = Field(..., description="The URL to alert at")
     http_headers: Optional[Dict] = Field(None, description="HTTP headers to send with the request")
     llm_model: str = Field("gemini-2.5-pro", description="The LLM model to use for the alert")
+    is_recurring: Optional[bool] = Field(None, description="Whether the alert is recurring")    #TODO: must NOT be optional
     
     # Optional fields
     payload_format: Optional[Dict] = Field(None, description="A JSON schema describing the expected payload (e.g., from .model_json_schema())")
@@ -41,7 +42,7 @@ class AlertPromptCreateRequestBase(BaseModel):
 class AlertPromptCreateSuccessResponse(BaseModel):
     id: str = Field(..., description="The ID of the alert")
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
-    output_intent: str = Field(..., description="What the LLM understood from the prompt")
+    reason: str = Field(..., description="Reason for the approval or denial")
     created_at: datetime
     keywords: Optional[list[str]] = Field(None, description="Keywords that MUST be in the data that triggers the alert")
 
@@ -68,15 +69,6 @@ class AlertPromptListResponse(BaseModel):
     total_count: int
 
     model_config = ConfigDict(from_attributes=True)
-
-class AlertPromptPriceCheckRequest(BaseModel):
-    prompt: str = Field(..., description="The natural language prompt describing what to monitor")
-    payload_format: dict[str, Any] = Field(None, description="A JSON schema describing the expected payload (e.g., from .model_json_schema())")
-
-class AlertPromptPriceCheckSuccessResponse(BaseModel):
-    price_in_credits: int
-    prompt: str = Field(..., description="The natural language prompt describing what to monitor")
-    output_intent: str = Field(..., description="What LLM understood from the prompt")
     
 class AlertCancelRequest(BaseModel):
     alert_id: str = Field(..., description="The ID of the alert to cancel")

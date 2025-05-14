@@ -72,12 +72,14 @@ async def create_alert(
         # Create and save validation record
         llm_validation = LLMValidation(
             id=str(uuid.uuid4()),
-            prompt_id=str(uuid.uuid4()),  # Temporary ID that will be updated if alert is created
+            prompt_id=None,  # Temporary ID that will be updated if alert is created
+            prompt=alert_data.prompt[:255],
+            reason=llm_validation_response.reason[:128],
             approval=llm_validation_response.approval,
             chance_score=llm_validation_response.chance_score,
             input_tokens=count_tokens(alert_data.prompt, llm_model.model_name),
             input_price=input_price,
-            output_tokens=count_tokens(llm_validation_response.output_intent, llm_model.model_name),
+            output_tokens=count_tokens(llm_validation_response.reason, llm_model.model_name),
             output_price=output_price,
             llm_id=llm_model.id,
             date_time=now
@@ -93,7 +95,7 @@ async def create_alert(
                     "validation": {
                         "approval": llm_validation_response.approval,
                         "chance_score": llm_validation_response.chance_score,
-                        "output_intent": llm_validation_response.output_intent,
+                        "reason": llm_validation_response.reason,
                         "keywords": llm_validation_response.keywords
                     }
                 }
@@ -108,7 +110,7 @@ async def create_alert(
             http_url=str(alert_data.http_url),
             http_headers=alert_data.http_headers or {},
             payload_format=alert_data.payload_format or {},
-            is_recurring=alert_data.is_recurring,
+            is_recurring=alert_data.is_recurring or False,
             keywords=llm_validation_response.keywords,
             expires_at=alert_data.max_datetime or (now + timedelta(days=300)),
             llm_model=alert_data.llm_model
@@ -133,7 +135,7 @@ async def create_alert(
             id=new_alert.id,
             prompt=new_alert.prompt,
             created_at=new_alert.created_at,
-            output_intent=llm_validation_response.output_intent,
+            reason=llm_validation_response.reason,
             keywords=llm_validation_response.keywords
         )
         

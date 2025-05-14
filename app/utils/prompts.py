@@ -27,7 +27,7 @@ Your job is to validate if the alert's request is reasonable.
 You will respond in a structure format, with the following fields:
 - approval: bool = Whether the alert's request is a valid one
 - chance_score: float = Validation estimate ranging from 0.0 to 1.0. Must be at least 0.85 to approve.
-- output_intent: str = What the LLM understood from the alert request
+- reason: str = Reason for the approval or denial. Be succint
 - keywords: list[str] = The keywords that MUST be in the data that triggers the alert
 
 

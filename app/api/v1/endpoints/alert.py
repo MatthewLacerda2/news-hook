@@ -107,7 +107,7 @@ async def create_alert(
             http_url=str(alert_data.http_url),
             http_headers=alert_data.http_headers or {},
             payload_format=alert_data.payload_format or {},
-            is_recurring=alert_data.is_recurring or False,
+            is_recurring=alert_data.is_recurring,
             keywords=llm_validation_response.keywords,
             expires_at=alert_data.max_datetime.replace(tzinfo=None) if alert_data.max_datetime else (now + timedelta(days=MAX_DATETIME)),
             llm_model=alert_data.llm_model

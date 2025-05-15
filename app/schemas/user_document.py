@@ -1,8 +1,8 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
 class UserDocumentCreateRequest(BaseModel):
-    name: str = Field(..., description="The name of the document")
-    content: str = Field(..., description="The actual content of the document")
+    name: str = Field(..., min_length=3, description="The name of the document")
+    content: str = Field(..., min_length=10, description="The actual content of the document")
 
 class UserDocumentCreateSuccessResponse(BaseModel):
     id: str = Field(..., description="The id of the document")

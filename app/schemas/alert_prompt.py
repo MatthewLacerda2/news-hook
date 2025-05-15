@@ -27,8 +27,7 @@ class AlertPromptCreateRequestBase(BaseModel):
     def validate_max_datetime(cls, v: Optional[datetime]) -> Optional[datetime]:
         if v is None:
             return v
-            
-        # Create timezone-aware now() if input is timezone-aware
+
         now = datetime.now(v.tzinfo) if v.tzinfo else datetime.now()
         max_allowed = now + timedelta(days=300)
         

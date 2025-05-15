@@ -101,7 +101,6 @@ def mock_google_verify():
             }
         raise ValueError("Invalid token")
 
-    # Mock the Google verification function instead
     with patch('google.oauth2.id_token.verify_oauth2_token', side_effect=mock_verify_oauth2_token) as mock:
         yield mock
 

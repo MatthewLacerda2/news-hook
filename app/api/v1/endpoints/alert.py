@@ -57,10 +57,8 @@ async def create_alert(
                 detail=f"Invalid LLM model"
             )
 
-        # Get validation first
         llm_validation_response = await get_llm_validation(alert_data, llm_model.model_name)
         
-        # Calculate prices
         input_price, output_price = get_llm_validation_price(alert_data, llm_validation_response, llm_model)
         tokens_price = input_price + output_price
         
@@ -70,10 +68,9 @@ async def create_alert(
                 detail="Insufficient credits"
             )
             
-        # Create and save validation record
         llm_validation = LLMValidation(
             id=str(uuid.uuid4()),
-            prompt_id=None,  # Temporary ID that will be updated if alert is created
+            prompt_id=None,
             prompt=alert_data.prompt[:255],
             reason=llm_validation_response.reason[:128],
             approval=llm_validation_response.approval,
@@ -86,7 +83,7 @@ async def create_alert(
             date_time=now
         )
         db.add(llm_validation)
-        await db.commit()  # Commit here to ensure validation is saved regardless of approval
+        await db.commit()
 
         if not llm_validation_response.approval or llm_validation_response.chance_score < 0.85:
             raise HTTPException(
@@ -102,7 +99,6 @@ async def create_alert(
                 }
             )
         
-        # Create the alert if validation passed
         new_alert = AlertPrompt(
             id=str(uuid.uuid4()),
             agent_controller_id=user.id,
@@ -117,7 +113,6 @@ async def create_alert(
             llm_model=alert_data.llm_model
         )
         
-        # Update the validation with the actual alert ID
         llm_validation.prompt_id = new_alert.id
         db.add(new_alert)
         
@@ -141,7 +136,7 @@ async def create_alert(
         )
         
     except HTTPException as e:
-        raise e  # re-raise HTTPExceptions so FastAPI can handle them
+        raise e
     except Exception as e:
         await db.rollback()
         raise HTTPException(
@@ -201,7 +196,6 @@ async def get_alert(
 ):
     """Get a specific alert by ID"""
     
-    # Find the alert and verify ownership
     stmt = select(AlertPrompt).where(
         AlertPrompt.id == alert_id,
         AlertPrompt.agent_controller_id == user.id
@@ -232,7 +226,7 @@ def alert_to_schema(alert: AlertPrompt) -> AlertPromptItem:
         llm_model=alert.llm_model
     )
 
-#Alert can not be 'deleted'. They costed credits and thus have to be kept register of.
+#Alert should not be 'deleted'. They costed credits and thus have to be kept register of.
 @router.patch("/{alert_id}/cancel", status_code=status.HTTP_200_OK)
 async def cancel_alert(
     alert_id: str,

@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "News Hook"
     
     # Security
-    SECRET_KEY: str = "your-secret-key-here"  # Change this in production
+    SECRET_KEY: str = "your-secret-key-here-or-youre-gay"  # Change this in production
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
     
     # Google OAuth2

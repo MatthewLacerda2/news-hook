@@ -45,7 +45,6 @@ class AlertPrompt(Base):
     expires_at = Column(DateTime, nullable=False)
     llm_model = Column(String, nullable=False)
 
-    # Relationships
     user = relationship("AgentController", back_populates="alert_prompts")
     alert_events = relationship("AlertEvent", back_populates="alert_prompt")
     llm_validations = relationship("LLMValidation", back_populates="alert_prompt")

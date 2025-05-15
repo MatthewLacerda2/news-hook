@@ -2,9 +2,6 @@ from app.utils.prompts import get_summarization_prompt
 from app.utils.count_tokens import count_tokens
 from openai import OpenAI
 
-# One thing that was chunking the content
-# That probably won't be needed until the docs get like 10k in character-count or token-count
-
 client = OpenAI(
     base_url = 'http://localhost:11434/v1',
     api_key='ollama',

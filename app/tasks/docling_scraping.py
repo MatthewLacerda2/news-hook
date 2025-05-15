@@ -32,7 +32,6 @@ async def process_webscrape_source(source: WebscrapeSource, db: AsyncSession):
         )
         response.raise_for_status()
         
-        # Convert using docling
         converter = DocumentConverter()
         result = converter.convert(response.text).document.export_to_markdown()
         
@@ -50,8 +49,8 @@ async def process_webscrape_source(source: WebscrapeSource, db: AsyncSession):
         await process_document_for_vector_search(sourced_document=sourced_data)
         
     except Exception as e:
-        logger.error(f"Error processing source {source.id}: {str(e)}", exc_info=True)
         # Don't raise the exception - we want to continue with other sources
+        logger.error(f"Error processing source {source.id}: {str(e)}", exc_info=True)
         
 async def check_and_process_sources():
     """Check for sources that need to be scraped and process them"""

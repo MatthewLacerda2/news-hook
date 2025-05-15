@@ -27,12 +27,10 @@ class MonitoredData(Base):
     
     content_embedding = Column(Vector(768), nullable=True)
     
-    # Foreign keys for different source types
     webhook_source_id = Column(String(36), ForeignKey('webhook_sources.id'), nullable=True)
     api_source_id = Column(String(36), ForeignKey('api_sources.id'), nullable=True)
     webscrape_source_id = Column(String(36), ForeignKey('webscrape_sources.id'), nullable=True)
     
-    # Relationships
     webhook_source = relationship("WebhookSource", back_populates="monitored_data")
     api_source = relationship("APISource", back_populates="monitored_data")
     webscrape_source = relationship("WebscrapeSource", back_populates="monitored_data")

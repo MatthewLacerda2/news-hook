@@ -73,7 +73,6 @@ async def test_post_document_invalid_api_key(client, valid_user_with_credits):
 @pytest.mark.asyncio
 async def test_post_document_mismatched_user_api_key(client, mock_google_verify, test_db):
     """Test document upload with API key not owned by user_id"""
-    # Create user 1
     mock_google_verify.return_value = {
         'email': 'test1@example.com',
         'sub': '12345',
@@ -85,7 +84,6 @@ async def test_post_document_mismatched_user_api_key(client, mock_google_verify,
     )
     user1_data = signup1.json()["agent_controller"]
 
-    # Create user 2
     mock_google_verify.return_value = {
         'email': 'test2@example.com',
         'sub': '67890',

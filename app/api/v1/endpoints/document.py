@@ -20,12 +20,6 @@ async def post_document(
     """
     Create a new document
     """
-    
-    # Validate name and content length
-    if len(user_document.name) < 3:
-        raise HTTPException(status_code=401, detail="name must be at least 3 characters long")
-    if len(user_document.content) < 16:
-        raise HTTPException(status_code=401, detail="content must be at least 16 characters long")
 
     try:
         embedding = await get_nomic_embeddings(user_document.content)

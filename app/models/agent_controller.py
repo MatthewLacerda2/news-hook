@@ -17,6 +17,5 @@ class AgentController(Base):
     created_at = Column(DateTime, nullable=False, default=datetime.now())
     last_login = Column(DateTime, nullable=True)
 
-    # Relationships
     alert_prompts = relationship("AlertPrompt", back_populates="user")
     documents = relationship("UserDocument", back_populates="agent_controller")

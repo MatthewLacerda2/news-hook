@@ -33,7 +33,6 @@ async def verify_document_matches_alert(
         stmt = select(AlertPrompt).where(AlertPrompt.id == alert_id)
         alert_prompt = db.execute(stmt).scalar_one()
         
-        # Choose LLM based on model name
         verification_result: LLMVerificationFormat
         if alert_prompt.llm_model == "llama3.1":
             verification_result = await get_ollama_verification(
@@ -53,10 +52,8 @@ async def verify_document_matches_alert(
         await register_llm_verification(alert_prompt, verification_result, alert_prompt.llm_model, db)
             
         if verification_result.approval and verification_result.chance_score >= 0.85:
-            # Pass to LLM generation
             await get_llm_generation(alert_prompt, sourced_document, db)
             
-            # Update alert status
             if not alert_prompt.is_recurring:
                 alert_prompt.status = AlertStatus.TRIGGERED
             db.commit()

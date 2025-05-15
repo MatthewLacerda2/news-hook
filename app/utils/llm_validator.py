@@ -11,7 +11,6 @@ async def get_llm_validation(alert_request: AlertPromptCreateRequestBase, llm_mo
     Validate the alert request using LLM
     """
     
-    # Choose LLM based on model name
     validation_result: LLMValidationFormat
     if llm_model == "llama3.1":
         validation_result = await get_ollama_validation(

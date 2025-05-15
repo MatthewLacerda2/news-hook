@@ -15,8 +15,8 @@ The alert's request was:
 The alert has to be:
 - Clear
 - Specific
+- Unambiguous
 - Have a plausible chance of happening
-- Unambiguous (not leave multiple interpretations)
 - Self-contained (not requiring multiple documents)
 - NOT vague
 - NOT a matter of personal opinion or preference

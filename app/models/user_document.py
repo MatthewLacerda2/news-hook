@@ -7,6 +7,7 @@ import uuid
 from sqlalchemy.orm import relationship
 
 class UserDocument(Base):
+
     __tablename__ = "user_documents"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))

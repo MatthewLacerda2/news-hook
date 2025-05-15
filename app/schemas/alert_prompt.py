@@ -36,7 +36,57 @@ class AlertPromptCreateRequestBase(BaseModel):
             
         return v
     
-    #TODO: headers and payload validators
+    @field_validator('http_headers')
+    @classmethod
+    def validate_headers(cls, v: Optional[Dict]) -> Optional[Dict]:
+        if v is None:
+            return v
+
+        for header_name, header_value in v.items():
+            if not isinstance(header_name, str):
+                raise ValueError(f"Header name must be a string, got {type(header_name)}")
+                
+            if isinstance(header_value, list):
+                if not all(isinstance(x, str) for x in header_value):
+                    raise ValueError(f"All header values in list must be strings for header: {header_name}")
+            elif not isinstance(header_value, str):
+                raise ValueError(f"Header value must be a string or list of strings, got {type(header_value)}")
+                
+        return v
+
+    @field_validator('payload_format')
+    @classmethod
+    def validate_payload_format(cls, v: Optional[Dict]) -> Optional[Dict]:
+        if v is None:
+            return v
+            
+        required_schema_fields = {'properties', 'title', 'type'}
+        if not all(field in v for field in required_schema_fields):
+            raise ValueError("Payload format must be a valid JSON Schema with 'type' and 'properties' fields")
+                
+        if not isinstance(v.get('properties'), dict):
+            raise ValueError("Properties must be a dictionary of field definitions")    
+        
+        if v.get('type') != 'object':
+            raise ValueError("Root schema type must be 'object'")
+        
+        for prop_name, prop_def in v['properties'].items():
+            if not isinstance(prop_def, dict):
+                raise ValueError(f"Property definition for {prop_name} must be a dictionary")
+            if 'type' not in prop_def:
+                raise ValueError(f"Property {prop_name} must have a 'type' field")
+        
+        required_fields = v.get('required', [])
+        if required_fields:
+            if not isinstance(required_fields, list):
+                raise ValueError("'required' must be a list of field names")
+            if not all(isinstance(field, str) for field in required_fields):
+                raise ValueError("All required field names must be strings")
+            for field in required_fields:
+                if field not in v['properties']:
+                    raise ValueError(f"Required field '{field}' must be defined in properties")
+                
+        return v
 
 class AlertPromptCreateSuccessResponse(BaseModel):
     id: str = Field(..., description="The ID of the alert")

@@ -23,9 +23,8 @@ class MonitoredData(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     source = Column(SQLEnum(DataSource), nullable=False)
     content = Column(JSON, nullable=False)
-    scraped_datetime = Column(DateTime, nullable=False, default=datetime.now())
-    
     content_embedding = Column(Vector(768), nullable=True)
+    scraped_datetime = Column(DateTime, nullable=False, default=datetime.now())    
     
     webhook_source_id = Column(String(36), ForeignKey('webhook_sources.id'), nullable=True)
     api_source_id = Column(String(36), ForeignKey('api_sources.id'), nullable=True)

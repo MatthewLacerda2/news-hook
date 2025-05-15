@@ -48,7 +48,7 @@ async def llm_generation(alert_prompt: AlertPrompt, sourced_document: SourcedDat
     
     await save_alert_event(llm_generation_result, generated_response, db)
     await save_monitored_data(sourced_document, db)
-    await register_credit_usage(alert_prompt, sourced_document, generated_response, alert_prompt.id, db)
+    await register_credit_usage(alert_prompt, generated_response, db)
     
     return llm_generation_result
 
@@ -91,23 +91,16 @@ async def save_monitored_data(sourced_document: SourcedData, db: AsyncSession):
     db.add(monitored_data_db)
     db.commit()
 
-async def register_credit_usage(alert_prompt: AlertPrompt, sourced_document: SourcedData, generated_response: LLMGenerationFormat, db: AsyncSession):
+async def register_credit_usage(alert_prompt: AlertPrompt, generated_response: LLMGenerationFormat, db: AsyncSession):
     
-    input_tokens_count = count_tokens(alert_prompt.prompt, alert_prompt.llm_model) + count_tokens(generated_response.output, alert_prompt.llm_model)
+    input_tokens_count = count_tokens(alert_prompt.prompt, alert_prompt.llm_model)
     output_tokens_count = count_tokens(generated_response.output, alert_prompt.llm_model)
-    
-    # find the alert_prompt based on its id
-    stmt = select(AlertPrompt).where(AlertPrompt.id == alert_prompt.id)
-    result = await db.execute(stmt)
-    alert_prompt_db = result.scalar_one_or_none()
-    
-    # find the llm_model based on the alert prompt's llm_model
+        
     stmt = select(LLMModel).where(LLMModel.model_name == alert_prompt.llm_model)
     result = await db.execute(stmt)
     llm_model_db = result.scalar_one_or_none()
     
-    # find the agent_controller based on the alert_prompt's agent_controller_id
-    stmt = select(AgentController).where(AgentController.id == alert_prompt_db.agent_controller_id)
+    stmt = select(AgentController).where(AgentController.id == alert_prompt.agent_controller_id)
     result = await db.execute(stmt)
     agent_controller_db = result.scalar_one_or_none()
     

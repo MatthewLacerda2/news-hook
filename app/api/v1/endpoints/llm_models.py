@@ -11,17 +11,13 @@ router = APIRouter()
 
 @router.get("/", response_model=LLMModelListResponse)
 async def list_llm_models(
-    actives_only: bool = True,  #TODO: remove essa bosta
     db: AsyncSession = Depends(get_db)
 ):
     """
-    List available LLM models.
-    If actives_only is True (default), only return active models.
-    If actives_only is False, return all models.
+    List all active LLM models.
     """
     query = select(LLMModel)
-    if actives_only:
-        query = query.where(LLMModel.is_active == True)
+    query = query.where(LLMModel.is_active == True)
     
     result = await db.execute(query)
     models = result.scalars().all()

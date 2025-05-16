@@ -3,7 +3,7 @@ from app.models.agent_controller import AgentController
 from app.models.llm_models import LLMModel
 from app.tasks.llm_apis.ollama import get_ollama_alert_generation
 from app.tasks.llm_apis.gemini import get_gemini_alert_generation
-from app.schemas.alert_event import NewsEvent
+from app.schemas.news_event import NewsEvent
 from datetime import datetime
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession

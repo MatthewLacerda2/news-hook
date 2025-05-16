@@ -46,13 +46,19 @@ async def process_document_for_vector_search(sourced_document: SourcedData):
 async def find_matching_alerts_by_embedding(db: AsyncSession, document_embedding: np.ndarray, agent_controller_id: str | None) -> List[AlertPrompt]:
     """
     Find active alerts where the prompt_embedding is similar to the document_embedding using PostgreSQL vector search.
+    If agent_controller_id is provided, only return alerts belonging to that controller.
     """
     embedding_list = document_embedding.tolist()
-    stmt = select(AlertPrompt).where(
+    conditions = [
         AlertPrompt.status == AlertStatus.ACTIVE,
         AlertPrompt.expires_at > datetime.now(),
         text(f"prompt_embedding <=> :embedding <= {1 - 0.85}")
-    ).params(embedding=embedding_list)
+    ]
+    
+    if agent_controller_id is not None:
+        conditions.append(AlertPrompt.agent_controller_id == agent_controller_id)
+    
+    stmt = select(AlertPrompt).where(*conditions).params(embedding=embedding_list)
     result = await db.execute(stmt)
     return result.scalars().all()
 

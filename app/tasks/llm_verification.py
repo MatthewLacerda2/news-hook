@@ -31,7 +31,8 @@ async def verify_document_matches_alert(
         db = SessionLocal()
         
         stmt = select(AlertPrompt).where(AlertPrompt.id == alert_id)
-        alert_prompt = db.execute(stmt).scalar_one()
+        result = await db.execute(stmt)
+        alert_prompt = result.scalar_one_or_none()
         
         verification_result: LLMVerificationFormat
         if alert_prompt.llm_model == "llama3.1":
@@ -39,7 +40,7 @@ async def verify_document_matches_alert(
                 alert_prompt.prompt,
                 sourced_document.content,
             )
-        elif alert_prompt.llm_model == "gemini-2.5-pro-preview-05-06":
+        elif alert_prompt.llm_model == "gemini-2.0-flash":
             verification_result = await get_gemini_verification(
                 alert_prompt.prompt,
                 sourced_document.content,
@@ -56,7 +57,7 @@ async def verify_document_matches_alert(
             
             if not alert_prompt.is_recurring:
                 alert_prompt.status = AlertStatus.TRIGGERED
-            db.commit()
+            await db.commit()
             
     except Exception as e:
         logger.error(f"Error in LLM verification: {str(e)}", exc_info=True)

@@ -23,7 +23,7 @@ async def llm_generation(alert_prompt: AlertPrompt, sourced_document: SourcedDat
             alert_prompt.payload_format,
             sourced_document.source_url
         )
-    elif alert_prompt.llm_model == "gemini-2.5-pro-preview-05-06":
+    elif alert_prompt.llm_model == "gemini-2.0-flash":
         generated_response = await get_gemini_alert_generation(
             sourced_document.content,
             alert_prompt.payload_format,
@@ -80,7 +80,7 @@ async def save_alert_event(alert_event: NewsEvent, generated_response: LLMGenera
         structured_data=generated_response.structured_data
     )
     db.add(alert_event_db)
-    db.commit()
+    await db.commit()
 
 async def save_monitored_data(sourced_document: SourcedData, db: AsyncSession):
     monitored_data_db = MonitoredData(
@@ -90,7 +90,7 @@ async def save_monitored_data(sourced_document: SourcedData, db: AsyncSession):
         content_embedding=sourced_document.content_embedding,
     )
     db.add(monitored_data_db)
-    db.commit()
+    await db.commit()
 
 async def register_credit_usage(alert_prompt: AlertPrompt, generated_response: LLMGenerationFormat, db: AsyncSession):
     
@@ -110,4 +110,4 @@ async def register_credit_usage(alert_prompt: AlertPrompt, generated_response: L
     
     agent_controller_db.credit_balance -= (input_tokens_price + output_tokens_price)
     
-    db.commit()
+    await db.commit()

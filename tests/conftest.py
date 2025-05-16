@@ -109,7 +109,7 @@ async def sample_llm_models(test_db):
     models = [
         LLMModel(
             id=str("550e8400-e29b-41d4-a716-446655440001"),
-            model_name="gemini-2.5-pro-preview-05-06",
+            model_name="gemini-2.0-flash",
             input_token_price=0.001,
             output_token_price=0.002,
             is_active=True

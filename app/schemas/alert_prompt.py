@@ -14,7 +14,7 @@ class AlertPromptCreateRequestBase(BaseModel):
     http_method: HttpMethod = Field(..., description="HTTP method to alert at")
     http_url: HttpUrl = Field(..., description="The URL to alert at")
     http_headers: Optional[Dict] = Field(None, description="HTTP headers to send with the request")
-    llm_model: str = Field("gemini-2.5-pro-preview-05-06", description="The LLM model to use for the alert")
+    llm_model: str = Field("gemini-2.0-flash", description="The LLM model to use for the alert")
     is_recurring: bool = Field(..., description="Whether the alert is recurring")
     
     # Optional fields

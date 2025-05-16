@@ -37,7 +37,7 @@ async def process_webscrape_source(source: WebscrapeSource, db: AsyncSession):
         
         source.last_scraped_at = datetime.now()
         source.num_scrapes += 1
-        db.commit()
+        await db.commit()
         
         sourced_data = SourcedData(
             source=DataSource.WEBSCRAPE,

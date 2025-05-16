@@ -30,7 +30,8 @@ async def get_llm_validation(alert_request: AlertPromptCreateRequestBase, llm_mo
     
     return validation_result
 
-def get_llm_validation_price(alert_request: AlertPromptCreateRequestBase, validation_result: LLMValidationFormat, llm_model: LLMModel) -> float:
+#TODO: this should be (input, output, llm_model)
+def get_token_price(alert_request: AlertPromptCreateRequestBase, validation_result: LLMValidationFormat, llm_model: LLMModel) -> float:
     """
     Get the price of the LLM validation
     """

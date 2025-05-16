@@ -16,15 +16,16 @@ class DataSource(Enum):
 class MonitoredData(Base):
     __tablename__ = "monitored_data"
     __table_args__ = (
-        Index('idx_scraped_datetime', 'scraped_datetime'),
+        Index('idx_monitored_datetime', 'monitored_datetime'),
         Index('idx_content_embedding_cosine', 'content_embedding', postgresql_using='ivfflat', postgresql_ops={'content_embedding': 'vector_cosine_ops'}),
     )
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     source = Column(SQLEnum(DataSource), nullable=False)
+    name = Column(String(128), nullable=False)
     content = Column(JSON, nullable=False)
     content_embedding = Column(Vector(768), nullable=True)
-    scraped_datetime = Column(DateTime, nullable=False, default=datetime.now())    
+    monitored_datetime = Column(DateTime, nullable=False, default=datetime.now())    
     
     webhook_source_id = Column(String(36), ForeignKey('webhook_sources.id'), nullable=True)
     api_source_id = Column(String(36), ForeignKey('api_sources.id'), nullable=True)

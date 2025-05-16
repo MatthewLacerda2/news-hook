@@ -5,7 +5,7 @@ from app.models.alert_prompt import AlertPrompt, AlertStatus
 from app.utils.llm_response_formats import LLMVerificationFormat
 from app.tasks.llm_apis.ollama import get_ollama_verification
 from app.tasks.llm_apis.gemini import get_gemini_verification
-from app.tasks.llm_generation import get_llm_generation
+from app.tasks.llm_generation import llm_generation
 from app.utils.sourced_data import SourcedData
 from app.utils.count_tokens import count_tokens
 from app.models.llm_verification import LLMVerification
@@ -53,7 +53,7 @@ async def verify_document_matches_alert(
         await register_llm_verification(alert_prompt, verification_result, alert_prompt.llm_model, db)
             
         if verification_result.approval and verification_result.chance_score >= 0.85:
-            await get_llm_generation(alert_prompt, sourced_document, db)
+            await llm_generation(alert_prompt, sourced_document, db)
             
             if not alert_prompt.is_recurring:
                 alert_prompt.status = AlertStatus.TRIGGERED

@@ -41,9 +41,12 @@ async def process_webscrape_source(source: WebscrapeSource, db: AsyncSession):
         
         sourced_data = SourcedData(
             source=DataSource.WEBSCRAPE,
+            source_url=source.url,
             source_id=source.id,
+            name=result.title,
             content=result,
-            content_embedding=np.zeros(768)
+            content_embedding=np.zeros(768),
+            agent_controller_id=None
         )
         
         await process_document_for_vector_search(sourced_document=sourced_data)

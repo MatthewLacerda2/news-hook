@@ -28,7 +28,7 @@ async def process_document_for_vector_search(sourced_document: SourcedData):
         
         document_embedding = await get_nomic_embeddings(sourced_document.content)
         
-        active_alerts = await find_matching_alerts_by_embedding(db, document_embedding)
+        active_alerts = await find_matching_alerts_by_embedding(db, document_embedding, sourced_document.agent_controller_id)
         active_alerts = sort_alerts_by_keyword_overlap(active_alerts)
         
         for alert in active_alerts:
@@ -43,7 +43,7 @@ async def process_document_for_vector_search(sourced_document: SourcedData):
     finally:
         await db.close()
 
-async def find_matching_alerts_by_embedding(db: AsyncSession, document_embedding: np.ndarray, threshold: float = 0.85) -> List[AlertPrompt]:
+async def find_matching_alerts_by_embedding(db: AsyncSession, document_embedding: np.ndarray, agent_controller_id: str | None) -> List[AlertPrompt]:
     """
     Find active alerts where the prompt_embedding is similar to the document_embedding using PostgreSQL vector search.
     """
@@ -51,7 +51,7 @@ async def find_matching_alerts_by_embedding(db: AsyncSession, document_embedding
     stmt = select(AlertPrompt).where(
         AlertPrompt.status == AlertStatus.ACTIVE,
         AlertPrompt.expires_at > datetime.now(),
-        text(f"prompt_embedding <=> :embedding <= {1 - threshold}")
+        text(f"prompt_embedding <=> :embedding <= {1 - 0.85}")
     ).params(embedding=embedding_list)
     result = await db.execute(stmt)
     return result.scalars().all()

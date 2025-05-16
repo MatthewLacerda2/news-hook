@@ -14,7 +14,7 @@ from app.schemas.alert_prompt import (
 )
 from app.core.security import get_user_by_api_key
 from app.models.llm_models import LLMModel
-from app.utils.llm_validator import get_llm_validation, get_llm_validation_price
+from app.utils.llm_validator import get_llm_validation, get_token_price
 from app.utils.count_tokens import count_tokens
 from app.models.llm_validation import LLMValidation
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -59,7 +59,7 @@ async def create_alert(
 
         llm_validation_response = await get_llm_validation(alert_data, llm_model.model_name)
         
-        input_price, output_price = get_llm_validation_price(alert_data, llm_validation_response, llm_model)
+        input_price, output_price = get_token_price(alert_data, llm_validation_response, llm_model)
         tokens_price = input_price + output_price
         
         if user.credit_balance < tokens_price:

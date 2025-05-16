@@ -1,8 +1,7 @@
-from dotenv import load_dotenv
 import os
-from google import genai
-from google.genai import types, Client
-from google.genai.types import GenerateContentConfig, GenerationConfig
+from dotenv import load_dotenv
+from google.genai import Client
+from google.genai.types import GenerateContentConfig
 from app.utils.prompts import get_validation_prompt, get_verification_prompt, get_generation_prompt
 from app.utils.llm_response_formats import LLMValidationFormat, LLMVerificationFormat, LLMGenerationFormat
 

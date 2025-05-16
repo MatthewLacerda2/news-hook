@@ -26,9 +26,9 @@ The alert has to be:
 Your job is to validate if the alert's request is reasonable.
 You will respond in a structure format, with the following fields:
 - approval: bool = Whether the alert's request is a valid one
-- chance_score: float = Validation estimate ranging from 0.0 to 1.0. Must be at least 0.85 to approve.
-- reason: str = Reason for the approval or denial. Be succint
-- keywords: list[str] = The keywords that MUST be in the data that triggers the alert
+- chance_score: float = rough estimate of the certainty of the approval or denial. Ranging from 0.00 (total denial) to 1.00 (total approval). Must be at least 0.85 to approve
+- reason: str = Reason for the approval or denial. Be succinct
+- keywords: list[str] = keywords required to be in the document that triggers the alert
 
 
 Current date and time: {current_date_time}
@@ -59,7 +59,7 @@ The document is:
 Your job is to verify if the document matches the alert's request.
 You will respond in a structure format, with the following fields:
 - approval: bool = Whether the document matches the alert's request
-- chance_score: float = Validation estimate ranging from 0.0 to 1.0. Must be at least 0.85 to approve.
+- chance_score: float = rough estimate of the certainty of the approval or denial. Ranging from 0.00 (total denial) to 1.00 (total approval). Must be at least 0.85 to approve.
 
 
 Current date and time: {current_date_time}
@@ -101,7 +101,7 @@ The payload shall be a JSON object in the given payload format:
 
 You answer must be self-contained, using the document as the source of truth and respond fully to the Query.
 Your answer must written with an unbiased and journalistic tone.
-You must be concise. Skip the preamble and just provide the answer without telling the user what you are doing.
+You must be succinct. Skip the preamble and just provide the answer without telling the user what you are doing.
 Write in the language of the user's request.
 
 Current date and time: {current_date_time}
@@ -125,7 +125,7 @@ The document is:
 </document>
 
 
-Your job is to simplify remove whatever is not relevant to the main content of the document.
+Your job is to simply remove whatever is not relevant to the main content of the document.
 Simply remove the non-relevant parts and what is not important to the main content.
 
 

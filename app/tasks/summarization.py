@@ -31,8 +31,14 @@ async def get_summarization_by_ollama(document: str) -> str:
     )    
     return response.choices[0].message.content
 
-async def get_summarization_by_gemini(document: str) -> str:    
+async def get_summarization_by_gemini(document: str) -> str:
+    from google.genai.types import GenerateContentConfig
     response = client.models.generate_content(
-        model="gemini-2.5-pro-preview-05-06", contents=get_summarization_prompt(document)
-    )    
+        model="gemini-2.5-pro-preview-05-06", contents=get_summarization_prompt(document),
+        config=GenerateContentConfig(
+            temperature=0,
+            automatic_function_calling={"disable": True}
+        )
+    )
+    
     return response.text

@@ -93,7 +93,7 @@ class AlertPromptCreateSuccessResponse(BaseModel):
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
     reason: str = Field(..., description="Reason for the approval or denial")
     created_at: datetime
-    keywords: Optional[list[str]] = Field(None, description="Keywords that MUST be in the data that triggers the alert")
+    keywords: Optional[list[str]] = Field(None, description="keywords required to be in the document that triggers the alert")
 
     model_config = ConfigDict(from_attributes=True)
 

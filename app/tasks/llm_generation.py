@@ -9,11 +9,11 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.alert_event import AlertEvent
 from app.utils.llm_response_formats import LLMGenerationFormat
-import requests
 from app.utils.sourced_data import SourcedData
 from app.models.monitored_data import MonitoredData
 from app.utils.count_tokens import count_tokens
 from sqlalchemy import select
+import httpx
 
 async def llm_generation(alert_prompt: AlertPrompt, sourced_document: SourcedData, db: AsyncSession) -> NewsEvent:
     
@@ -44,7 +44,7 @@ async def llm_generation(alert_prompt: AlertPrompt, sourced_document: SourcedDat
         structured_data=generated_response.structured_data,
     )
 
-    send_alert_event(llm_generation_result)
+    await send_alert_event(llm_generation_result, db)
     
     await save_alert_event(llm_generation_result, generated_response, db)
     await save_monitored_data(sourced_document, db)
@@ -52,21 +52,22 @@ async def llm_generation(alert_prompt: AlertPrompt, sourced_document: SourcedDat
     
     return llm_generation_result
 
-def send_alert_event(alert_event: NewsEvent, db: AsyncSession):
+async def send_alert_event(alert_event: NewsEvent, db: AsyncSession):
     
     stmt = select(AlertPrompt).where(AlertPrompt.id == alert_event.alert_prompt_id)
-    result = db.execute(stmt)
+    result = await db.execute(stmt)
     alert_prompt = result.scalar_one_or_none()
     
     #TODO: add retries or backoff
-    if alert_prompt.http_method == "POST":
-        requests.post(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
-    elif alert_prompt.http_method == "PUT":
-        requests.put(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
-    elif alert_prompt.http_method == "PATCH":
-        requests.patch(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
-    else:
-        raise ValueError(f"Unsupported HTTP method: {alert_prompt.http_method}")
+    async with httpx.AsyncClient() as client:
+        if alert_prompt.http_method == "POST":
+            await client.post(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
+        elif alert_prompt.http_method == "PUT":
+            await client.put(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
+        elif alert_prompt.http_method == "PATCH":
+            await client.patch(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
+        else:
+            raise ValueError(f"Unsupported HTTP method: {alert_prompt.http_method}")
 
 async def save_alert_event(alert_event: NewsEvent, generated_response: LLMGenerationFormat, db: AsyncSession) -> AlertEvent:
     alert_event_db = AlertEvent(

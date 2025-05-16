@@ -58,6 +58,7 @@ async def get_ollama_verification(alert_prompt: str, document: str) -> LLMVerifi
 async def get_ollama_alert_generation(document: str, payload_format: str, source_url: str) -> LLMGenerationFormat:
     
     full_prompt = get_generation_prompt(document, payload_format, source_url)
+    #TODO: tell the AI how to send the structured_data. Do that to Gemini as well
     response = client.chat.completions.create(
         model="llama3.1",
         temperature=ollama_temperature,

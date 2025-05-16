@@ -15,11 +15,12 @@ class AlertEvent(Base):
     alert_prompt_id = Column(String(36), ForeignKey('alert_prompts.id'), nullable=False)
     scraped_data_id = Column(String(36), ForeignKey('monitored_data.id'), nullable=False)
     triggered_at = Column(DateTime, nullable=False, default=datetime.now())
-    response = Column(JSON, nullable=True)
+    exception = Column(String, nullable=True)
     input_tokens = Column(Integer, nullable=False)
     input_price = Column(Float, nullable=False)
     output_tokens = Column(Integer, nullable=False)
     output_price = Column(Float, nullable=False)    
+    structured_data = Column(JSON, nullable=True)
 
     alert_prompt = relationship("AlertPrompt", back_populates="alert_events")
     monitored_data = relationship("MonitoredData")

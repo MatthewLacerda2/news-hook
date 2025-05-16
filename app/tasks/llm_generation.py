@@ -20,7 +20,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-async def llm_generation(alert_prompt: AlertPrompt, sourced_document: SourcedData, db: AsyncSession) -> NewsEvent:
+async def generate_and_send_alert(alert_prompt: AlertPrompt, sourced_document: SourcedData, db: AsyncSession) -> NewsEvent:
     
     if alert_prompt.llm_model == "llama3.1":
         generated_response = await get_ollama_alert_generation(
@@ -49,45 +49,66 @@ async def llm_generation(alert_prompt: AlertPrompt, sourced_document: SourcedDat
         structured_data=generated_response.structured_data,
     )
 
-    await send_alert_event(llm_generation_result, db)
+    exception = send_alert_event(llm_generation_result, db)
     
-    await save_alert_event(llm_generation_result, generated_response, db)
-    await save_monitored_data(sourced_document, db)
+    await save_alert_event(llm_generation_result, generated_response, exception, db)
+    await save_document(sourced_document, db)
     await register_credit_usage(alert_prompt, generated_response, db)
     
     return llm_generation_result
 
-async def send_alert_event(alert_event: NewsEvent, db: AsyncSession):
+def send_alert_event(alert_event: NewsEvent, db: AsyncSession):
     
     stmt = select(AlertPrompt).where(AlertPrompt.id == alert_event.alert_prompt_id)
-    result = await db.execute(stmt)
+    result = db.execute(stmt)
     alert_prompt = result.scalar_one_or_none()
     
-    #TODO: add retries or backoff
-    async with httpx.AsyncClient() as client:
-        if alert_prompt.http_method == "POST":
-            await client.post(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
-        elif alert_prompt.http_method == "PUT":
-            await client.put(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
-        elif alert_prompt.http_method == "PATCH":
-            await client.patch(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
-        else:
-            raise ValueError(f"Unsupported HTTP method: {alert_prompt.http_method}")
+    try:
+        #TODO: add retries or backoff
+        with httpx.Client() as client:
+            if alert_prompt.http_method == "POST":
+                response = client.post(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
+            elif alert_prompt.http_method == "PUT":
+                response = client.put(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
+            elif alert_prompt.http_method == "PATCH":
+                response = client.patch(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
+            else:
+                raise ValueError(f"Unsupported HTTP method: {alert_prompt.http_method}")
+            
+            if response.status_code >= 400:
+                logger.error(f"Alert webhook failed with status {response.status_code}: {response.text}")
+                return str(f"{response.status_code}: {response.text}")
+            else:
+                return None
+            
+    except httpx.TimeoutException as e:
+        logger.error(f"Timeout while sending alert to {alert_prompt.http_url}: {str(e)}")
+        return str(e)
+    except httpx.ConnectError as e:
+        logger.error(f"Connection error while sending alert to {alert_prompt.http_url}: {str(e)}")
+        return str(e)
+    except httpx.RequestError as e:
+        logger.error(f"Request error while sending alert to {alert_prompt.http_url}: {str(e)}")
+        return str(e)
+    except Exception as e:
+        logger.error(f"Unexpected error while sending alert to {alert_prompt.http_url}: {str(e)}")
+        return str(e)
 
-async def save_alert_event(alert_event: NewsEvent, generated_response: LLMGenerationFormat, db: AsyncSession) -> AlertEvent:
+async def save_alert_event(alert_event: NewsEvent, generated_response: LLMGenerationFormat, exception: str, db: AsyncSession) -> AlertEvent:
     alert_event_db = AlertEvent(
         id=alert_event.id,
         alert_prompt_id=alert_event.alert_prompt_id,
         scraped_data_id=alert_event.scraped_data_id,
         triggered_at=alert_event.triggered_at,
-        output=generated_response.output,
+        output=generated_response.output,   #TODO: WRONG. It's tokens and prices
         tags=generated_response.tags,
-        structured_data=generated_response.structured_data
+        structured_data=generated_response.structured_data,
+        exception=exception
     )
     db.add(alert_event_db)
     await db.commit()
 
-async def save_monitored_data(sourced_document: SourcedData, db: AsyncSession):
+async def save_document(sourced_document: SourcedData, db: AsyncSession):
     if sourced_document.agent_controller_id is None:
         monitored_data_db = MonitoredData(
             id=sourced_document.id,
@@ -110,6 +131,7 @@ async def save_monitored_data(sourced_document: SourcedData, db: AsyncSession):
         db.add(user_document_db)
     await db.commit()
 
+#TODO: unify with get_token_price in llm_validator.py
 async def register_credit_usage(alert_prompt: AlertPrompt, generated_response: LLMGenerationFormat, db: AsyncSession):
     
     input_tokens_count = count_tokens(alert_prompt.prompt, alert_prompt.llm_model)

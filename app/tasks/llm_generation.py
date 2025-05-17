@@ -41,12 +41,14 @@ async def generate_and_send_alert(alert_prompt: AlertPrompt, sourced_document: S
     
     llm_generation_result = NewsEvent(
         id=str(uuid.uuid4()),
+        document_id=sourced_document.id,
         alert_prompt_id=alert_prompt.id,
         triggered_at=datetime.now(),
         output=generated_response.output,
         tags=generated_response.tags,
         source_url=sourced_document.source_url,
         structured_data=generated_response.structured_data,
+        
     )
 
     exception = send_alert_event(llm_generation_result, db)

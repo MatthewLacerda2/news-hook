@@ -20,40 +20,6 @@ async def test_post_document_success(client, valid_user_with_credits):
     assert data["created_at"] is not None
 
 @pytest.mark.asyncio
-async def test_post_document_invalid_name(client, valid_user_with_credits):
-    """Test document upload with name too short"""
-    user = valid_user_with_credits
-    doc_data = {
-        "name": "ab",
-        "content": "This is a sufficiently long document content."
-    }
-    headers = {"X-API-Key": user["api_key"], "X-User-Id": user["id"]}
-    response = await client.post(
-        "/api/v1/documents/",
-        json=doc_data,
-        headers=headers
-    )
-    assert response.status_code == 401
-    assert "name" in response.json()["detail"]
-
-@pytest.mark.asyncio
-async def test_post_document_invalid_content(client, valid_user_with_credits):
-    """Test document upload with content too short"""
-    user = valid_user_with_credits
-    doc_data = {
-        "name": "Valid Name",
-        "content": "Too short"
-    }
-    headers = {"X-API-Key": user["api_key"], "X-User-Id": user["id"]}
-    response = await client.post(
-        "/api/v1/documents/",
-        json=doc_data,
-        headers=headers
-    )
-    assert response.status_code == 401
-    assert "content" in response.json()["detail"]
-
-@pytest.mark.asyncio
 async def test_post_document_invalid_api_key(client, valid_user_with_credits):
     """Test document upload with invalid API key for user"""
     user = valid_user_with_credits

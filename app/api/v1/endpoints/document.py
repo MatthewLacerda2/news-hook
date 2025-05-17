@@ -26,6 +26,7 @@ async def process_user_document(user_document: UserDocument):
         source=DataSource.USER_DOCUMENT,
         source_url=user_document.id,
         source_id=user_document.id,
+        document_id=user_document.id,
         name=user_document.name,
         content=user_document.content,
         content_embedding=np.zeros(NUM_EMBEDDING_DIMENSIONS)

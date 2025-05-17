@@ -12,6 +12,7 @@ class SourcedData(Base):
     source : DataSource
     source_url : str
     source_id : str
+    document_id : str
     name : str
     content : str
     content_embedding : Vector

@@ -7,6 +7,7 @@ from pydantic import ConfigDict
 class NewsEvent(Base):
 
     id: str = Field(..., description="The ID of the alert event")
+    document_id: str = Field(..., description="The ID of the document that triggered the alert")
     alert_prompt_id: str = Field(..., description="The ID of the alert prompt")
     triggered_at: datetime = Field(..., description="The datetime the alert event was triggered")
     

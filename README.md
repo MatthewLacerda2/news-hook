@@ -17,12 +17,24 @@ The alert-prompt could come in json format, since those fit natural-language
 
 # How to run:
 
-_No point in running this yet_
-_The db will be on AWS at a later date..._
+```bash
+docker run --name news-hook-db -e POSTGRES_DB=news_hook -e POSTGRES_USER=lendacerda -e POSTGRES_PASSWORD=l3ndacerda -p 5432:5432 -d ankane/pgvector:latest
 ```
+Before proceeding, create the 'vector' extension in the db:
+```bash
+CREATE EXTENSION IF NOT EXISTS vector;
+```
+Than, run the server:
+```bash
 pip install -r requirements.txt
-uvicorn main:app --reload
+uvicorn app.main:app --reload
 ```
+_Note: The db will be on AWS at a later date..._
+
+Also, to generate the client-sdk for the front-end, you just need to:
+- Go in localhost:8000/docs
+- Save the openai.json
+- Run ```openapi-generator-cli generate -i ../../../openapi.json -g typescript-fetch -o client-sdk``` from the '/src' folder
 
 For build-and-test-ing, you can run `build-and-test.bat` on Windows
 For simple testing, you can run `pytest`

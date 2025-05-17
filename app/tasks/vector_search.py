@@ -4,7 +4,7 @@ from sqlalchemy import select, text
 import numpy as np
 import logging
 
-from app.core.database import SessionLocal
+from app.core.database import AsyncSessionLocal
 from app.models.alert_prompt import AlertPrompt, AlertStatus
 from app.tasks.llm_verification import verify_document_matches_alert
 from app.utils.sourced_data import SourcedData
@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
-async def process_document_for_vector_search(sourced_document: SourcedData):
+async def perform_embed_and_vector_search(sourced_document: SourcedData):
     """
     Process a document from a webscrape source and store it in the vector database.
     For each ACTIVE alert that has matching keywords, perform vector similarity search
@@ -24,11 +24,11 @@ async def process_document_for_vector_search(sourced_document: SourcedData):
         source_id: The ID of the webscrape source that generated this document
     """
     try:
-        db = SessionLocal()
+        db = AsyncSessionLocal()
         
         document_embedding = await get_nomic_embeddings(sourced_document.content)
         
-        active_alerts = await find_matching_alerts_by_embedding(db, document_embedding)
+        active_alerts = await find_matching_alerts_by_embedding(db, document_embedding, sourced_document.agent_controller_id)
         active_alerts = sort_alerts_by_keyword_overlap(active_alerts)
         
         for alert in active_alerts:
@@ -43,16 +43,22 @@ async def process_document_for_vector_search(sourced_document: SourcedData):
     finally:
         await db.close()
 
-async def find_matching_alerts_by_embedding(db: AsyncSession, document_embedding: np.ndarray, threshold: float = 0.85) -> List[AlertPrompt]:
+async def find_matching_alerts_by_embedding(db: AsyncSession, document_embedding: np.ndarray, agent_controller_id: str | None) -> List[AlertPrompt]:
     """
     Find active alerts where the prompt_embedding is similar to the document_embedding using PostgreSQL vector search.
+    If agent_controller_id is provided, only return alerts belonging to that controller.
     """
     embedding_list = document_embedding.tolist()
-    stmt = select(AlertPrompt).where(
+    conditions = [
         AlertPrompt.status == AlertStatus.ACTIVE,
         AlertPrompt.expires_at > datetime.now(),
-        text(f"prompt_embedding <=> :embedding <= {1 - threshold}")
-    ).params(embedding=embedding_list)
+        text(f"prompt_embedding <=> :embedding <= {1 - 0.85}")
+    ]
+    
+    if agent_controller_id is not None:
+        conditions.append(AlertPrompt.agent_controller_id == agent_controller_id)
+    
+    stmt = select(AlertPrompt).where(*conditions).params(embedding=embedding_list)
     result = await db.execute(stmt)
     return result.scalars().all()
 

@@ -11,13 +11,12 @@ async def get_llm_validation(alert_request: AlertPromptCreateRequestBase, llm_mo
     Validate the alert request using LLM
     """
     
-    # Choose LLM based on model name
     validation_result: LLMValidationFormat
     if llm_model == "llama3.1":
         validation_result = await get_ollama_validation(
             alert_request.prompt,
         )
-    elif llm_model == "gemini-2.5-pro":
+    elif llm_model == "gemini-2.0-flash":
         validation_result = await get_gemini_validation(
             alert_request.prompt,
         )
@@ -31,13 +30,14 @@ async def get_llm_validation(alert_request: AlertPromptCreateRequestBase, llm_mo
     
     return validation_result
 
-def get_llm_validation_price(alert_request: AlertPromptCreateRequestBase, validation_result: LLMValidationFormat, llm_model: LLMModel) -> float:
+#TODO: this should be (input, output, llm_model)
+def get_token_price(alert_request: AlertPromptCreateRequestBase, validation_result: LLMValidationFormat, llm_model: LLMModel) -> float:
     """
     Get the price of the LLM validation
     """
     
     input_token_count = count_tokens(alert_request.prompt, llm_model.model_name)
-    output_token_count = count_tokens(str(validation_result.output_intent), llm_model.model_name)
+    output_token_count = count_tokens(str(validation_result.reason), llm_model.model_name)
     
     input_price = input_token_count * (llm_model.input_token_price/1000000)
     output_price = output_token_count * (llm_model.output_token_price/1000000)

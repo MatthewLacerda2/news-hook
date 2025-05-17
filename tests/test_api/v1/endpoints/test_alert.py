@@ -135,10 +135,7 @@ async def test_create_alert_invalid_payload_format(client, valid_user_with_credi
 
     response = await client.post("/api/v1/alerts/", json=alert_data, headers={"X-API-Key": user_data["api_key"]})
     assert response.status_code == 422
-    
-    # Print the actual error message for debugging
-    print("\nActual error response:", response.json()["detail"])
-    
+        
     assert any(
         "payload_format must be a valid dictionary" in error["msg"] for error in response.json()["detail"]
     )

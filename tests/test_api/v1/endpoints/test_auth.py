@@ -38,13 +38,11 @@ async def test_signup_invalid_token(client, mock_google_verify):
 @pytest.mark.asyncio
 async def test_signup_existing_user(client, mock_google_verify, test_db):
     """Test signup attempt with existing Google account"""
-    # First signup
     first_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}
     )
     
-    # Try to signup again with same Google account
     second_response = await client.post(
         "/api/v1/auth/signup",
         json={"access_token": "valid_google_token"}

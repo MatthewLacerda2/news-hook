@@ -20,7 +20,6 @@ from app.core.database import get_db
 from httpx import ASGITransport
 from app.models.agent_controller import AgentController
 from sqlalchemy.sql import text
-from app.utils.llm_response_formats import LLMValidationFormat
 
 # Create a test database URL for SQLite in-memory database
 SQLALCHEMY_TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -101,7 +100,6 @@ def mock_google_verify():
             }
         raise ValueError("Invalid token")
 
-    # Mock the Google verification function instead
     with patch('google.oauth2.id_token.verify_oauth2_token', side_effect=mock_verify_oauth2_token) as mock:
         yield mock
 
@@ -110,7 +108,7 @@ async def sample_llm_models(test_db):
     models = [
         LLMModel(
             id=str("550e8400-e29b-41d4-a716-446655440001"),
-            model_name="gemini-2.5-pro",
+            model_name="gemini-2.0-flash",
             input_token_price=0.001,
             output_token_price=0.002,
             is_active=True

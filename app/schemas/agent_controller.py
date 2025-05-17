@@ -19,7 +19,6 @@ class AgentControllerResponse(AgentControllerBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-# Schema for token response
 class TokenResponse(BaseModel):
     access_token: str = Field(..., description="JWT access token")
     token_type: str = Field(default="bearer", description="Type of token")

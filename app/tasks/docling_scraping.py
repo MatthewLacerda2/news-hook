@@ -11,6 +11,7 @@ from app.models.webscrape_source import WebscrapeSource
 from app.tasks.vector_search import perform_embed_and_vector_search
 from app.models.alert_prompt import Alert, AlertStatus
 from app.utils.sourced_data import SourcedData, DataSource
+from app.utils.env import NUM_EMBEDDING_DIMENSIONS
 import numpy as np
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -44,7 +45,7 @@ async def process_webscrape_source(source: WebscrapeSource, db: AsyncSession):
             source_id=source.id,
             name=result.title,
             content=result,
-            content_embedding=np.zeros(768),
+            content_embedding=np.zeros(NUM_EMBEDDING_DIMENSIONS),
             agent_controller_id=None
         )
         

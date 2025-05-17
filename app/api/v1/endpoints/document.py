@@ -9,6 +9,7 @@ from app.core.security import get_user_by_api_key
 from app.models.user_document import UserDocument
 from app.core.database import get_db
 from datetime import datetime
+from app.utils.env import NUM_EMBEDDING_DIMENSIONS
 import numpy as np
 import asyncio
 import uuid
@@ -27,7 +28,7 @@ async def process_user_document(user_document: UserDocument):
         source_id=user_document.id,
         name=user_document.name,
         content=user_document.content,
-        content_embedding=np.zeros(768)
+        content_embedding=np.zeros(NUM_EMBEDDING_DIMENSIONS)
     )
     
     await perform_embed_and_vector_search(

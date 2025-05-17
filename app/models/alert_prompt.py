@@ -5,7 +5,7 @@ from sqlalchemy import Column, String, DateTime, JSON, Enum as SQLEnum, ForeignK
 import uuid
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
-
+from app.utils.env import NUM_EMBEDDING_DIMENSIONS
 from app.models.base import Base
 
 class AlertStatus(Enum):
@@ -39,7 +39,7 @@ class AlertPrompt(Base):
     is_recurring = Column(Boolean, nullable=False, default=False)
     
     keywords = Column(JSON, nullable=False)
-    prompt_embedding = Column(Vector(768), nullable=True)
+    prompt_embedding = Column(Vector(NUM_EMBEDDING_DIMENSIONS), nullable=True)
     status = Column(SQLEnum(AlertStatus), nullable=False, default=AlertStatus.ACTIVE)
     created_at = Column(DateTime, nullable=False, default=datetime.now())
     expires_at = Column(DateTime, nullable=False)

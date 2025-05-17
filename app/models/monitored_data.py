@@ -4,6 +4,7 @@ from enum import Enum
 from sqlalchemy import Column, DateTime, JSON, Enum as SQLEnum, ForeignKey, Index, String
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
+from app.utils.env import NUM_EMBEDDING_DIMENSIONS
 
 from app.models.base import Base
 
@@ -25,7 +26,7 @@ class MonitoredData(Base):
     source = Column(SQLEnum(DataSource), nullable=False)
     name = Column(String(128), nullable=False)
     content = Column(JSON, nullable=False)
-    content_embedding = Column(Vector(768), nullable=True)
+    content_embedding = Column(Vector(NUM_EMBEDDING_DIMENSIONS), nullable=True)
     monitored_datetime = Column(DateTime, nullable=False, default=datetime.now())    
     
     webhook_source_id = Column(String(36), ForeignKey('webhook_sources.id'), nullable=True)

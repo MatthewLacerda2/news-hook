@@ -151,7 +151,7 @@ async def list_alerts(
     prompt_contains: Optional[str] = None,
     max_datetime: Optional[datetime] = None,
     created_after: Optional[datetime] = None,
-    semantic_threshold: float = Query(default=0.85, ge=0.0, le=1.0),
+    semantic_threshold: Optional[float] = Query(default=0.85, ge=0.0, le=1.0),
     db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key)
 ):

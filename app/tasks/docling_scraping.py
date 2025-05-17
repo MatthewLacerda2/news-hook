@@ -124,4 +124,5 @@ async def run_periodic_check(day_interval: int = 60 * 10, night_interval: int = 
         await asyncio.sleep(interval)
 
 if __name__ == "__main__":
+    #TODO: call this at startup when ready for production
     asyncio.run(run_periodic_check())

@@ -20,7 +20,6 @@ from app.core.database import get_db
 from httpx import ASGITransport
 from app.models.agent_controller import AgentController
 from sqlalchemy.sql import text
-from app.utils.llm_response_formats import LLMValidationFormat
 
 # Create a test database URL for SQLite in-memory database
 SQLALCHEMY_TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"

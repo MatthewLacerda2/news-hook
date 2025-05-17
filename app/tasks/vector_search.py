@@ -4,7 +4,7 @@ from sqlalchemy import select, text
 import numpy as np
 import logging
 
-from app.core.database import SessionLocal
+from app.core.database import AsyncSessionLocal
 from app.models.alert_prompt import AlertPrompt, AlertStatus
 from app.tasks.llm_verification import verify_document_matches_alert
 from app.utils.sourced_data import SourcedData
@@ -24,7 +24,7 @@ async def perform_embed_and_vector_search(sourced_document: SourcedData):
         source_id: The ID of the webscrape source that generated this document
     """
     try:
-        db = SessionLocal()
+        db = AsyncSessionLocal()
         
         document_embedding = await get_nomic_embeddings(sourced_document.content)
         

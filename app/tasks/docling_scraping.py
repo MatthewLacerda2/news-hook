@@ -6,7 +6,7 @@ from typing import List
 from sqlalchemy import select
 from docling.document_converter import DocumentConverter
 
-from app.core.database import SessionLocal
+from app.core.database import AsyncSessionLocal
 from app.models.webscrape_source import WebscrapeSource
 from app.tasks.vector_search import perform_embed_and_vector_search
 from app.models.alert_prompt import Alert, AlertStatus
@@ -59,7 +59,7 @@ async def process_webscrape_source(source: WebscrapeSource, db: AsyncSession):
 async def check_and_process_sources():
     """Check for sources that need to be scraped and process them"""
     try:
-        db = SessionLocal()
+        db = AsyncSessionLocal()
         now = datetime.now()
         
         query = select(WebscrapeSource).where(
@@ -97,7 +97,7 @@ def is_night_time() -> bool:
 
 async def mark_expired_alerts():
     """Mark expired alerts as expired"""
-    db = SessionLocal()
+    db = AsyncSessionLocal()
     try:
         stmt = select(Alert).where(Alert.expires_at < datetime.now())
         result = await db.execute(stmt)

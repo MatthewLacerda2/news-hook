@@ -1,11 +1,8 @@
-from app.models.base import Base
 from datetime import datetime
-from pydantic import Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Dict, Any
-from pydantic import ConfigDict
 
-class NewsEvent(Base):
-
+class NewsEvent(BaseModel):
     id: str = Field(..., description="The ID of the alert event")
     document_id: str = Field(..., description="The ID of the document that triggered the alert")
     alert_prompt_id: str = Field(..., description="The ID of the alert prompt")

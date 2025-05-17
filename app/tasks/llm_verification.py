@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from datetime import datetime
-from app.core.database import SessionLocal
+from app.core.database import AsyncSessionLocal
 from app.models.alert_prompt import AlertPrompt, AlertStatus
 from app.utils.llm_response_formats import LLMVerificationFormat
 from app.tasks.llm_apis.ollama import get_ollama_verification
@@ -28,7 +28,7 @@ async def verify_document_matches_alert(
         document: The document to verify, as returned by docling
     """
     try:
-        db = SessionLocal()
+        db = AsyncSessionLocal()
         
         stmt = select(AlertPrompt).where(AlertPrompt.id == alert_id)
         result = await db.execute(stmt)

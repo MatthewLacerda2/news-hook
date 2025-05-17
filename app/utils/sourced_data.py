@@ -1,21 +1,21 @@
-from app.models.base import Base
 from app.models.monitored_data import DataSource
 from datetime import datetime
 from pgvector.sqlalchemy import Vector
 import uuid
+from dataclasses import dataclass
 
-class SourcedData(Base):
-
-    id : str
-    agent_controller_id : str | None
-    retrieved_datetime : datetime
-    source : DataSource
-    source_url : str
-    source_id : str
-    document_id : str
-    name : str
-    content : str
-    content_embedding : Vector
+@dataclass
+class SourcedData:
+    id: str
+    agent_controller_id: str | None
+    retrieved_datetime: datetime
+    source: DataSource
+    source_url: str
+    source_id: str
+    document_id: str
+    name: str
+    content: str
+    content_embedding: Vector
     
     def __init__(self, source: DataSource, source_url: str, content: str, content_embedding: Vector, name: str, agent_controller_id: str = None):
         self.id = str(uuid.uuid4())
@@ -26,3 +26,5 @@ class SourcedData(Base):
         self.content_embedding = content_embedding
         self.name = name
         self.agent_controller_id = agent_controller_id
+        self.source_id = ""  # You might want to set this properly
+        self.document_id = ""  # You might want to set this properly

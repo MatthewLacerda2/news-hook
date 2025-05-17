@@ -20,7 +20,7 @@ from app.models.llm_validation import LLMValidation
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy import func
-from app.tasks.save_embedding import generate_and_save_embeddings
+from app.tasks.save_embedding import generate_and_save_alert_embeddings
 import uuid
 from app.utils.env import MAX_DATETIME
 
@@ -121,7 +121,7 @@ async def create_alert(
         await db.refresh(new_alert)
         
         asyncio.create_task(
-            generate_and_save_embeddings(
+            generate_and_save_alert_embeddings(
                 new_alert.id,
                 alert_data.prompt,
             )

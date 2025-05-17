@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
-async def process_document_for_vector_search(sourced_document: SourcedData):
+async def perform_embed_and_vector_search(sourced_document: SourcedData):
     """
     Process a document from a webscrape source and store it in the vector database.
     For each ACTIVE alert that has matching keywords, perform vector similarity search

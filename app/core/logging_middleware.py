@@ -5,7 +5,7 @@ import logging
 import time
 import json
 
-logger = logging.getLogger("api_logger")
+logger = logging.getLogger(__name__)
 
 class LoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):

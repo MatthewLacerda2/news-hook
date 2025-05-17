@@ -12,6 +12,7 @@ class DataSource(Enum):
     WEBSCRAPE = "WEBSCRAPE"
     API = "API"
     YOUTUBE = "YOUTUBE"
+    USER_DOCUMENT = "USER_DOCUMENT"
 
 class MonitoredData(Base):
     __tablename__ = "monitored_data"

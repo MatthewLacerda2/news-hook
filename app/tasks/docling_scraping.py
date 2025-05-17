@@ -8,13 +8,12 @@ from docling.document_converter import DocumentConverter
 
 from app.core.database import SessionLocal
 from app.models.webscrape_source import WebscrapeSource
-from app.tasks.vector_search import process_document_for_vector_search
+from app.tasks.vector_search import perform_embed_and_vector_search
 from app.models.alert_prompt import Alert, AlertStatus
 from app.utils.sourced_data import SourcedData, DataSource
 import numpy as np
 from sqlalchemy.ext.asyncio import AsyncSession
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 async def process_webscrape_source(source: WebscrapeSource, db: AsyncSession):
@@ -49,7 +48,7 @@ async def process_webscrape_source(source: WebscrapeSource, db: AsyncSession):
             agent_controller_id=None
         )
         
-        await process_document_for_vector_search(sourced_document=sourced_data)
+        await perform_embed_and_vector_search(sourced_document=sourced_data)
         
     except Exception as e:
         # Don't raise the exception - we want to continue with other sources

@@ -105,7 +105,8 @@ async def test_create_alert_insufficient_credits(client, valid_user_with_credits
             "user_id": user_data["id"],
             "prompt": "Test prompt",
             "http_method": "POST",
-            "http_url": "https://webhook.example.com/test"
+            "http_url": "https://webhook.example.com/test",
+            "is_recurring": False
         },
         headers={"X-API-Key": user_data["api_key"]}
     )

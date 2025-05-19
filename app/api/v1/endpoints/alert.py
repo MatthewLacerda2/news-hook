@@ -223,7 +223,8 @@ def alert_to_schema(alert: AlertPrompt) -> AlertPromptItem:
         status=alert.status,
         created_at=alert.created_at,
         expires_at=alert.expires_at,
-        llm_model=alert.llm_model
+        llm_model=alert.llm_model,
+        is_recurring=alert.is_recurring
     )
 
 #Alert should not be 'deleted'. They costed credits and thus have to be kept register of.

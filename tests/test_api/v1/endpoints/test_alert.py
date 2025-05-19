@@ -286,7 +286,7 @@ async def test_get_alert_invalid_api_key(client, test_db):
     assert "Invalid API key" in response.json()["detail"]
     
 @pytest.mark.asyncio
-async def test_get_alert_successful(client, valid_user_with_credits, sample_llm_models, test_db):
+async def test_get_alert_successful(client, valid_user_with_credits, sample_llm_models, test_db, mock_llm_validation):
     """Test successful alert retrieval"""
     user_data = valid_user_with_credits
     api_key = user_data["api_key"]
@@ -375,7 +375,7 @@ async def test_cancel_alert_invalid_api_key(client, test_db):
     assert "Invalid API key" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_cancel_alert_wrong_user(client, valid_user_with_credits, mock_google_verify, sample_llm_models, test_db):
+async def test_cancel_alert_wrong_user(client, valid_user_with_credits, mock_google_verify, sample_llm_models, test_db, mock_llm_validation):
     """Test attempting to cancel an alert belonging to another user"""
     user_data = valid_user_with_credits
     api_key = user_data["api_key"]

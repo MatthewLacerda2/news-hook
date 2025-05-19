@@ -20,6 +20,7 @@ from app.core.database import get_db
 from httpx import ASGITransport
 from app.models.agent_controller import AgentController
 from sqlalchemy.sql import text
+from app.utils.llm_response_formats import LLMValidationFormat
 
 # Create a test database URL for SQLite in-memory database
 SQLALCHEMY_TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -163,5 +164,21 @@ async def valid_user_with_credits(test_db, client, mock_google_verify):
     await test_db.refresh(user)
 
     return user_data
+
+@pytest.fixture
+def mock_llm_validation():
+    """Fixture to mock LLM validation responses"""
+    from app.utils import llm_validator
+    
+    async def mock_get_llm_validation(*args, **kwargs):
+        return LLMValidationFormat(
+            approval=True,
+            chance_score=0.95,
+            reason="This is a valid alert request",
+            keywords=["bitcoin", "price", "50000"]
+        )
+
+    with patch('app.utils.llm_validator.get_llm_validation', side_effect=mock_get_llm_validation) as mock:
+        yield mock
 
 #TODO: mock_llm_validation and mock_generate_embeddings

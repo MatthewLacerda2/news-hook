@@ -24,7 +24,7 @@ test_alert_data = {
 }
 
 @pytest.mark.asyncio
-async def test_create_alert_successful(client, valid_user_with_credits, sample_llm_models, test_db):
+async def test_create_alert_successful(client, valid_user_with_credits, sample_llm_models, test_db, mock_llm_validation):
     """Test successful alert creation with valid data"""
     user_data = valid_user_with_credits
 
@@ -40,7 +40,7 @@ async def test_create_alert_successful(client, valid_user_with_credits, sample_l
     
     assert response.status_code == 201
     AlertPromptCreateSuccessResponse.model_validate(response.json())
-    
+    assert mock_llm_validation.called
 
 @pytest.mark.asyncio
 async def test_create_alert_invalid_api_key(client, test_db):
@@ -137,7 +137,7 @@ async def test_create_alert_invalid_payload_format(client, valid_user_with_credi
     assert response.status_code == 422
         
     assert any(
-        "payload_format must be a valid dictionary" in error["msg"] for error in response.json()["detail"]
+        "Input should be a valid dictionary" in error["msg"] for error in response.json()["detail"]
     )
 
 @pytest.mark.asyncio
@@ -156,7 +156,7 @@ async def test_create_alert_invalid_max_datetime(client, valid_user_with_credits
     )
 
 @pytest.mark.asyncio
-async def test_create_alert_invalid_llm_model(client, valid_user_with_credits, sample_llm_models, test_db):
+async def test_create_alert_invalid_llm_model(client, valid_user_with_credits, sample_llm_models, test_db, mock_llm_validation):
     user_data = valid_user_with_credits
 
     alert_data = test_alert_data
@@ -170,6 +170,7 @@ async def test_create_alert_invalid_llm_model(client, valid_user_with_credits, s
 
     assert response.status_code == 400
     assert "Invalid LLM model" in response.json()["detail"]
+    assert not mock_llm_validation.called
 
 @pytest.mark.asyncio
 async def test_list_alerts_successful(client, valid_user_with_credits):
@@ -328,7 +329,7 @@ async def test_get_alert_not_found(client, valid_user_with_credits):
     assert "Not found" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_cancel_alert_successful(client, valid_user_with_credits, sample_llm_models, test_db):
+async def test_cancel_alert_successful(client, valid_user_with_credits, sample_llm_models, test_db, mock_llm_validation):
     """Test successful alert cancellation"""
     user_data = valid_user_with_credits
     api_key = user_data["api_key"]
@@ -341,6 +342,7 @@ async def test_cancel_alert_successful(client, valid_user_with_credits, sample_l
     
     assert create_response.status_code == 201
     alert_id = create_response.json()["id"]
+    assert mock_llm_validation.called
     
     # Now cancel the alert using PATCH
     response = await client.patch(

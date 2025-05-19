@@ -168,7 +168,6 @@ async def valid_user_with_credits(test_db, client, mock_google_verify):
 @pytest.fixture
 def mock_llm_validation():
     """Fixture to mock LLM validation responses"""
-    from app.utils import llm_validator
     
     async def mock_get_llm_validation(*args, **kwargs):
         return LLMValidationFormat(
@@ -178,7 +177,5 @@ def mock_llm_validation():
             keywords=["bitcoin", "price", "50000"]
         )
 
-    with patch('app.utils.llm_validator.get_llm_validation', side_effect=mock_get_llm_validation) as mock:
+    with patch('app.api.v1.endpoints.alert.get_llm_validation', side_effect=mock_get_llm_validation) as mock:
         yield mock
-
-#TODO: mock_llm_validation and mock_generate_embeddings

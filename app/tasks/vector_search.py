@@ -27,16 +27,23 @@ async def perform_embed_and_vector_search(sourced_document: SourcedData):
     try:
         db = AsyncSessionLocal()
         
+        logger.info(f"Performing vector search for document: {sourced_document.name}")
+        
         document_embedding = await get_nomic_embeddings(sourced_document.content)
         
         active_alerts = await find_matching_alerts_by_embedding(db, document_embedding, sourced_document.agent_controller_id)
-        active_alerts = sort_alerts_by_keyword_overlap(active_alerts)
+        
+        logger.info(f"Found {len(active_alerts)} matching alerts before keywords")
+        #active_alerts = sort_alerts_by_keyword_overlap(active_alerts)
+        #logger.info(f"Found {len(active_alerts)} matching alerts after keywords")
         
         for alert in active_alerts:
             await verify_document_matches_alert(
                 alert_id=str(alert.id),
-                document=sourced_document,
+                sourced_document=sourced_document,
             )
+            
+        logger.info(f"Completed vector search for document: {sourced_document.name}")
                 
     except Exception as e:
         # Log error but don't raise to avoid breaking the scraping pipeline
@@ -51,44 +58,16 @@ async def find_matching_alerts_by_embedding(db: AsyncSession, document_embedding
     """
     # Convert numpy array to list and format for PostgreSQL array
     embedding_list = [float(x) for x in document_embedding.tolist()]
-    embedding_str = f"[{','.join(str(x) for x in embedding_list)}]"
     
     conditions = [
         AlertPrompt.status == AlertStatus.ACTIVE,
         AlertPrompt.expires_at > datetime.now(),
-        text("prompt_embedding <=> :embedding < 0.15")
+        AlertPrompt.prompt_embedding.cosine_distance(embedding_list) < 0.99  # Use pgvector's SQLAlchemy integration
     ]
     
     if agent_controller_id is not None:
         conditions.append(AlertPrompt.agent_controller_id == agent_controller_id)
     
     stmt = select(AlertPrompt).where(*conditions)
-    result = await db.execute(stmt.params(embedding=embedding_str))
+    result = await db.execute(stmt)  # No need for params() since we're using SQLAlchemy's vector type
     return result.scalars().all()
-
-def count_keyword_matches(alert_keywords, reference_keywords):
-    count = 0
-    for ref_kw in reference_keywords:
-        for kw in alert_keywords:
-            if ref_kw in kw or kw in ref_kw:
-                count += 1
-                break  # Only count one match per reference keyword
-    return count
-
-def sort_alerts_by_keyword_overlap(active_alerts):
-    if not active_alerts:
-        return []
-
-    reference_keywords = active_alerts[0].keywords or []
-    # Ensure all keywords are strings
-    reference_keywords = [str(k) for k in reference_keywords]
-
-    def match_count(alert):
-        alert_keywords = alert.keywords or []
-        alert_keywords = [str(k) for k in alert_keywords]
-        return count_keyword_matches(alert_keywords, reference_keywords)
-
-    sorted_alerts = [active_alerts[0]] + sorted(
-        active_alerts[1:], key=match_count, reverse=True
-    )
-    return sorted_alerts

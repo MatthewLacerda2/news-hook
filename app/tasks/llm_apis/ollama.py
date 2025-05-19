@@ -28,12 +28,14 @@ async def get_nomic_embeddings(text: str):
 async def get_ollama_validation(alert_prompt: str) -> LLMValidationFormat:
     
     full_prompt = get_validation_prompt(alert_prompt)    
-    response = client.generate(
+    response = client.chat.completions.create(
         model="llama3.1",
         temperature=ollama_temperature,
         stream=False,
-        prompt=full_prompt,
-        format=LLMValidationFormat.model_json_schema()
+        messages=[
+            {"role": "user", "content": full_prompt},
+        ],
+        response_format={"type": "json_object", "schema": LLMValidationFormat.model_json_schema()}
     )
     
     return response.choices[0].message.content
@@ -41,12 +43,14 @@ async def get_ollama_validation(alert_prompt: str) -> LLMValidationFormat:
 async def get_ollama_verification(alert_prompt: str, document: str) -> LLMVerificationFormat:
         
     full_prompt = get_verification_prompt(alert_prompt, document)    
-    response = client.generate(
+    response = client.chat.completions.create(
         model="llama3.1",
         temperature=ollama_temperature,
         stream=False,
-        prompt=full_prompt,
-        format=LLMVerificationFormat.model_json_schema()
+        messages=[
+            {"role": "user", "content": full_prompt},
+        ],
+        response_format={"type": "json_object", "schema": LLMVerificationFormat.model_json_schema()}
     )
     
     return response.choices[0].message.content
@@ -55,12 +59,14 @@ async def get_ollama_alert_generation(document: str, payload_format: str, source
     
     full_prompt = get_generation_prompt(document, payload_format, source_url)
     #TODO: tell the AI how to send the structured_data. Do that to Gemini as well
-    response = client.generate(
+    response = client.chat.completions.create(
         model="llama3.1",
         temperature=ollama_temperature,
         stream=False,
-        prompt=full_prompt,
-        format=LLMGenerationFormat.model_json_schema()
+        messages=[
+            {"role": "user", "content": full_prompt},
+        ],
+        response_format={"type": "json_object", "schema": LLMGenerationFormat.model_json_schema()}
     )
     
     return response.choices[0].message.content

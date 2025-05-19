@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import select, text
 import numpy as np
 import logging
+from pgvector.sqlalchemy import Vector
 
 from app.core.database import AsyncSessionLocal
 from app.models.alert_prompt import AlertPrompt, AlertStatus
@@ -48,18 +49,21 @@ async def find_matching_alerts_by_embedding(db: AsyncSession, document_embedding
     Find active alerts where the prompt_embedding is similar to the document_embedding using PostgreSQL vector search.
     If agent_controller_id is provided, only return alerts belonging to that controller.
     """
-    embedding_list = document_embedding.tolist()
+    # Convert numpy array to list and format for PostgreSQL array
+    embedding_list = [float(x) for x in document_embedding.tolist()]
+    embedding_str = f"[{','.join(str(x) for x in embedding_list)}]"
+    
     conditions = [
         AlertPrompt.status == AlertStatus.ACTIVE,
         AlertPrompt.expires_at > datetime.now(),
-        text(f"prompt_embedding <=> :embedding <= {1 - 0.85}")
+        text("prompt_embedding <=> :embedding < 0.15")
     ]
     
     if agent_controller_id is not None:
         conditions.append(AlertPrompt.agent_controller_id == agent_controller_id)
     
-    stmt = select(AlertPrompt).where(*conditions).params(embedding=embedding_list)
-    result = await db.execute(stmt)
+    stmt = select(AlertPrompt).where(*conditions)
+    result = await db.execute(stmt.params(embedding=embedding_str))
     return result.scalars().all()
 
 def count_keyword_matches(alert_keywords, reference_keywords):

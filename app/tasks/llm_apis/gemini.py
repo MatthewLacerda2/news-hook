@@ -14,6 +14,7 @@ async def get_gemini_validation(alert_prompt: str) -> LLMValidationFormat:
     
     full_prompt = get_validation_prompt(alert_prompt)
     
+    #TODO: test with client.generate()
     response = client.models.generate_content(
         model="gemini-2.0-flash", contents=full_prompt, config=GenerateContentConfig(
         response_mime_type='application/json',

@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 from app.models.agent_controller import AgentController
 from app.schemas.alert_prompt import AlertPromptCreateSuccessResponse, AlertPromptListResponse, AlertPromptItem
 from pydantic import BaseModel
-import random
 
 class TestPayload(BaseModel):
     price: int

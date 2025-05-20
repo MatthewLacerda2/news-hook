@@ -5,6 +5,7 @@ from google.genai.types import GenerateContentConfig
 from app.utils.prompts import get_validation_prompt, get_verification_prompt, get_generation_prompt
 from app.utils.llm_response_formats import LLMValidationFormat, LLMVerificationFormat, LLMGenerationFormat
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 load_dotenv()
@@ -49,13 +50,13 @@ async def get_gemini_verification(alert_prompt: str, document: str) -> LLMVerifi
     return LLMVerificationFormat.model_validate_json(json_response)
 
 async def get_gemini_alert_generation(document: str, payload_format: str, alert_prompt: str) -> LLMGenerationFormat:
-    
+
     full_prompt = get_generation_prompt(document, payload_format, alert_prompt)
     
     response = client.models.generate_content(
         model="gemini-2.0-flash", contents=full_prompt, config=GenerateContentConfig(
         response_mime_type='application/json',
-        response_schema=LLMGenerationFormat.model_json_schema(),
+        response_schema=payload_format,
         temperature=gemini_temperature,
         automatic_function_calling={"disable": True}
     ),)

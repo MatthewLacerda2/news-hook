@@ -62,7 +62,7 @@ async def find_matching_alerts_by_embedding(db: AsyncSession, document_embedding
     conditions = [
         AlertPrompt.status == AlertStatus.ACTIVE,
         AlertPrompt.expires_at > datetime.now(),
-        AlertPrompt.prompt_embedding.cosine_distance(embedding_list) < 0.9  # Use pgvector's SQLAlchemy integration
+        AlertPrompt.prompt_embedding.cosine_distance(embedding_list) < 0.5  # Use pgvector's SQLAlchemy integration
     ]
     
     if agent_controller_id is not None:

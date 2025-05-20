@@ -26,13 +26,13 @@ async def generate_and_send_alert(alert_prompt: AlertPrompt, sourced_document: S
         generated_response = await get_ollama_alert_generation(
             sourced_document.content,
             alert_prompt.payload_format,
-            sourced_document.source_url
+            alert_prompt.prompt
         )
     elif alert_prompt.llm_model == "gemini-2.0-flash":
         generated_response = await get_gemini_alert_generation(
             sourced_document.content,
             alert_prompt.payload_format,
-            sourced_document.source_url
+            alert_prompt.prompt
         )
     else:
         msg = "This shouldn't even be possible, as the LLM model is checked before the alert is created"

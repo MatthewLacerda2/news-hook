@@ -4,7 +4,9 @@ from google.genai import Client
 from google.genai.types import GenerateContentConfig
 from app.utils.prompts import get_validation_prompt, get_verification_prompt, get_generation_prompt
 from app.utils.llm_response_formats import LLMValidationFormat, LLMVerificationFormat, LLMGenerationFormat
+import logging
 
+logger = logging.getLogger(__name__)
 load_dotenv()
 client = Client(api_key=os.getenv("GEMINI_API_KEY"))
 
@@ -23,9 +25,14 @@ async def get_gemini_validation(alert_prompt: str) -> LLMValidationFormat:
         automatic_function_calling={"disable": True}
     ),)
     
-    return response.text
+    json_response = response.text
+    # Parse the JSON string into our Pydantic model
+    return LLMValidationFormat.model_validate_json(json_response)
 
 async def get_gemini_verification(alert_prompt: str, document: str) -> LLMVerificationFormat:
+    
+    print(f"Alert prompt: {alert_prompt}")
+    logger.info(f"Alert prompt: {alert_prompt}")
     
     full_prompt = get_verification_prompt(alert_prompt, document)
     
@@ -37,7 +44,9 @@ async def get_gemini_verification(alert_prompt: str, document: str) -> LLMVerifi
         automatic_function_calling={"disable": True}
     ),)
 
-    return response.text
+    json_response = response.text
+    # Parse the JSON string into our Pydantic model
+    return LLMVerificationFormat.model_validate_json(json_response)
 
 async def get_gemini_alert_generation(document: str, payload_format: str, source_url: str) -> LLMGenerationFormat:
     
@@ -51,4 +60,6 @@ async def get_gemini_alert_generation(document: str, payload_format: str, source
         automatic_function_calling={"disable": True}
     ),)
     
-    return response.text
+    json_response = response.text
+    # Parse the JSON string into our Pydantic model
+    return LLMGenerationFormat.model_validate_json(json_response)

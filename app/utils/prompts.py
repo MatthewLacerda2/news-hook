@@ -26,7 +26,7 @@ The alert has to be:
 Your job is to validate if the alert's request is reasonable.
 You will respond in a structure format, with the following fields:
 - approval: bool = Whether the alert's request is a valid one
-- chance_score: float = rough estimate of the certainty of the approval or denial. Ranging from 0.00 (total denial) to 1.00 (total approval). Must be at least 0.85 to approve
+- chance_score: float = Chance that the document matches the alert's request. 0.85 or higher means approved
 - reason: str = Reason for the approval or denial. Be succinct
 - keywords: list[str] = keywords required to be in the document that triggers the alert
 
@@ -59,14 +59,14 @@ The document is:
 Your job is to verify if the document matches the alert's request.
 You will respond in a structure format, with the following fields:
 - approval: bool = Whether the document matches the alert's request
-- chance_score: float = rough estimate of the certainty of the approval or denial. Ranging from 0.00 (total denial) to 1.00 (total approval). Must be at least 0.85 to approve.
+- chance_score: float = Chance that the document matches the alert's request. 0.85 or higher means approved
 
 
 Current date and time: {current_date_time}
 """
 
 def get_verification_prompt(alert_prompt: str, document: str):
-    current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")    
     return verification_prompt.format(
         alert_prompt=alert_prompt,
         document=document,

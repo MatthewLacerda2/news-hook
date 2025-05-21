@@ -29,7 +29,7 @@ async def process_user_document(user_document: MonitoredData):
         content_embedding=np.zeros(NUM_EMBEDDING_DIMENSIONS),
         name=user_document.name,
         agent_controller_id=user_document.agent_controller_id,
-        document_id=user_document.id,
+        document_id=user_document.id
     )
     
     await perform_embed_and_vector_search(

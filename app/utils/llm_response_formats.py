@@ -13,11 +13,3 @@ class LLMVerificationFormat(BaseModel):
     
     approval: bool = Field(description="Whether the document matches the alert's intent")
     chance_score: float = Field(ge=0.0, le=1.0, description="Validation estimate ranging from 0.0 to 1.0. Must be at least 0.85 to approve.")
-        
-class LLMGenerationFormat(BaseModel):
-    
-    #TODO: remove all of this and leave just the structured_data
-    output: str = Field(description="The LLM output on the matter")
-    tags: list[str] = Field(description="The tags for the alert")
-    source_url: str = Field(description="The URL of the source that triggered the alert")
-    structured_data: Dict[str, Any] | None = Field(description="The structured JSON response as requested by the alert requester")

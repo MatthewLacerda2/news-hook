@@ -8,7 +8,6 @@ from datetime import datetime
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.alert_event import AlertEvent
-from app.utils.llm_response_formats import LLMGenerationFormat
 from app.utils.sourced_data import SourcedData
 from app.models.monitored_data import MonitoredData
 from app.utils.count_tokens import count_tokens
@@ -44,11 +43,9 @@ async def generate_and_send_alert(alert_prompt: AlertPrompt, sourced_document: S
         document_id=sourced_document.id,
         alert_prompt_id=alert_prompt.id,
         triggered_at=datetime.now(),
-        output=generated_response.output,
-        tags=generated_response.tags,
-        source_url=sourced_document.source_url,
-        structured_data=generated_response.structured_data,
-        
+        output=generated_response,  #TODO: one of the two must go
+        structured_data=generated_response, #TODO: one of the two must go
+        tags= alert_prompt.keywords,
     )
 
     exception = send_alert_event(llm_generation_result, db)
@@ -96,16 +93,14 @@ def send_alert_event(alert_event: NewsEvent, db: AsyncSession):
         logger.error(f"Unexpected error while sending alert to {alert_prompt.http_url}: {str(e)}")
         return str(e)
 
-async def save_alert_event(alert_event: NewsEvent, generated_response: LLMGenerationFormat, exception: str, db: AsyncSession) -> AlertEvent:
+async def save_alert_event(alert_event: NewsEvent, generated_response: str, exception: str, db: AsyncSession) -> AlertEvent:
     alert_event_db = AlertEvent(
         id=alert_event.id,
         alert_prompt_id=alert_event.alert_prompt_id,
         scraped_data_id=alert_event.scraped_data_id,
         triggered_at=alert_event.triggered_at,
-        output=generated_response.output,   #TODO: WRONG. It's tokens and prices
-        tags=generated_response.tags,
-        structured_data=generated_response.structured_data,
-        exception=exception
+        exception=exception,
+        structured_data=generated_response,
     )
     db.add(alert_event_db)
     await db.commit()
@@ -134,10 +129,10 @@ async def save_document(sourced_document: SourcedData, db: AsyncSession):
     await db.commit()
 
 #TODO: unify with get_token_price in llm_validator.py
-async def register_credit_usage(alert_prompt: AlertPrompt, generated_response: LLMGenerationFormat, db: AsyncSession):
+async def register_credit_usage(alert_prompt: AlertPrompt, generated_response, db: AsyncSession):
     
     input_tokens_count = count_tokens(alert_prompt.prompt, alert_prompt.llm_model)
-    output_tokens_count = count_tokens(generated_response.output, alert_prompt.llm_model)
+    output_tokens_count = count_tokens(generated_response, alert_prompt.llm_model)
         
     stmt = select(LLMModel).where(LLMModel.model_name == alert_prompt.llm_model)
     result = await db.execute(stmt)

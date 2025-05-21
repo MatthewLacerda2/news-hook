@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from google.genai import Client
 from google.genai.types import GenerateContentConfig
 from app.utils.prompts import get_validation_prompt, get_verification_prompt, get_generation_prompt
-from app.utils.llm_response_formats import LLMValidationFormat, LLMVerificationFormat, LLMGenerationFormat
+from app.utils.llm_response_formats import LLMValidationFormat, LLMVerificationFormat
 import logging
 import json
 
@@ -49,10 +49,10 @@ async def get_gemini_verification(alert_prompt: str, document: str) -> LLMVerifi
     # Parse the JSON string into our Pydantic model
     return LLMVerificationFormat.model_validate_json(json_response)
 
-async def get_gemini_alert_generation(document: str, payload_format: str, alert_prompt: str) -> LLMGenerationFormat:
+async def get_gemini_alert_generation(document: str, payload_format: str, alert_prompt: str) -> str:
 
     full_prompt = get_generation_prompt(document, payload_format, alert_prompt)
-    
+    print(f"Payload format: {payload_format}")
     response = client.models.generate_content(
         model="gemini-2.0-flash", contents=full_prompt, config=GenerateContentConfig(
         response_mime_type='application/json',
@@ -61,6 +61,4 @@ async def get_gemini_alert_generation(document: str, payload_format: str, alert_
         automatic_function_calling={"disable": True}
     ),)
     
-    json_response = response.text
-    # Parse the JSON string into our Pydantic model
-    return LLMGenerationFormat.model_validate_json(json_response)
+    return response.text

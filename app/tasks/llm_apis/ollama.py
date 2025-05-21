@@ -1,6 +1,6 @@
 from openai import OpenAI
 from app.utils.prompts import get_validation_prompt, get_verification_prompt, get_generation_prompt
-from app.utils.llm_response_formats import LLMValidationFormat, LLMVerificationFormat, LLMGenerationFormat
+from app.utils.llm_response_formats import LLMValidationFormat, LLMVerificationFormat
 import numpy as np
 import logging
 import json
@@ -65,9 +65,10 @@ async def get_ollama_verification(alert_prompt: str, document: str) -> LLMVerifi
     # Parse the JSON string into our Pydantic model
     return LLMVerificationFormat.model_validate_json(json_response)
 
-async def get_ollama_alert_generation(document: str, payload_format: str, alert_prompt: str) -> LLMGenerationFormat:
+async def get_ollama_alert_generation(document: str, payload_format: str, alert_prompt: str) -> str:
 
     full_prompt = get_generation_prompt(document, payload_format, alert_prompt)
+    print(f"Payload format: {payload_format}")
     #TODO: tell the AI how to send the structured_data. Do that to Gemini as well
     response = client.chat.completions.create(
         model="llama3.1",
@@ -79,6 +80,4 @@ async def get_ollama_alert_generation(document: str, payload_format: str, alert_
         response_format={"type": "json_object", "schema": payload_format}
     )
     
-    json_response = response.choices[0].message.content
-    # Parse the JSON string into our Pydantic model
-    return LLMGenerationFormat.model_validate_json(json_response)
+    return response.choices[0].message.content

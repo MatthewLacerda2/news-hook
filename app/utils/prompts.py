@@ -91,13 +91,10 @@ The document was:
 {document}
 </document>
 
-
-With the above information, write the payload for an http POST request, based on the alert's request.
-The payload shall be a JSON object in the given payload format:
+Your response must follow the user's requested payload format exactly:
 <payload_format>
 {payload_format}
 </payload_format>
-
 
 You answer must be self-contained, using the document as the source of truth and respond fully to the Query.
 Your answer must written with an unbiased and journalistic tone.

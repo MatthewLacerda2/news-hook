@@ -15,11 +15,12 @@ from sqlalchemy import select
 import httpx
 from app.models.user_document import UserDocument
 import logging
+import json
 
 
 logger = logging.getLogger(__name__)
 
-async def generate_and_send_alert(alert_prompt: AlertPrompt, sourced_document: SourcedData, db: AsyncSession) -> NewsEvent:
+async def generate_and_send_alert(alert_prompt: AlertPrompt, sourced_document: SourcedData, db: AsyncSession):
     
     if alert_prompt.llm_model == "llama3.1":
         generated_response = await get_ollama_alert_generation(
@@ -38,38 +39,41 @@ async def generate_and_send_alert(alert_prompt: AlertPrompt, sourced_document: S
         print(f"Unsupported LLM model: {alert_prompt.llm_model}\n{msg}")
         raise ValueError(f"Unsupported LLM model: {alert_prompt.llm_model}")
     
+    # First save the document to satisfy foreign key constraints
+    await save_document(sourced_document, db)
+    
     llm_generation_result = NewsEvent(
         id=str(uuid.uuid4()),
         document_id=sourced_document.id,
         alert_prompt_id=alert_prompt.id,
         triggered_at=datetime.now(),
-        output=generated_response,  #TODO: one of the two must go
-        structured_data=generated_response, #TODO: one of the two must go
-        tags= alert_prompt.keywords,
+        output="",
+        tags=[],
+        source_url=sourced_document.source_url,
+        structured_data=json.loads(generated_response)
     )
 
-    exception = send_alert_event(llm_generation_result, db)
-    
+    # Then send the alert and save the event
+    exception = await send_alert_event(llm_generation_result, db)
     await save_alert_event(llm_generation_result, generated_response, exception, db)
-    await save_document(sourced_document, db)
     await register_credit_usage(alert_prompt, generated_response, db)
     
     return llm_generation_result
 
-def send_alert_event(alert_event: NewsEvent, db: AsyncSession):
+async def send_alert_event(alert_event: NewsEvent, db: AsyncSession):
     
     stmt = select(AlertPrompt).where(AlertPrompt.id == alert_event.alert_prompt_id)
-    result = db.execute(stmt)
+    result = await db.execute(stmt)
     alert_prompt = result.scalar_one_or_none()
     
     try:
         #TODO: add retries or backoff
         with httpx.Client() as client:
-            if alert_prompt.http_method == "POST":
+            if alert_prompt.http_method.value == "POST":
                 response = client.post(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
-            elif alert_prompt.http_method == "PUT":
+            elif alert_prompt.http_method.value == "PUT":
                 response = client.put(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
-            elif alert_prompt.http_method == "PATCH":
+            elif alert_prompt.http_method.value == "PATCH":
                 response = client.patch(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
             else:
                 raise ValueError(f"Unsupported HTTP method: {alert_prompt.http_method}")
@@ -94,13 +98,21 @@ def send_alert_event(alert_event: NewsEvent, db: AsyncSession):
         return str(e)
 
 async def save_alert_event(alert_event: NewsEvent, generated_response: str, exception: str, db: AsyncSession) -> AlertEvent:
+    # Count tokens for the alert event
+    input_tokens = count_tokens(generated_response, "llama3.1")  # TODO: get model from alert_prompt
+    output_tokens = count_tokens(str(alert_event.structured_data), "llama3.1")  # TODO: get model from alert_prompt
+    
     alert_event_db = AlertEvent(
         id=alert_event.id,
         alert_prompt_id=alert_event.alert_prompt_id,
-        scraped_data_id=alert_event.scraped_data_id,
+        scraped_data_id=alert_event.document_id,
         triggered_at=alert_event.triggered_at,
+        structured_data=json.loads(generated_response),
         exception=exception,
-        structured_data=generated_response,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        input_price=0.0,  # TODO: calculate actual prices
+        output_price=0.0  # TODO: calculate actual prices
     )
     db.add(alert_event_db)
     await db.commit()
@@ -128,8 +140,7 @@ async def save_document(sourced_document: SourcedData, db: AsyncSession):
         db.add(user_document_db)
     await db.commit()
 
-#TODO: unify with get_token_price in llm_validator.py
-async def register_credit_usage(alert_prompt: AlertPrompt, generated_response, db: AsyncSession):
+async def register_credit_usage(alert_prompt: AlertPrompt, generated_response: str, db: AsyncSession):
     
     input_tokens_count = count_tokens(alert_prompt.prompt, alert_prompt.llm_model)
     output_tokens_count = count_tokens(generated_response, alert_prompt.llm_model)

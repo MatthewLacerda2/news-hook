@@ -53,8 +53,7 @@ async def post_user_document(
         name=user_document.name,
         content=user_document.content,
         content_embedding=None,
-        monitored_datetime=datetime.now(),
-        agent_controller_id = user.id
+        monitored_datetime=datetime.now()
     )
     
     db.add(new_doc)

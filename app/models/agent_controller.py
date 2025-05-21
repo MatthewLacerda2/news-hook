@@ -18,4 +18,4 @@ class AgentController(Base):
     last_login = Column(DateTime, nullable=True)
 
     alert_prompts = relationship("AlertPrompt", back_populates="user")
-    documents = relationship("UserDocument", back_populates="agent_controller")
+    monitored_data = relationship("MonitoredData", back_populates="agent_controller")

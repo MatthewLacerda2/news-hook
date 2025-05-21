@@ -14,7 +14,7 @@ client = OpenAI(
 
 ollama_temperature = 0.0
 
-async def get_nomic_embeddings(text: str):
+async def get_nomic_embeddings(text: str) -> np.ndarray:
     embeddings = client.embeddings.create(
         model="nomic-embed-text",
         input=text,

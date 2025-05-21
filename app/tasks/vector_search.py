@@ -1,9 +1,8 @@
 from typing import List
 from datetime import datetime
-from sqlalchemy import select, text
+from sqlalchemy import select
 import numpy as np
 import logging
-from pgvector.sqlalchemy import Vector
 
 from app.core.database import AsyncSessionLocal
 from app.models.alert_prompt import AlertPrompt, AlertStatus

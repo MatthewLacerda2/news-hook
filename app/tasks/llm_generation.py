@@ -13,7 +13,6 @@ from app.models.monitored_data import MonitoredData
 from app.utils.count_tokens import count_tokens
 from sqlalchemy import select
 import httpx
-from app.models.user_document import UserDocument
 import logging
 import json
 
@@ -47,9 +46,8 @@ async def generate_and_send_alert(alert_prompt: AlertPrompt, sourced_document: S
         document_id=sourced_document.id,
         alert_prompt_id=alert_prompt.id,
         triggered_at=datetime.now(),
-        output="",
+        output="",    #TODO: should be the alertprompt.keywords
         tags=[],
-        source_url=sourced_document.source_url,
         structured_data=json.loads(generated_response)
     )
 
@@ -118,26 +116,16 @@ async def save_alert_event(alert_event: NewsEvent, generated_response: str, exce
     await db.commit()
 
 async def save_document(sourced_document: SourcedData, db: AsyncSession):
-    if sourced_document.agent_controller_id is None:
-        monitored_data_db = MonitoredData(
-            id=sourced_document.id,
-            source=sourced_document.source,
-            name=sourced_document.name,
-            content=sourced_document.content,
-            content_embedding=sourced_document.content_embedding,
-            monitored_datetime=sourced_document.retrieved_datetime,
-        )
-        db.add(monitored_data_db)
-    else:
-        user_document_db = UserDocument(
-            id=sourced_document.id,
-            agent_controller_id=sourced_document.agent_controller_id,
-            name=sourced_document.name,
-            content=sourced_document.content,
-            content_embedding=sourced_document.content_embedding,
-            uploaded_datetime=sourced_document.retrieved_datetime,
-        )
-        db.add(user_document_db)
+    monitored_data_db = MonitoredData(
+        id=sourced_document.id,
+        source=sourced_document.source,
+        name=sourced_document.name,
+        content=sourced_document.content,
+        content_embedding=sourced_document.content_embedding,
+        monitored_datetime=sourced_document.retrieved_datetime,
+        agent_controller_id=sourced_document.agent_controller_id,
+    )
+    db.add(monitored_data_db)
     await db.commit()
 
 async def register_credit_usage(alert_prompt: AlertPrompt, generated_response: str, db: AsyncSession):

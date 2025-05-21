@@ -41,7 +41,6 @@ async def process_webscrape_source(source: WebscrapeSource, db: AsyncSession):
         
         sourced_data = SourcedData(
             source=DataSource.WEBSCRAPE,
-            source_url=source.url,
             source_id=source.id,
             document_id=source.id,  #TODO: Change to the document id
             name=result.title,

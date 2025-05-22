@@ -18,5 +18,4 @@ class WebscrapeSource(Base):
     num_scrapes = Column(Integer, nullable=False)
     is_active = Column(Boolean, default=True)
     
-    # Relationship with MonitoredData
     monitored_data = relationship("MonitoredData", back_populates="webscrape_source")

@@ -3,10 +3,12 @@
 ## LLM Validator
 - An LLM validates the alert request
 
-## Tasks
+## Monitoring
 - Webscrape the active webscrape sources at each's given interval
   - docling_scraping
   - youtube_scraping
+OR
+- Receive documents sent by the user
 
 ## Vector Search
 - First we filter the alerts by those whose keywords are found in the document

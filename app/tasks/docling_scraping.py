@@ -6,15 +6,15 @@ from typing import List
 from sqlalchemy import select
 from docling.document_converter import DocumentConverter
 
-from app.core.database import SessionLocal
+from app.core.database import AsyncSessionLocal
 from app.models.webscrape_source import WebscrapeSource
-from app.tasks.vector_search import process_document_for_vector_search
+from app.tasks.vector_search import perform_embed_and_vector_search
 from app.models.alert_prompt import Alert, AlertStatus
 from app.utils.sourced_data import SourcedData, DataSource
+from app.utils.env import NUM_EMBEDDING_DIMENSIONS
 import numpy as np
 from sqlalchemy.ext.asyncio import AsyncSession
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 async def process_webscrape_source(source: WebscrapeSource, db: AsyncSession):
@@ -32,31 +32,33 @@ async def process_webscrape_source(source: WebscrapeSource, db: AsyncSession):
         )
         response.raise_for_status()
         
-        # Convert using docling
         converter = DocumentConverter()
         result = converter.convert(response.text).document.export_to_markdown()
         
         source.last_scraped_at = datetime.now()
         source.num_scrapes += 1
-        db.commit()
+        await db.commit()
         
         sourced_data = SourcedData(
             source=DataSource.WEBSCRAPE,
             source_id=source.id,
+            document_id=source.id,  #TODO: Change to the document id
+            name=result.title,
             content=result,
-            content_embedding=np.zeros(768)
+            content_embedding=np.zeros(NUM_EMBEDDING_DIMENSIONS),
+            agent_controller_id=None
         )
         
-        await process_document_for_vector_search(sourced_document=sourced_data)
+        await perform_embed_and_vector_search(sourced_document=sourced_data)
         
     except Exception as e:
-        logger.error(f"Error processing source {source.id}: {str(e)}", exc_info=True)
         # Don't raise the exception - we want to continue with other sources
+        logger.error(f"Error processing source {source.id}: {str(e)}", exc_info=True)
         
 async def check_and_process_sources():
     """Check for sources that need to be scraped and process them"""
     try:
-        db = SessionLocal()
+        db = AsyncSessionLocal()
         now = datetime.now()
         
         query = select(WebscrapeSource).where(
@@ -94,7 +96,7 @@ def is_night_time() -> bool:
 
 async def mark_expired_alerts():
     """Mark expired alerts as expired"""
-    db = SessionLocal()
+    db = AsyncSessionLocal()
     try:
         stmt = select(Alert).where(Alert.expires_at < datetime.now())
         result = await db.execute(stmt)
@@ -121,4 +123,5 @@ async def run_periodic_check(day_interval: int = 60 * 10, night_interval: int = 
         await asyncio.sleep(interval)
 
 if __name__ == "__main__":
+    #TODO: call this at startup when ready for production
     asyncio.run(run_periodic_check())

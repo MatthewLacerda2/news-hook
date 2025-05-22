@@ -69,7 +69,6 @@ async def signup(
             detail="User already exists"
         )
     except HTTPException:
-        # Re-raise HTTP exceptions without modifying them
         raise
     except Exception as e:
         print(f"\nEXCEPTION CAUGHT IN SIGNUP: {type(e).__name__}: {str(e)}")
@@ -88,10 +87,8 @@ async def login(
     Login using Google OAuth2 token.
     """
     try:
-        # Verify Google token and get user info
         user_info = verify_google_token(oauth_data.access_token)
         
-        # Check if user exists using async syntax
         stmt = select(AgentController).where(AgentController.google_id == user_info["sub"])
         result = await db.execute(stmt)
         user = result.scalar_one_or_none()
@@ -102,7 +99,6 @@ async def login(
                 detail="User not found"
             )
         
-        # Create access token
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
             data={"sub": str(user.id)},
@@ -117,16 +113,13 @@ async def login(
         )
         
     except HTTPException:
-        # Re-raise HTTP exceptions without modifying them
         raise
     except ValueError as e:
-        # Handle Google token verification errors
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid Google token"
         )
     except Exception as e:
-        # Handle unexpected errors
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error"

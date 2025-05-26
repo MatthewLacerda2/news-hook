@@ -5,7 +5,7 @@ from sqlalchemy import Column, String, DateTime, JSON, Enum as SQLEnum, ForeignK
 import uuid
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
-
+from app.utils.env import NUM_EMBEDDING_DIMENSIONS
 from app.models.base import Base
 
 class AlertStatus(Enum):
@@ -34,17 +34,17 @@ class AlertPrompt(Base):
     http_method = Column(SQLEnum(HttpMethod), nullable=False)
     http_url = Column(String, nullable=False)
     http_headers = Column(JSON, nullable=True)    
-    payload_format = Column(JSON, nullable=True)
+    payload_format = Column(JSON, nullable=True)    #TODO: rename to payload_schema
     
     is_recurring = Column(Boolean, nullable=False, default=False)
     
     keywords = Column(JSON, nullable=False)
-    prompt_embedding = Column(Vector(768), nullable=True)
+    prompt_embedding = Column(Vector(NUM_EMBEDDING_DIMENSIONS), nullable=True)
     status = Column(SQLEnum(AlertStatus), nullable=False, default=AlertStatus.ACTIVE)
     created_at = Column(DateTime, nullable=False, default=datetime.now())
     expires_at = Column(DateTime, nullable=False)
     llm_model = Column(String, nullable=False)
 
-    # Relationships
     user = relationship("AgentController", back_populates="alert_prompts")
     alert_events = relationship("AlertEvent", back_populates="alert_prompt")
+    llm_validations = relationship("LLMValidation", back_populates="alert_prompt")

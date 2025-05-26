@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Optional, Dict, Union, List, Any
-from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict, Json
+from typing import Optional, Dict, List
+from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict
 from app.models.alert_prompt import AlertStatus
 
 class HttpMethod(str, Enum):
@@ -14,9 +14,10 @@ class AlertPromptCreateRequestBase(BaseModel):
     http_method: HttpMethod = Field(..., description="HTTP method to alert at")
     http_url: HttpUrl = Field(..., description="The URL to alert at")
     http_headers: Optional[Dict] = Field(None, description="HTTP headers to send with the request")
-    llm_model: str = Field("gemini-2.5-pro", description="The LLM model to use for the alert")
+    is_recurring: bool = Field(..., description="Whether the alert is recurring")
     
     # Optional fields
+    llm_model: Optional[str] = Field(default="gemini-2.0-flash", description="The LLM model to use for the alert")
     payload_format: Optional[Dict] = Field(None, description="A JSON schema describing the expected payload (e.g., from .model_json_schema())")
     max_datetime: Optional[datetime] = Field(None, description="Monitoring window. Must be within the next 300 days")
     
@@ -26,22 +27,73 @@ class AlertPromptCreateRequestBase(BaseModel):
     def validate_max_datetime(cls, v: Optional[datetime]) -> Optional[datetime]:
         if v is None:
             return v
-            
-        now = datetime.now()
+
+        now = datetime.now(v.tzinfo) if v.tzinfo else datetime.now()
         max_allowed = now + timedelta(days=300)
+        
         if v > max_allowed:
             raise ValueError("max_datetime cannot be more than 300 days in the future")
             
         return v
     
-    #TODO: headers and payload validators
+    @field_validator('http_headers')
+    @classmethod
+    def validate_headers(cls, v: Optional[Dict]) -> Optional[Dict]:
+        if v is None:
+            return v
+
+        for header_name, header_value in v.items():
+            if not isinstance(header_name, str):
+                raise ValueError(f"Header name must be a string, got {type(header_name)}")
+                
+            if isinstance(header_value, list):
+                if not all(isinstance(x, str) for x in header_value):
+                    raise ValueError(f"All header values in list must be strings for header: {header_name}")
+            elif not isinstance(header_value, str):
+                raise ValueError(f"Header value must be a string or list of strings, got {type(header_value)}")
+                
+        return v
+
+    @field_validator('payload_format')
+    @classmethod
+    def validate_payload_format(cls, v: Optional[Dict]) -> Optional[Dict]:
+        if v is None:
+            return v
+            
+        required_schema_fields = {'properties', 'title', 'type'}
+        if not all(field in v for field in required_schema_fields):
+            raise ValueError("Payload format must be a valid JSON Schema with 'type' and 'properties' fields")
+                
+        if not isinstance(v.get('properties'), dict):
+            raise ValueError("Properties must be a dictionary of field definitions")    
+        
+        if v.get('type') != 'object':
+            raise ValueError("Root schema type must be 'object'")
+        
+        for prop_name, prop_def in v['properties'].items():
+            if not isinstance(prop_def, dict):
+                raise ValueError(f"Property definition for {prop_name} must be a dictionary")
+            if 'type' not in prop_def:
+                raise ValueError(f"Property {prop_name} must have a 'type' field")
+        
+        required_fields = v.get('required', [])
+        if required_fields:
+            if not isinstance(required_fields, list):
+                raise ValueError("'required' must be a list of field names")
+            if not all(isinstance(field, str) for field in required_fields):
+                raise ValueError("All required field names must be strings")
+            for field in required_fields:
+                if field not in v['properties']:
+                    raise ValueError(f"Required field '{field}' must be defined in properties")
+                
+        return v
 
 class AlertPromptCreateSuccessResponse(BaseModel):
     id: str = Field(..., description="The ID of the alert")
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")
-    output_intent: str = Field(..., description="What the LLM understood from the prompt")
+    reason: str = Field(..., description="Reason for the approval or denial")
     created_at: datetime
-    keywords: Optional[list[str]] = Field(None, description="Keywords that MUST be in the data that triggers the alert")
+    keywords: Optional[list[str]] = Field(None, description="keywords required to be in the document that triggers the alert")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -66,15 +118,6 @@ class AlertPromptListResponse(BaseModel):
     total_count: int
 
     model_config = ConfigDict(from_attributes=True)
-
-class AlertPromptPriceCheckRequest(BaseModel):
-    prompt: str = Field(..., description="The natural language prompt describing what to monitor")
-    payload_format: dict[str, Any] = Field(None, description="A JSON schema describing the expected payload (e.g., from .model_json_schema())")
-
-class AlertPromptPriceCheckSuccessResponse(BaseModel):
-    price_in_credits: int
-    prompt: str = Field(..., description="The natural language prompt describing what to monitor")
-    output_intent: str = Field(..., description="What LLM understood from the prompt")
     
 class AlertCancelRequest(BaseModel):
     alert_id: str = Field(..., description="The ID of the alert to cancel")

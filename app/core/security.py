@@ -43,7 +43,6 @@ def verify_google_token(token: str) -> dict:
         HTTPException: If the token is invalid or verification fails
     """
     try:
-        # Verify the token with Google's OAuth2 API
         idinfo = id_token.verify_oauth2_token(
             token,
             requests.Request(),
@@ -54,7 +53,6 @@ def verify_google_token(token: str) -> dict:
         if idinfo['aud'] != settings.GOOGLE_CLIENT_ID:
             raise ValueError("Token was not issued for this client")
             
-        # Return the user information
         return {
             "sub": idinfo["sub"],  # Google's unique user ID
             "email": idinfo["email"],
@@ -99,7 +97,6 @@ def verify_token(token: str) -> dict:
             detail="Invalid token"
         )
 
-# Create security scheme for JWT bearer token
 security = HTTPBearer()
 
 async def get_current_user(
@@ -110,7 +107,6 @@ async def get_current_user(
     Get the current authenticated user from the JWT token.
     """
     try:
-        # Verify the JWT token and get the payload
         payload = verify_token(credentials.credentials)
         
         # Get user_id from token payload
@@ -121,7 +117,6 @@ async def get_current_user(
                 detail="Invalid token payload"
             )
             
-        # Get user from database using async syntax
         stmt = select(AgentController).where(AgentController.id == user_id)
         result = await db.execute(stmt)
         user = result.scalar_one_or_none()
@@ -147,7 +142,6 @@ async def get_current_user(
             detail="Could not validate credentials"
         )
 
-# Define the API key header scheme
 api_key_header = APIKeyHeader(name="X-API-Key")
 
 async def get_user_by_api_key(

@@ -101,7 +101,6 @@ def mock_google_verify():
             }
         raise ValueError("Invalid token")
 
-    # Mock the Google verification function instead
     with patch('google.oauth2.id_token.verify_oauth2_token', side_effect=mock_verify_oauth2_token) as mock:
         yield mock
 
@@ -110,7 +109,7 @@ async def sample_llm_models(test_db):
     models = [
         LLMModel(
             id=str("550e8400-e29b-41d4-a716-446655440001"),
-            model_name="gemini-2.5-pro",
+            model_name="gemini-2.0-flash",
             input_token_price=0.001,
             output_token_price=0.002,
             is_active=True
@@ -166,4 +165,17 @@ async def valid_user_with_credits(test_db, client, mock_google_verify):
 
     return user_data
 
-#TODO: mock_llm_validation and mock_generate_embeddings
+@pytest.fixture
+def mock_llm_validation():
+    """Fixture to mock LLM validation responses"""
+    
+    async def mock_get_llm_validation(*args, **kwargs):
+        return LLMValidationFormat(
+            approval=True,
+            chance_score=0.95,
+            reason="This is a valid alert request",
+            keywords=["bitcoin", "price", "50000"]
+        )
+
+    with patch('app.api.v1.endpoints.alert.get_llm_validation', side_effect=mock_get_llm_validation) as mock:
+        yield mock

@@ -1,14 +1,16 @@
 from app.models.base import Base
 from sqlalchemy import Column, String, Float, Boolean, Integer, DateTime
 from sqlalchemy import ForeignKey
-from pgvector.sqlalchemy import Vector
 import uuid
+from sqlalchemy.orm import relationship
 
 class LLMValidation(Base):
     __tablename__ = "llm_validations"
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    prompt_id = Column(String(36), ForeignKey('alert_prompts.id'), nullable=False)
+    prompt_id = Column(String(36), ForeignKey('alert_prompts.id'), nullable=True)
+    prompt = Column(String(255), nullable=False)
+    reason = Column(String(128), nullable=False)
     
     approval = Column(Boolean, nullable=False)
     chance_score = Column(Float, nullable=False)
@@ -19,3 +21,5 @@ class LLMValidation(Base):
     
     llm_id = Column(String(36), ForeignKey('llm_models.id'), nullable=False)
     date_time = Column(DateTime, nullable=False)
+    
+    alert_prompt = relationship("AlertPrompt", back_populates="llm_validations")

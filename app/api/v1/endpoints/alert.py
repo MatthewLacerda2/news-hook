@@ -14,14 +14,15 @@ from app.schemas.alert_prompt import (
 )
 from app.core.security import get_user_by_api_key
 from app.models.llm_models import LLMModel
-from app.utils.llm_validator import get_llm_validation, get_llm_validation_price
+from app.utils.llm_validator import get_llm_validation, get_token_price
 from app.utils.count_tokens import count_tokens
 from app.models.llm_validation import LLMValidation
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy import func
-from app.tasks.save_embedding import generate_and_save_embeddings
+from app.tasks.save_embedding import generate_and_save_alert_embeddings
 import uuid
+from app.utils.env import MAX_DATETIME
 
 router = APIRouter()
 
@@ -32,6 +33,8 @@ async def create_alert(
     user: AgentController = Depends(get_user_by_api_key)
 ):
     """Create a new alert for monitoring"""
+    
+    print(alert_data.model_dump_json())
 
     if user.credit_balance <= 0:
         raise HTTPException(
@@ -55,14 +58,8 @@ async def create_alert(
             )
 
         llm_validation_response = await get_llm_validation(alert_data, llm_model.model_name)
-
-        if not llm_validation_response.approval or llm_validation_response.chance_score < 0.85:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid alert request"
-            )
         
-        input_price, output_price = get_llm_validation_price(alert_data, llm_validation_response, llm_model)
+        input_price, output_price = get_token_price(alert_data, llm_validation_response, llm_model)
         tokens_price = input_price + output_price
         
         if user.credit_balance < tokens_price:
@@ -71,41 +68,60 @@ async def create_alert(
                 detail="Insufficient credits"
             )
             
+        llm_validation = LLMValidation(
+            id=str(uuid.uuid4()),
+            prompt_id=None,
+            prompt=alert_data.prompt[:255],
+            reason=llm_validation_response.reason[:128],
+            approval=llm_validation_response.approval,
+            chance_score=llm_validation_response.chance_score,
+            input_tokens=count_tokens(alert_data.prompt, llm_model.model_name),
+            input_price=input_price,
+            output_tokens=count_tokens(llm_validation_response.reason, llm_model.model_name),
+            output_price=output_price,
+            llm_id=llm_model.id,
+            date_time=now
+        )
+        db.add(llm_validation)
+        await db.commit()
+
+        if not llm_validation_response.approval or llm_validation_response.chance_score < 0.85:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "message": "Invalid alert request",
+                    "validation": {
+                        "approval": llm_validation_response.approval,
+                        "chance_score": llm_validation_response.chance_score,
+                        "reason": llm_validation_response.reason,
+                        "keywords": llm_validation_response.keywords
+                    }
+                }
+            )
+        
         new_alert = AlertPrompt(
             id=str(uuid.uuid4()),
             agent_controller_id=user.id,
             prompt=alert_data.prompt,
             http_method=alert_data.http_method,
             http_url=str(alert_data.http_url),
-            http_headers=alert_data.http_headers or {},
-            payload_format=alert_data.payload_format or {},
+            http_headers=alert_data.http_headers or None,
+            payload_format=alert_data.payload_format or None,
             is_recurring=alert_data.is_recurring,
             keywords=llm_validation_response.keywords,
-            expires_at=alert_data.max_datetime or (now + timedelta(days=300)),
+            expires_at=alert_data.max_datetime.replace(tzinfo=None) if alert_data.max_datetime else (now + timedelta(days=MAX_DATETIME)),
             llm_model=alert_data.llm_model
         )
-
-        llm_validation = LLMValidation(
-            id=str(uuid.uuid4()),
-            prompt_id=new_alert.id,
-            approval=llm_validation_response.approval,
-            chance_score=llm_validation_response.chance_score,
-            input_tokens=count_tokens(alert_data.prompt, llm_model.model_name),
-            input_price=input_price,
-            output_tokens=count_tokens(llm_validation_response.output_intent, llm_model.model_name),
-            output_price=output_price,
-            llm_id=llm_model.id,
-            date_time=now
-        )
-        user.credit_balance -= tokens_price
-        db.add(llm_validation)
+        
+        llm_validation.prompt_id = new_alert.id
         db.add(new_alert)
         
+        user.credit_balance -= tokens_price
         await db.commit()
         await db.refresh(new_alert)
         
         asyncio.create_task(
-            generate_and_save_embeddings(
+            generate_and_save_alert_embeddings(
                 new_alert.id,
                 alert_data.prompt,
             )
@@ -115,12 +131,12 @@ async def create_alert(
             id=new_alert.id,
             prompt=new_alert.prompt,
             created_at=new_alert.created_at,
-            output_intent=llm_validation_response.output_intent,
+            reason=llm_validation_response.reason,
             keywords=llm_validation_response.keywords
         )
         
     except HTTPException as e:
-        raise e  # re-raise HTTPExceptions so FastAPI can handle them
+        raise e
     except Exception as e:
         await db.rollback()
         raise HTTPException(
@@ -135,6 +151,7 @@ async def list_alerts(
     prompt_contains: Optional[str] = None,
     max_datetime: Optional[datetime] = None,
     created_after: Optional[datetime] = None,
+    semantic_threshold: Optional[float] = Query(default=0.85, ge=0.0, le=1.0),
     db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key)
 ):
@@ -179,7 +196,6 @@ async def get_alert(
 ):
     """Get a specific alert by ID"""
     
-    # Find the alert and verify ownership
     stmt = select(AlertPrompt).where(
         AlertPrompt.id == alert_id,
         AlertPrompt.agent_controller_id == user.id
@@ -201,16 +217,17 @@ def alert_to_schema(alert: AlertPrompt) -> AlertPromptItem:
         prompt=alert.prompt,
         http_method=alert.http_method,
         http_url=alert.http_url,
-        http_headers=alert.http_headers or {},
-        payload_format=alert.payload_format or {},
+        http_headers=alert.http_headers or None,
+        payload_format=alert.payload_format or None,
         tags=alert.keywords,
         status=alert.status,
         created_at=alert.created_at,
         expires_at=alert.expires_at,
-        llm_model=alert.llm_model
+        llm_model=alert.llm_model,
+        is_recurring=alert.is_recurring
     )
 
-#Alert can not be 'deleted'. They costed credits and thus have to be kept register of.
+#Alert should not be 'deleted'. They costed credits and thus have to be kept register of.
 @router.patch("/{alert_id}/cancel", status_code=status.HTTP_200_OK)
 async def cancel_alert(
     alert_id: str,

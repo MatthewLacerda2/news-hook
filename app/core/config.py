@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "News Hook"
     
     # Security
-    SECRET_KEY: str = "your-secret-key-here"  # Change this in production
+    SECRET_KEY: str = "your-secret-key-here-or-youre-gay"  # Change this in production
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
     
     # Google OAuth2
@@ -17,7 +17,11 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str
     GOOGLE_REDIRECT_URI: str
     
+    # LLM API Keys
+    GEMINI_API_KEY: str
+    
     # Database
+    DATABASE_URL: Optional[str] = None  # Add this line
     POSTGRES_SERVER: str = "localhost"
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = "postgres"
@@ -29,6 +33,8 @@ class Settings(BaseSettings):
     def assemble_db_connection(cls, v: Optional[str], info) -> str:
         if isinstance(v, str):
             return v
+        if info.data.get("DATABASE_URL"):  # Add this condition
+            return info.data.get("DATABASE_URL")
         return f"postgresql://{info.data.get('POSTGRES_USER')}:{info.data.get('POSTGRES_PASSWORD')}@{info.data.get('POSTGRES_SERVER')}/{info.data.get('POSTGRES_DB')}"
     
     model_config = ConfigDict(case_sensitive=True, env_file=".env")

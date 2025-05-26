@@ -15,20 +15,20 @@ The alert's request was:
 The alert has to be:
 - Clear
 - Specific
+- Unambiguous
 - Have a plausible chance of happening
-- Unambiguous (not leave multiple interpretations)
 - Self-contained (not requiring multiple documents)
 - NOT vague
-- NOT subjective nor matter of opinion
-- NOT require complex reasoning
+- NOT a matter of personal opinion or preference
+- NOT require long reasoning
 
 
 Your job is to validate if the alert's request is reasonable.
 You will respond in a structure format, with the following fields:
 - approval: bool = Whether the alert's request is a valid one
-- chance_score: float = Validation estimate ranging from 0.0 to 1.0. Must be at least 0.85 to approve.
-- output_intent: str = What the LLM understood from the alert request
-- keywords: list[str] = The keywords that MUST be in the data that triggers the alert
+- chance_score: float = Chance that the document matches the alert's request. 0.85 or higher means approved
+- reason: str = Reason for the approval or denial. Be succinct
+- keywords: list[str] = keywords required to be in the document that triggers the alert
 
 
 Current date and time: {current_date_time}
@@ -59,14 +59,14 @@ The document is:
 Your job is to verify if the document matches the alert's request.
 You will respond in a structure format, with the following fields:
 - approval: bool = Whether the document matches the alert's request
-- chance_score: float = Validation estimate ranging from 0.0 to 1.0. Must be at least 0.85 to approve.
+- chance_score: float = Chance that the document matches the alert's request. 0.85 or higher means approved
 
 
 Current date and time: {current_date_time}
 """
 
 def get_verification_prompt(alert_prompt: str, document: str):
-    current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")    
     return verification_prompt.format(
         alert_prompt=alert_prompt,
         document=document,
@@ -91,27 +91,25 @@ The document was:
 {document}
 </document>
 
-
-With the above information, write the payload for an http POST request, based on the alert's request.
-The payload shall be a JSON object in the given payload format:
+Your response must follow the user's requested payload format exactly:
 <payload_format>
 {payload_format}
 </payload_format>
 
-
 You answer must be self-contained, using the document as the source of truth and respond fully to the Query.
 Your answer must written with an unbiased and journalistic tone.
-You must be concise. Skip the preamble and just provide the answer without telling the user what you are doing.
+You must be succinct. Skip the preamble and just provide the answer without telling the user what you are doing.
 Write in the language of the user's request.
 
 Current date and time: {current_date_time}
 """
 
-def get_generation_prompt(document: str, payload_format: str):
+def get_generation_prompt(document: str, payload_format: str, alert_prompt: str):
     current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return generation_prompt.format(
         document=document,
         payload_format=payload_format,
+        alert_prompt=alert_prompt,
         current_date_time=current_date_time
     )
 
@@ -125,7 +123,7 @@ The document is:
 </document>
 
 
-Your job is to simplify remove whatever is not relevant to the main content of the document.
+Your job is to simply remove whatever is not relevant to the main content of the document.
 Simply remove the non-relevant parts and what is not important to the main content.
 
 

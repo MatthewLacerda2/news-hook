@@ -1,15 +1,13 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-import os
+from app.core.config import settings
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-# Database URL should be in format: postgresql://user:password@host:port/dbname
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/news_hook")
-# Convert the URL to async format
-ASYNC_DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+asyncpg://')
+#This is how it's done now
+ASYNC_DATABASE_URL = settings.SQLALCHEMY_DATABASE_URI.replace('postgresql://', 'postgresql+asyncpg://')
 
 # Create SQLAlchemy async engine
 engine = create_async_engine(

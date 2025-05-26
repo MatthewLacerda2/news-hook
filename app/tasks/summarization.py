@@ -2,9 +2,6 @@ from app.utils.prompts import get_summarization_prompt
 from app.utils.count_tokens import count_tokens
 from openai import OpenAI
 
-# One thing that was chunking the content
-# That probably won't be needed until the docs get like 10k in character-count or token-count
-
 client = OpenAI(
     base_url = 'http://localhost:11434/v1',
     api_key='ollama',
@@ -34,8 +31,14 @@ async def get_summarization_by_ollama(document: str) -> str:
     )    
     return response.choices[0].message.content
 
-async def get_summarization_by_gemini(document: str) -> str:    
+async def get_summarization_by_gemini(document: str) -> str:
+    from google.genai.types import GenerateContentConfig
     response = client.models.generate_content(
-        model="gemini-2.5-pro", contents=get_summarization_prompt(document)
-    )    
+        model="gemini-2.0-flash", contents=get_summarization_prompt(document),
+        config=GenerateContentConfig(
+            temperature=0,
+            automatic_function_calling={"disable": True}
+        )
+    )
+    
     return response.text

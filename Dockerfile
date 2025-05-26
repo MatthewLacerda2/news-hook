@@ -1,9 +1,9 @@
-FROM python:3.11-slim
+FROM python:3.12.6-alpine
 
 WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
+RUN apk update && apk add --no-cache \
     libpq-dev \
     gcc \
     && rm -rf /var/lib/apt/lists/*

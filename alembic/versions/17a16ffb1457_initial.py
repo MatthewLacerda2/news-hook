@@ -1,8 +1,8 @@
-"""initialmigration
+"""initial
 
-Revision ID: dc20b13f50cf
+Revision ID: 17a16ffb1457
 Revises: 
-Create Date: 2025-05-12 18:38:55.268112
+Create Date: 2025-05-27 02:54:16.633959
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import pgvector
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'dc20b13f50cf'
+revision: str = '17a16ffb1457'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -107,30 +107,34 @@ def upgrade() -> None:
     op.create_index('idx_prompt_embedding_cosine', 'alert_prompts', ['prompt_embedding'], unique=False, postgresql_using='ivfflat', postgresql_ops={'prompt_embedding': 'vector_cosine_ops'})
     op.create_table('monitored_data',
     sa.Column('id', sa.String(length=36), nullable=False),
-    sa.Column('source', sa.Enum('WEBHOOK', 'WEBSCRAPE', 'API', 'YOUTUBE', name='datasource'), nullable=False),
+    sa.Column('source', sa.Enum('WEBHOOK', 'WEBSCRAPE', 'API', 'YOUTUBE', 'USER_DOCUMENT', name='datasource'), nullable=False),
+    sa.Column('name', sa.String(length=128), nullable=False),
     sa.Column('content', sa.JSON(), nullable=False),
-    sa.Column('scraped_datetime', sa.DateTime(), nullable=False),
     sa.Column('content_embedding', pgvector.sqlalchemy.vector.VECTOR(dim=768), nullable=True),
+    sa.Column('monitored_datetime', sa.DateTime(), nullable=False),
     sa.Column('webhook_source_id', sa.String(length=36), nullable=True),
     sa.Column('api_source_id', sa.String(length=36), nullable=True),
     sa.Column('webscrape_source_id', sa.String(length=36), nullable=True),
+    sa.Column('agent_controller_id', sa.String(length=36), nullable=True),
+    sa.ForeignKeyConstraint(['agent_controller_id'], ['agent_controllers.id'], ),
     sa.ForeignKeyConstraint(['api_source_id'], ['api_sources.id'], ),
     sa.ForeignKeyConstraint(['webhook_source_id'], ['webhook_sources.id'], ),
     sa.ForeignKeyConstraint(['webscrape_source_id'], ['webscrape_sources.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index('idx_content_embedding_cosine', 'monitored_data', ['content_embedding'], unique=False, postgresql_using='ivfflat', postgresql_ops={'content_embedding': 'vector_cosine_ops'})
-    op.create_index('idx_scraped_datetime', 'monitored_data', ['scraped_datetime'], unique=False)
+    op.create_index('idx_monitored_datetime', 'monitored_data', ['monitored_datetime'], unique=False)
     op.create_table('alert_events',
     sa.Column('id', sa.String(length=36), nullable=False),
     sa.Column('alert_prompt_id', sa.String(length=36), nullable=False),
     sa.Column('scraped_data_id', sa.String(length=36), nullable=False),
     sa.Column('triggered_at', sa.DateTime(), nullable=False),
-    sa.Column('response', sa.JSON(), nullable=True),
+    sa.Column('exception', sa.String(), nullable=True),
     sa.Column('input_tokens', sa.Integer(), nullable=False),
     sa.Column('input_price', sa.Float(), nullable=False),
     sa.Column('output_tokens', sa.Integer(), nullable=False),
     sa.Column('output_price', sa.Float(), nullable=False),
+    sa.Column('structured_data', sa.JSON(), nullable=True),
     sa.ForeignKeyConstraint(['alert_prompt_id'], ['alert_prompts.id'], ),
     sa.ForeignKeyConstraint(['scraped_data_id'], ['monitored_data.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -138,7 +142,9 @@ def upgrade() -> None:
     op.create_index('idx_triggered_at', 'alert_events', ['triggered_at'], unique=False)
     op.create_table('llm_validations',
     sa.Column('id', sa.String(length=36), nullable=False),
-    sa.Column('prompt_id', sa.String(length=36), nullable=False),
+    sa.Column('prompt_id', sa.String(length=36), nullable=True),
+    sa.Column('prompt', sa.String(length=255), nullable=False),
+    sa.Column('reason', sa.String(length=128), nullable=False),
     sa.Column('approval', sa.Boolean(), nullable=False),
     sa.Column('chance_score', sa.Float(), nullable=False),
     sa.Column('input_tokens', sa.Integer(), nullable=False),
@@ -175,7 +181,7 @@ def downgrade() -> None:
     op.drop_table('llm_validations')
     op.drop_index('idx_triggered_at', table_name='alert_events')
     op.drop_table('alert_events')
-    op.drop_index('idx_scraped_datetime', table_name='monitored_data')
+    op.drop_index('idx_monitored_datetime', table_name='monitored_data')
     op.drop_index('idx_content_embedding_cosine', table_name='monitored_data', postgresql_using='ivfflat', postgresql_ops={'content_embedding': 'vector_cosine_ops'})
     op.drop_table('monitored_data')
     op.drop_index('idx_prompt_embedding_cosine', table_name='alert_prompts', postgresql_using='ivfflat', postgresql_ops={'prompt_embedding': 'vector_cosine_ops'})

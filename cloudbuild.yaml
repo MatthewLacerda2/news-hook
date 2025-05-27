@@ -20,8 +20,6 @@ steps:
     - '--platform'
     - 'managed'
     - '--allow-unauthenticated'
-    - '--set-env-vars'
-    - 'DATABASE_URL=postgresql://$$DB_USER:$$DB_PASSWORD@/news_hook?host=/cloudsql/$$CLOUD_SQL_CONNECTION_NAME,GOOGLE_CLIENT_ID=$$GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET=$$GOOGLE_CLIENT_SECRET,GOOGLE_REDIRECT_URI=$$GOOGLE_REDIRECT_URI,GEMINI_API_KEY=$$GEMINI_API_KEY,SECRET_KEY=$$SECRET_KEY'
     - '--add-cloudsql-instances'
     - '$$CLOUD_SQL_CONNECTION_NAME'
     - '--service-account'
@@ -34,10 +32,3 @@ images:
 substitutions:
   _CLOUD_SQL_CONNECTION_NAME: ''  # Fill this with the output of: gcloud sql instances describe news-hook-db --format="value(connectionName)"
   _SERVICE_ACCOUNT: ''  # Fill this with the service account email from: gcloud iam service-accounts list
-  _GOOGLE_CLIENT_ID: ''  # Set this in Cloud Build trigger
-  _GOOGLE_CLIENT_SECRET: ''  # Set this in Cloud Build trigger
-  _GOOGLE_REDIRECT_URI: ''  # Set this in Cloud Build trigger
-  _GEMINI_API_KEY: ''  # Set this in Cloud Build trigger
-  _SECRET_KEY: ''  # Set this in Cloud Build trigger
-  _DB_USER: ''  # Database username
-  _DB_PASSWORD: ''  # Database password

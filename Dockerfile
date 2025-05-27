@@ -2,10 +2,14 @@ FROM python:3.12.6-alpine
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies - adding more build dependencies
 RUN apk update && apk add --no-cache \
     libpq-dev \
     gcc \
+    musl-dev \
+    python3-dev \
+    build-base \
+    linux-headers \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies

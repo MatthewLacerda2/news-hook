@@ -2,6 +2,7 @@ from typing import Optional
 from pydantic_settings import BaseSettings
 from pydantic import field_validator, ConfigDict
 from functools import lru_cache
+import os
 
 class Settings(BaseSettings):
     # API Settings
@@ -20,24 +21,21 @@ class Settings(BaseSettings):
     # LLM API Keys
     GEMINI_API_KEY: str
     
-    # Database
-    DATABASE_URL: Optional[str] = None  # Add this line
-    POSTGRES_SERVER: str = "localhost"
-    POSTGRES_USER: str = "postgres"
-    POSTGRES_PASSWORD: str = "postgres"
-    POSTGRES_DB: str = "news_hook"
-    SQLALCHEMY_DATABASE_URI: Optional[str] = None
+    # Database - Only Cloud SQL
+    DATABASE_URL: str  # This is required now, not Optional
+    SQLALCHEMY_DATABASE_URI: str = None  # This will be set from DATABASE_URL
     
     @field_validator("SQLALCHEMY_DATABASE_URI", mode="before")
     @classmethod
     def assemble_db_connection(cls, v: Optional[str], info) -> str:
-        if isinstance(v, str):
-            return v
-        if info.data.get("DATABASE_URL"):  # Add this condition
-            return info.data.get("DATABASE_URL")
-        return f"postgresql://{info.data.get('POSTGRES_USER')}:{info.data.get('POSTGRES_PASSWORD')}@{info.data.get('POSTGRES_SERVER')}/{info.data.get('POSTGRES_DB')}"
+        # Always use DATABASE_URL
+        return info.data.get("DATABASE_URL")
     
-    model_config = ConfigDict(case_sensitive=True, env_file=".env")
+    model_config = ConfigDict(
+        case_sensitive=True, 
+        env_file=".env",
+        env_file_encoding='utf-8'
+    )
 
 @lru_cache()
 def get_settings() -> Settings:

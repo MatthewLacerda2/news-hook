@@ -1,18 +1,14 @@
-FROM python:3.12.6-alpine
+FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install system dependencies - adding more build dependencies
-RUN apk update && apk add --no-cache \
-    libpq-dev \
+RUN apt-get update && apt-get install -y \
     gcc \
-    musl-dev \
     python3-dev \
-    build-base \
-    linux-headers \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
+# Copy requirements first to leverage Docker cache
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 

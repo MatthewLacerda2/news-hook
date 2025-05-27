@@ -177,3 +177,5 @@ cython_debug/
 .pypirc
 
 .env.yaml
+
+buildsummary.txt

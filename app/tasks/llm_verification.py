@@ -3,7 +3,6 @@ from datetime import datetime
 from app.core.database import AsyncSessionLocal
 from app.models.alert_prompt import AlertPrompt, AlertStatus
 from app.utils.llm_response_formats import LLMVerificationFormat
-from app.tasks.llm_apis.ollama import get_ollama_verification
 from app.tasks.llm_apis.gemini import get_gemini_verification
 from app.tasks.llm_generation import generate_and_send_alert
 from app.utils.sourced_data import SourcedData
@@ -35,12 +34,7 @@ async def verify_document_matches_alert(
         alert_prompt = result.scalar_one_or_none()
         
         verification_result: LLMVerificationFormat
-        if alert_prompt.llm_model == "llama3.1":
-            verification_result = await get_ollama_verification(
-                alert_prompt.prompt,
-                sourced_document.content,
-            )
-        elif alert_prompt.llm_model == "gemini-2.0-flash":
+        if alert_prompt.llm_model == "gemini-2.0-flash":
             verification_result = await get_gemini_verification(
                 alert_prompt.prompt,
                 sourced_document.content,

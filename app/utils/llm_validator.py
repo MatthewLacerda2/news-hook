@@ -1,6 +1,5 @@
 from app.utils.llm_response_formats import LLMValidationFormat
 from app.schemas.alert_prompt import AlertPromptCreateRequestBase
-from app.tasks.llm_apis.ollama import get_ollama_validation
 from app.tasks.llm_apis.gemini import get_gemini_validation
 from app.utils.count_tokens import count_tokens
 from app.models.llm_models import LLMModel
@@ -12,11 +11,7 @@ async def get_llm_validation(alert_request: AlertPromptCreateRequestBase, llm_mo
     """
     
     validation_result: LLMValidationFormat
-    if llm_model == "llama3.1":
-        validation_result = await get_ollama_validation(
-            alert_request.prompt,
-        )
-    elif llm_model == "gemini-2.0-flash":
+    if llm_model == "gemini-2.0-flash":
         validation_result = await get_gemini_validation(
             alert_request.prompt,
         )

@@ -5,7 +5,6 @@ from google.genai.types import GenerateContentConfig
 from app.utils.prompts import get_validation_prompt, get_verification_prompt, get_generation_prompt
 from app.utils.llm_response_formats import LLMValidationFormat, LLMVerificationFormat
 import logging
-import json
 
 logger = logging.getLogger(__name__)
 load_dotenv()
@@ -17,7 +16,6 @@ async def get_gemini_validation(alert_prompt: str) -> LLMValidationFormat:
     
     full_prompt = get_validation_prompt(alert_prompt)
     
-    #TODO: test with client.generate()
     response = client.models.generate_content(
         model="gemini-2.0-flash", contents=full_prompt, config=GenerateContentConfig(
         response_mime_type='application/json',
@@ -27,7 +25,7 @@ async def get_gemini_validation(alert_prompt: str) -> LLMValidationFormat:
     ),)
     
     json_response = response.text
-    # Parse the JSON string into our Pydantic model
+    
     return LLMValidationFormat.model_validate_json(json_response)
 
 async def get_gemini_verification(alert_prompt: str, document: str) -> LLMVerificationFormat:

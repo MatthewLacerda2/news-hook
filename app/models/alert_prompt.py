@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from enum import Enum
-from sqlalchemy import Column, String, DateTime, JSON, Enum as SQLEnum, ForeignKey, Index, Boolean, Integer
+from sqlalchemy import Column, String, DateTime, JSON, Enum as SQLEnum, ForeignKey, Index, Boolean
 import uuid
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
@@ -15,7 +15,7 @@ class AlertStatus(Enum):
     WARNED = "WARNED"
     EXPIRED = "EXPIRED"
     
-class HttpMethod(Enum):
+class HttpMethod(str, Enum):
     POST = "POST"
     PUT = "PUT"
     PATCH = "PATCH"

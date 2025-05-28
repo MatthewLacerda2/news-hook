@@ -1,16 +1,27 @@
 import os
 from dotenv import load_dotenv
 from google.genai import Client
-from google.genai.types import GenerateContentConfig
+from google.genai.types import GenerateContentConfig, EmbedContentConfig
 from app.utils.prompts import get_validation_prompt, get_verification_prompt, get_generation_prompt
 from app.utils.llm_response_formats import LLMValidationFormat, LLMVerificationFormat
 import logging
+import numpy as np
 
 logger = logging.getLogger(__name__)
 load_dotenv()
 client = Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 gemini_temperature = 0.0
+
+async def get_gemini_embeddings(text: str) -> np.ndarray:
+    response = client.embed(
+        model="text-embedding-004",
+        input=text,
+        config=EmbedContentConfig(
+            output_dimensionality=768,      # Optional, dimension of the output vector
+        ),
+    )
+    return np.array(response.embeddings)
 
 async def get_gemini_validation(alert_prompt: str) -> LLMValidationFormat:
     

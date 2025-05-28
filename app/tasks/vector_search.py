@@ -8,7 +8,7 @@ from app.core.database import AsyncSessionLocal
 from app.models.alert_prompt import AlertPrompt, AlertStatus
 from app.tasks.llm_verification import verify_document_matches_alert
 from app.utils.sourced_data import SourcedData
-from app.tasks.llm_apis.ollama import get_nomic_embeddings
+from app.tasks.llm_apis.gemini import get_gemini_embeddings
 from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ async def perform_embed_and_vector_search(sourced_document: SourcedData):
         
         logger.info(f"Performing vector search for document: {sourced_document.name}")
         
-        document_embedding = await get_nomic_embeddings(sourced_document.content)
+        document_embedding = await get_gemini_embeddings(sourced_document.content)
         
         active_alerts = await find_matching_alerts_by_embedding(db, document_embedding, sourced_document.agent_controller_id)
         

@@ -12,6 +12,7 @@ from app.models.llm_models import LLMModel
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,24 +32,19 @@ async def verify_document_matches_alert(
         
         stmt = select(AlertPrompt).where(AlertPrompt.id == alert_id)
         result = await db.execute(stmt)
-        alert_prompt = result.scalar_one_or_none()
+        alert_prompt: AlertPrompt = result.scalar_one()
         
-        verification_result: LLMVerificationFormat
-        if alert_prompt.llm_model == "gemini-2.0-flash":
-            verification_result = await get_gemini_verification(
-                alert_prompt.prompt,
-                sourced_document.content,
-            )
-        else:
-            msg = "This shouldn't even be possible, as the LLM model is checked before the alert is created"
-            print(f"Unsupported LLM model: {alert_prompt.llm_model}\n{msg}")
-            raise ValueError(f"Unsupported LLM model: {alert_prompt.llm_model}")
+        verification_result = await get_gemini_verification(
+            alert_prompt.prompt,
+            sourced_document.content,
+            alert_prompt.llm_model
+        )
         
         print(f"Verification result: {verification_result}")
         await register_llm_verification(alert_prompt, verification_result, alert_prompt.llm_model, db)
             
         if verification_result.approval:
-            await generate_and_send_alert(alert_prompt, sourced_document, db)
+            await generate_and_send_alert(alert_prompt, sourced_document, alert_prompt.llm_model, db)
             
             if not alert_prompt.is_recurring:
                 alert_prompt.status = AlertStatus.TRIGGERED

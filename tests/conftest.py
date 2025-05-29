@@ -108,22 +108,22 @@ def mock_google_verify():
 async def sample_llm_models(test_db):
     models = [
         LLMModel(
-            id=str("550e8400-e29b-41d4-a716-446655440001"),
+            id=str("gemini-2.0-flash"),
             model_name="gemini-2.0-flash",
             input_token_price=0.001,
             output_token_price=0.002,
             is_active=True
         ),
         LLMModel(
-            id=str("550e8400-e29b-41d4-a716-446655440002"),
-            model_name="llama3.1",
+            id=str("gemini-2.5-flash"),
+            model_name="gemini-2.5-flash",
             input_token_price=0.003,
             output_token_price=0.004,
             is_active=True
         ),
         LLMModel(
-            id=str("550e8400-e29b-41d4-a716-446655440000"),
-            model_name="gpt-4o",
+            id=str("gemini-2.5-pro"),
+            model_name="gemini-2.5-pro",
             input_token_price=0.0015,
             output_token_price=0.0030,
             is_active=False

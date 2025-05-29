@@ -17,7 +17,7 @@ test_alert_data = {
         "Content-Type": "application/json"
     },
     "payload_format": TestPayload.model_json_schema(),
-    "llm_model": "llama3.1",
+    "llm_model": "gemini-2.5-pro",
     "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
     "is_recurring": False,
 }
@@ -182,7 +182,7 @@ async def test_list_alerts_successful(client, valid_user_with_credits):
         "prompt_contains": "bitcoin",
         "created_after": datetime.now().isoformat(),
         "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
-        "llm_model": "llama3.1"
+        "llm_model": "gemini-2.5-pro"
     }
     
     response = await client.get(

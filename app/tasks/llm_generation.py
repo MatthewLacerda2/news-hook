@@ -1,7 +1,6 @@
 from app.models.alert_prompt import AlertPrompt
 from app.models.agent_controller import AgentController
 from app.models.llm_models import LLMModel
-from app.tasks.llm_apis.ollama import get_ollama_alert_generation
 from app.tasks.llm_apis.gemini import get_gemini_alert_generation
 from app.schemas.news_event import NewsEvent
 from datetime import datetime
@@ -19,24 +18,14 @@ import json
 
 logger = logging.getLogger(__name__)
 
-async def generate_and_send_alert(alert_prompt: AlertPrompt, sourced_document: SourcedData, db: AsyncSession):
+async def generate_and_send_alert(alert_prompt: AlertPrompt, sourced_document: SourcedData, llm_model: str, db: AsyncSession):
     
-    if alert_prompt.llm_model == "llama3.1":
-        generated_response = await get_ollama_alert_generation(
-            sourced_document.content,
-            alert_prompt.payload_format,
-            alert_prompt.prompt
-        )
-    elif alert_prompt.llm_model == "gemini-2.0-flash":
-        generated_response = await get_gemini_alert_generation(
-            sourced_document.content,
-            alert_prompt.payload_format,
-            alert_prompt.prompt
-        )
-    else:
-        msg = "This shouldn't even be possible, as the LLM model is checked before the alert is created"
-        print(f"Unsupported LLM model: {alert_prompt.llm_model}\n{msg}")
-        raise ValueError(f"Unsupported LLM model: {alert_prompt.llm_model}")
+    generated_response = await get_gemini_alert_generation(
+        sourced_document.content,
+        alert_prompt.payload_format,
+        alert_prompt.prompt,
+        llm_model
+    )
     
     # First save the document to satisfy foreign key constraints
     await save_document(sourced_document, db)

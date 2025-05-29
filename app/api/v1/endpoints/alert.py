@@ -26,6 +26,8 @@ from app.utils.env import MAX_DATETIME
 
 router = APIRouter()
 
+#TODO: Gemini models allow us to toggle 'thinking' off at a discount, but we are not allowing the user to do that.
+
 @router.post("/", response_model=AlertPromptCreateSuccessResponse, status_code=status.HTTP_201_CREATED)
 async def create_alert(
     alert_data: AlertPromptCreateRequestBase,
@@ -43,8 +45,7 @@ async def create_alert(
         )
     
     try:
-        now = datetime.now()
-        
+                
         stmt = select(LLMModel).where(
             LLMModel.model_name == alert_data.llm_model,
             LLMModel.is_active == True
@@ -67,6 +68,8 @@ async def create_alert(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient credits"
             )
+            
+        now = datetime.now()
             
         llm_validation = LLMValidation(
             id=str(uuid.uuid4()),

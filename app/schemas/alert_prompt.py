@@ -2,12 +2,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional, Dict, List
 from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict
-from app.models.alert_prompt import AlertStatus
-
-class HttpMethod(str, Enum):
-    POST = "POST"
-    PUT = "PUT"
-    PATCH = "PATCH"
+from app.models.alert_prompt import AlertStatus, HttpMethod
 
 class AlertPromptCreateRequestBase(BaseModel):
     prompt: str = Field(..., description="The natural language prompt describing what to monitor")

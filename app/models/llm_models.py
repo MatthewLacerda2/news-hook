@@ -2,6 +2,9 @@ from sqlalchemy import Column, String, Float, Boolean
 from app.models.base import Base
 import uuid
 
+#TODO: we can make the model_name the primary key, as no two models can have the same name in VertexAI
+#Remove the id column when you have a new migration to do
+#The id was kept so we could track price changes over time
 class LLMModel(Base):
     __tablename__ = "llm_models"
     

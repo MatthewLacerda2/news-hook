@@ -14,6 +14,7 @@ class DataSource(Enum):
     API = "API"
     YOUTUBE = "YOUTUBE"
     USER_DOCUMENT = "USER_DOCUMENT"
+#TODO:MANUAL_DOCUMENT = "MANUAL_DOCUMENT"
 
 class MonitoredData(Base):
     __tablename__ = "monitored_data"

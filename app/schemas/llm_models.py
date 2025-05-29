@@ -2,11 +2,9 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import List
 
 class LLMModelItem(BaseModel):
-    id: str
-    model_name: str
-    input_token_price: float
-    output_token_price: float
-    is_active: bool = Field(..., description="Whether the model is currently active and can be used")
+    model_name: str = Field(..., description="The name of the LLM model. Vertex-AI refers to it as the model ID.")
+    input_token_price: float = Field(..., description="Input token price in dollars per million tokens, without cache hit")
+    output_token_price: float = Field(..., description="Output token price in dollars per million tokens, without cache hit")
 
     model_config = ConfigDict(from_attributes=True)
 

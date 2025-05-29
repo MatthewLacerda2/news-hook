@@ -6,6 +6,7 @@ from app.utils.prompts import get_validation_prompt, get_verification_prompt, ge
 from app.utils.llm_response_formats import LLMValidationFormat, LLMVerificationFormat
 import logging
 import numpy as np
+from app.utils.env import NUM_EMBEDDING_DIMENSIONS
 
 logger = logging.getLogger(__name__)
 load_dotenv()
@@ -18,7 +19,7 @@ async def get_gemini_embeddings(text: str, task_type: str) -> np.ndarray:
         model="text-embedding-004",
         input=text,
         config=EmbedContentConfig(
-            output_dimensionality=768,      # Optional, dimension of the output vector
+            output_dimensionality=NUM_EMBEDDING_DIMENSIONS,      # Optional, dimension of the output vector
             task_type=task_type,
         ),
     )

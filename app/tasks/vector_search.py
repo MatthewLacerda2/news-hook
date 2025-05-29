@@ -28,7 +28,9 @@ async def perform_embed_and_vector_search(sourced_document: SourcedData):
         
         logger.info(f"Performing vector search for document: {sourced_document.name}")
         
-        document_embedding = await get_gemini_embeddings(sourced_document.content)
+        document_embedding = sourced_document.content_embedding
+        if document_embedding is None or np.all(document_embedding == 0):
+            document_embedding = await get_gemini_embeddings(sourced_document.content, "RETRIEVAL_DOCUMENT")
         
         active_alerts = await find_matching_alerts_by_embedding(db, document_embedding, sourced_document.agent_controller_id)
         
@@ -45,7 +47,6 @@ async def perform_embed_and_vector_search(sourced_document: SourcedData):
         logger.info(f"Completed vector search for document: {sourced_document.name}")
                 
     except Exception as e:
-        # Log error but don't raise to avoid breaking the scraping pipeline
         logger.error(f"Error in vector search processing: {str(e)}", exc_info=True)
     finally:
         await db.close()
@@ -61,12 +62,12 @@ async def find_matching_alerts_by_embedding(db: AsyncSession, document_embedding
     conditions = [
         AlertPrompt.status == AlertStatus.ACTIVE,
         AlertPrompt.expires_at > datetime.now(),
-        AlertPrompt.prompt_embedding.cosine_distance(embedding_list) < 0.5  # Use pgvector's SQLAlchemy integration
+        AlertPrompt.prompt_embedding.cosine_distance(embedding_list) < 0.5
     ]
     
     if agent_controller_id is not None:
         conditions.append(AlertPrompt.agent_controller_id == agent_controller_id)
     
     stmt = select(AlertPrompt).where(*conditions)
-    result = await db.execute(stmt)  # No need for params() since we're using SQLAlchemy's vector type
+    result = await db.execute(stmt)
     return result.scalars().all()

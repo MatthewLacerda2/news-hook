@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     GOOGLE_REDIRECT_URI: str    
     GEMINI_API_KEY: str
     
+    # Database settings
+    DB_USER: str
+    DB_PASSWORD: str
+    DB_NAME: str
+    DB_HOST: str
     DATABASE_URL: str  # This is required now, not Optional
     SQLALCHEMY_DATABASE_URI: str = None  # This will be set from DATABASE_URL
     

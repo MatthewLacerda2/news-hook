@@ -118,11 +118,23 @@ async def run_periodic_check(day_interval: int = 60 * 10, night_interval: int = 
         day_interval: Interval in seconds during day (7 AM - 11 PM)
         night_interval: Interval in seconds during night (11 PM - 7 AM)
     """
-    while True:
-        await mark_expired_alerts()
-        await check_and_process_sources()
-        interval = night_interval if is_night_time() else day_interval
-        await asyncio.sleep(interval)
+    await mark_expired_alerts()
+    await check_and_process_sources()
+
+async def handle_periodic_check_http(request):
+    """
+    HTTP handler for Cloud Run to process periodic checks.
+    This endpoint should be triggered by Cloud Scheduler.
+    """
+    try:
+        # Determine interval based on time of day
+        interval = 60 * 30 if is_night_time() else 60 * 10  # 30 min at night, 10 min during day
+        
+        await run_periodic_check()
+        return {"status": "success", "next_interval_seconds": interval}
+    except Exception as e:
+        logger.error(f"Error in periodic check HTTP handler: {str(e)}", exc_info=True)
+        return {"status": "error", "error": str(e)}, 500
 
 async def process_manual_document(
     name: str,
@@ -172,5 +184,5 @@ async def process_manual_document(
         raise  # In manual processing, you probably want to know if it failed
 
 if __name__ == "__main__":
-    #TODO: call this at startup when ready for production
+    # For local development testing only
     asyncio.run(run_periodic_check())

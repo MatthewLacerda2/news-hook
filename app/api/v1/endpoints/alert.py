@@ -57,8 +57,10 @@ async def create_alert(
             )
 
         llm_validation_response = await get_llm_validation(alert_data, llm_model.model_name)
+        llm_validation_str = llm_validation_response.model_dump_json()
         
-        input_price, output_price = get_token_price(alert_data, llm_validation_response, llm_model)
+        input_price, output_price = get_token_price(alert_data.prompt, llm_validation_str, llm_model)
+        
         tokens_price = input_price + output_price
         
         if user.credit_balance < tokens_price:

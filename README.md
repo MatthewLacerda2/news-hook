@@ -14,7 +14,7 @@ The alerts requests come in what we call "alert prompts". Just like you'd say to
 
 
 - When and if a document comes that fulfills an alert, we send the alert via http request
-- It's a *natural-language triggered webhook*
+- It's a *natural-language webhook triggered by real-life news*
 
 # How to run:
 

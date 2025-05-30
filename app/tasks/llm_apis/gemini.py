@@ -18,9 +18,9 @@ client = Client(
 gemini_temperature = 0.0
 
 async def get_gemini_embeddings(text: str, task_type: str) -> np.ndarray:
-    response = client.embed(
-        model="text-embedding-004",
-        input=text,
+    response = client.models.embed_content(
+        model="gemini-embedding-exp-03-07",
+        contents=text,
         config=EmbedContentConfig(
             output_dimensionality=NUM_EMBEDDING_DIMENSIONS,      # Optional, dimension of the output vector
             task_type=task_type,

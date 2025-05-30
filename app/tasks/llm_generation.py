@@ -14,17 +14,17 @@ from sqlalchemy import select
 import httpx
 import logging
 import json
-
+from app.models.alert_prompt import HttpMethod
 
 logger = logging.getLogger(__name__)
 
-async def generate_and_send_alert(alert_prompt: AlertPrompt, sourced_document: SourcedData, llm_model: str, db: AsyncSession):
+async def generate_and_send_alert(alert_prompt: AlertPrompt, sourced_document: SourcedData, llm_model: LLMModel, db: AsyncSession):
     
     generated_response = await get_gemini_alert_generation(
         sourced_document.content,
         alert_prompt.payload_format,
         alert_prompt.prompt,
-        llm_model
+        llm_model.model_name
     )
     
     # First save the document to satisfy foreign key constraints
@@ -40,9 +40,8 @@ async def generate_and_send_alert(alert_prompt: AlertPrompt, sourced_document: S
         structured_data=json.loads(generated_response)
     )
 
-    # Then send the alert and save the event
-    exception = await send_alert_event(llm_generation_result, db)
-    await save_alert_event(llm_generation_result, generated_response, exception, db)
+    await send_alert_event(llm_generation_result, db)
+    await save_alert_event(llm_generation_result, generated_response, llm_model, db)
     await register_credit_usage(alert_prompt, generated_response, db)
     
     return llm_generation_result
@@ -56,11 +55,11 @@ async def send_alert_event(alert_event: NewsEvent, db: AsyncSession):
     try:
         #TODO: add retries or backoff
         with httpx.Client() as client:
-            if alert_prompt.http_method.value == "POST":
+            if alert_prompt.http_method == HttpMethod.POST:
                 response = client.post(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
-            elif alert_prompt.http_method.value == "PUT":
+            elif alert_prompt.http_method == HttpMethod.PUT:
                 response = client.put(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
-            elif alert_prompt.http_method.value == "PATCH":
+            elif alert_prompt.http_method == HttpMethod.PATCH:
                 response = client.patch(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
             else:
                 raise ValueError(f"Unsupported HTTP method: {alert_prompt.http_method}")
@@ -84,10 +83,10 @@ async def send_alert_event(alert_event: NewsEvent, db: AsyncSession):
         logger.error(f"Unexpected error while sending alert to {alert_prompt.http_url}: {str(e)}")
         return str(e)
 
-async def save_alert_event(alert_event: NewsEvent, generated_response: str, exception: str, db: AsyncSession) -> AlertEvent:
-    # Count tokens for the alert event
-    input_tokens = count_tokens(generated_response, "llama3.1")  # TODO: get model from alert_prompt
-    output_tokens = count_tokens(str(alert_event.structured_data), "llama3.1")  # TODO: get model from alert_prompt
+async def save_alert_event(alert_event: NewsEvent, generated_response: str, llm_model: LLMModel, db: AsyncSession) -> AlertEvent:
+
+    input_tokens = count_tokens(generated_response, llm_model.model_name)
+    output_tokens = count_tokens(str(alert_event.structured_data), llm_model.model_name)
     
     alert_event_db = AlertEvent(
         id=alert_event.id,
@@ -95,11 +94,10 @@ async def save_alert_event(alert_event: NewsEvent, generated_response: str, exce
         scraped_data_id=alert_event.document_id,
         triggered_at=alert_event.triggered_at,
         structured_data=json.loads(generated_response),
-        exception=exception,
         input_tokens=input_tokens,
         output_tokens=output_tokens,
-        input_price=0.0,  # TODO: calculate actual prices
-        output_price=0.0  # TODO: calculate actual prices
+        input_price=input_tokens * (llm_model.input_token_price/1000),
+        output_price=output_tokens * (llm_model.output_token_price/1000)
     )
     db.add(alert_event_db)
     await db.commit()
@@ -116,6 +114,7 @@ async def save_document(sourced_document: SourcedData, db: AsyncSession):
     )
     db.add(monitored_data_db)
     await db.commit()
+    await db.refresh(monitored_data_db)
 
 async def register_credit_usage(alert_prompt: AlertPrompt, generated_response: str, db: AsyncSession):
     

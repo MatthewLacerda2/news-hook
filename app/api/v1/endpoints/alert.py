@@ -26,8 +26,6 @@ from app.utils.env import MAX_DATETIME
 
 router = APIRouter()
 
-#TODO: Gemini models allow us to toggle 'thinking' off at a discount, but we are not allowing the user to do that.
-
 @router.post("/", response_model=AlertPromptCreateSuccessResponse, status_code=status.HTTP_201_CREATED)
 async def create_alert(
     alert_data: AlertPromptCreateRequestBase,

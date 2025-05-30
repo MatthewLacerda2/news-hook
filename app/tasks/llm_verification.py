@@ -66,12 +66,13 @@ async def register_llm_verification(alert_prompt: AlertPrompt, verification_resu
         alert_prompt_id=alert_prompt.id,
         approval=verification_result.approval,
         chance_score=verification_result.chance_score,
-        #output = verification_result.output, #TODO: add this to the database
+        reason=verification_result.reason,
+        keywords=verification_result.keywords,
+        llm_model=llm_model.model_name,
         input_tokens_count=input_tokens_count,
         input_tokens_price=input_tokens_count * llm_model.input_token_price,
         output_tokens_count=output_tokens_count,
         output_tokens_price=output_tokens_count * llm_model.output_token_price,
-        llm_model=llm_model.model_name,
         date_time=datetime.now()
     )
     

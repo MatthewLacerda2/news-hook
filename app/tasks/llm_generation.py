@@ -37,8 +37,8 @@ async def generate_and_send_alert(alert_prompt: AlertPrompt, sourced_document: S
         document_id=sourced_document.id,
         alert_prompt_id=alert_prompt.id,
         triggered_at=datetime.now(),
-        output="",    #TODO: should be the alertprompt.keywords
-        tags=[],
+        output=generated_response,
+        tags=alert_prompt.keywords,
         structured_data=json.loads(generated_response)
     )
 

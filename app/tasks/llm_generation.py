@@ -15,6 +15,8 @@ import httpx
 import logging
 import json
 from app.models.alert_prompt import HttpMethod
+from urllib3 import Retry
+from httpx import HTTPTransport
 
 logger = logging.getLogger(__name__)
 
@@ -53,14 +55,22 @@ async def send_alert_event(alert_event: NewsEvent, db: AsyncSession):
     alert_prompt = result.scalar_one_or_none()
     
     try:
-        #TODO: add retries or backoff
-        with httpx.Client() as client:
+        retry = Retry(
+            total=5,
+            backoff_factor=1,
+            status_forcelist=[status for status in range(400, 600)],
+            raise_on_connect_errors=False  # This makes it retry on connection errors too
+        )
+        
+        transport = HTTPTransport(retries=retry)
+        
+        with httpx.Client(transport=transport, timeout=10) as client:
             if alert_prompt.http_method == HttpMethod.POST:
-                response = client.post(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
+                response = client.post(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers or {})
             elif alert_prompt.http_method == HttpMethod.PUT:
-                response = client.put(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
+                response = client.put(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers or {})
             elif alert_prompt.http_method == HttpMethod.PATCH:
-                response = client.patch(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers, timeout=10)
+                response = client.patch(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers or {})
             else:
                 raise ValueError(f"Unsupported HTTP method: {alert_prompt.http_method}")
             
@@ -72,16 +82,13 @@ async def send_alert_event(alert_event: NewsEvent, db: AsyncSession):
             
     except httpx.TimeoutException as e:
         logger.error(f"Timeout while sending alert to {alert_prompt.http_url}: {str(e)}")
-        return str(e)
     except httpx.ConnectError as e:
         logger.error(f"Connection error while sending alert to {alert_prompt.http_url}: {str(e)}")
-        return str(e)
     except httpx.RequestError as e:
-        logger.error(f"Request error while sending alert to {alert_prompt.http_url}: {str(e)}")
-        return str(e)
+        status = getattr(e.response, 'status_code', 'unknown')
+        logger.error(f"Request error (status {status}) while sending alert to {alert_prompt.http_url}: {str(e)}")
     except Exception as e:
         logger.error(f"Unexpected error while sending alert to {alert_prompt.http_url}: {str(e)}")
-        return str(e)
 
 async def save_alert_event(alert_event: NewsEvent, generated_response: str, llm_model: LLMModel, db: AsyncSession) -> AlertEvent:
 

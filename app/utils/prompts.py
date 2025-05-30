@@ -28,7 +28,7 @@ You will respond in a structure format, with the following fields:
 - approval: bool = Is the alert's request valid?
 - chance_score: float = Estimation of the quality of the request. Ranging from 0.0 to 1.0. Must be at least 0.85 to approve
 - reason: str = Reason for the approval or denial. Be succinct
-- keywords: list[str] = keywords required to be in the document that triggers the alert
+- keywords: list[str] = keywords required to be in the document that triggers the alert, like name of a person, company, country, etc.
 
 
 Current date and time: {current_date_time}
@@ -61,7 +61,7 @@ You will respond in a structure format, with the following fields:
 - approval: bool = Does the document match the alert's intent?
 - chance_score: float = Estimation of the quality of the request. Ranging from 0.0 to 1.0. Must be at least 0.85 to approve
 - reason: str = Reason for the approval or denial. Be succinct
-- keywords: list[str] = keywords required to be in the document that triggers the alert
+- keywords: list[str] = keywords required to be in the document that triggers the alert, like name of a person, company
 
 
 Current date and time: {current_date_time}

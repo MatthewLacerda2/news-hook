@@ -32,11 +32,10 @@ async def perform_embed_and_vector_search(sourced_document: SourcedData):
         if document_embedding is None or np.all(document_embedding == 0):
             document_embedding = await get_gemini_embeddings(sourced_document.content, "RETRIEVAL_DOCUMENT")
         
-        active_alerts = await find_matching_alerts_by_embedding(db, document_embedding, sourced_document.agent_controller_id)
+        active_alerts = await find_matching_alerts(db, document_embedding, sourced_document.agent_controller_id)
+        active_alerts = filter_by_keywords(active_alerts, sourced_document.content)
         
         logger.info(f"Found {len(active_alerts)} matching alerts before keywords")
-        #active_alerts = sort_alerts_by_keyword_overlap(active_alerts)
-        #logger.info(f"Found {len(active_alerts)} matching alerts after keywords")
         
         for alert in active_alerts:
             await verify_document_matches_alert(
@@ -51,7 +50,7 @@ async def perform_embed_and_vector_search(sourced_document: SourcedData):
     finally:
         await db.close()
 
-async def find_matching_alerts_by_embedding(db: AsyncSession, document_embedding: np.ndarray, agent_controller_id: str | None) -> List[AlertPrompt]:
+async def find_matching_alerts(db: AsyncSession, document_embedding: np.ndarray, agent_controller_id: str | None) -> List[AlertPrompt]:
     """
     Find active alerts where the prompt_embedding is similar to the document_embedding using PostgreSQL vector search.
     If agent_controller_id is provided, only return alerts belonging to that controller.
@@ -62,7 +61,7 @@ async def find_matching_alerts_by_embedding(db: AsyncSession, document_embedding
     conditions = [
         AlertPrompt.status == AlertStatus.ACTIVE,
         AlertPrompt.expires_at > datetime.now(),
-        AlertPrompt.prompt_embedding.cosine_distance(embedding_list) < 0.5
+        AlertPrompt.prompt_embedding.cosine_distance(embedding_list) < 0.4
     ]
     
     if agent_controller_id is not None:
@@ -71,3 +70,23 @@ async def find_matching_alerts_by_embedding(db: AsyncSession, document_embedding
     stmt = select(AlertPrompt).where(*conditions)
     result = await db.execute(stmt)
     return result.scalars().all()
+
+def filter_by_keywords(alerts: List[AlertPrompt], document_content: str) -> List[AlertPrompt]:
+    """
+    Filter alerts by checking if any of their keywords appear in the document content.
+    
+    Args:
+        alerts: List of AlertPrompt objects to filter
+        document_content: The document text to check against
+        
+    Returns:
+        List of AlertPrompt objects where at least one keyword appears in the document
+    """
+    filtered_alerts = []
+    
+    for alert in alerts:
+        if any(keyword.lower() in document_content.lower() for keyword in alert.keywords):
+            filtered_alerts.append(alert)
+            
+    return filtered_alerts
+    

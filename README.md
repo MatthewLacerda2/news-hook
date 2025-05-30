@@ -50,9 +50,9 @@ For simple testing, you can run `pytest`
     - Their prompts will be vector-embedded
 - We keep monitoring
     - Periodically webscraping sources / Receiving user-created documents
+    - Pgvector-search to see which alert-prompts are related to the scraped document
     - Keyword filtering
         - e.g if the alert-request is about a person and a country, we expect both their names in the scraped document
-    - Pgvector-search to see which alert-prompts are related to the scraped document
     - We ask an LLM for verification
         - The LLM confirms that the document fulfills the alert-request
     - If the document does satisfy the alert:

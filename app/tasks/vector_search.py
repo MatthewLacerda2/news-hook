@@ -9,6 +9,7 @@ from app.models.alert_prompt import AlertPrompt, AlertStatus
 from app.tasks.llm_verification import verify_document_matches_alert
 from app.utils.sourced_data import SourcedData
 from app.tasks.llm_apis.gemini import get_gemini_embeddings
+from app.utils.env import DATA_SIMILARITY_THRESHOLD
 from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
@@ -61,7 +62,7 @@ async def find_matching_alerts(db: AsyncSession, document_embedding: np.ndarray,
     conditions = [
         AlertPrompt.status == AlertStatus.ACTIVE,
         AlertPrompt.expires_at > datetime.now(),
-        AlertPrompt.prompt_embedding.cosine_distance(embedding_list) < 0.4
+        AlertPrompt.prompt_embedding.cosine_distance(embedding_list) < DATA_SIMILARITY_THRESHOLD
     ]
     
     if agent_controller_id is not None:

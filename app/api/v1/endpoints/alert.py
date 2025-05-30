@@ -22,7 +22,7 @@ from sqlalchemy import select
 from sqlalchemy import func
 from app.tasks.save_embedding import generate_and_save_alert_embeddings
 import uuid
-from app.utils.env import MAX_DATETIME
+from app.utils.env import MAX_DATETIME, LLM_VERIFICATION_THRESHOLD
 
 router = APIRouter()
 
@@ -92,7 +92,7 @@ async def create_alert(
         db.add(llm_validation)
         await db.commit()
 
-        if not llm_validation_response.approval or llm_validation_response.chance_score < 0.85:
+        if not llm_validation_response.approval or llm_validation_response.chance_score < LLM_VERIFICATION_THRESHOLD:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail={

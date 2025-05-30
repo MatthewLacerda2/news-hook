@@ -59,7 +59,7 @@ async def send_alert_event(alert_event: NewsEvent, db: AsyncSession):
             total=5,
             backoff_factor=1,
             status_forcelist=[status for status in range(400, 600)],
-            raise_on_connect_errors=False  # This makes it retry on connection errors too
+            raise_on_connect_errors=False
         )
         
         transport = HTTPTransport(retries=retry)

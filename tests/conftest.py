@@ -22,10 +22,8 @@ from app.models.agent_controller import AgentController
 from sqlalchemy.sql import text
 from app.utils.llm_response_formats import LLMValidationFormat
 
-# Create a test database URL for SQLite in-memory database
 SQLALCHEMY_TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
-# Create the test engine
 test_engine = create_async_engine(
     SQLALCHEMY_TEST_DATABASE_URL,
     connect_args={"check_same_thread": False}  # Needed for SQLite
@@ -40,7 +38,6 @@ TestingSessionLocal = sessionmaker(
     autoflush=False,
 )
 
-# Override the database dependency
 async def override_get_db():
     async with TestingSessionLocal() as session:
         try:

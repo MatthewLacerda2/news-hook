@@ -39,10 +39,10 @@ async def run_migrations():
         logger.debug(f"Migration output: {result.stdout}")
     except subprocess.CalledProcessError as e:
         logger.error(f"Error running migrations: {e.stderr}")
-        # Don't raise the error - let the app start even if migrations fail
-        # This allows for manual intervention if needed
+        raise e
     except Exception as e:
         logger.error(f"Unexpected error running migrations: {str(e)}")
+        raise e
 
 app.add_middleware(
     CORSMiddleware,

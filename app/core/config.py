@@ -2,26 +2,19 @@ from typing import Optional
 from pydantic_settings import BaseSettings
 from pydantic import field_validator, ConfigDict
 from functools import lru_cache
-import os
 
 class Settings(BaseSettings):
-    # API Settings
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "News Hook"
     
-    # Security
-    SECRET_KEY: str = "your-secret-key-here-or-youre-gay"  # Change this in production
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
+    SECRET_KEY: str = "your-secret-key-here-or-youre-gay"  # TODO: Change this in production
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30
     
-    # Google OAuth2
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: str
-    GOOGLE_REDIRECT_URI: str
-    
-    # LLM API Keys
+    GOOGLE_REDIRECT_URI: str    
     GEMINI_API_KEY: str
     
-    # Database - Only Cloud SQL
     DATABASE_URL: str  # This is required now, not Optional
     SQLALCHEMY_DATABASE_URI: str = None  # This will be set from DATABASE_URL
     

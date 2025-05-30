@@ -22,7 +22,7 @@ async def get_gemini_embeddings(text: str, task_type: str) -> np.ndarray:
         model="gemini-embedding-exp-03-07",
         contents=text,
         config=EmbedContentConfig(
-            output_dimensionality=NUM_EMBEDDING_DIMENSIONS,      # Optional, dimension of the output vector
+            output_dimensionality=NUM_EMBEDDING_DIMENSIONS,
             task_type=task_type,
         ),
     )
@@ -60,6 +60,7 @@ async def get_gemini_verification(alert_prompt: str, document: str, llm_model: s
     ),)
 
     json_response = response.text
+    
     # Parse the JSON string into our Pydantic model
     return LLMVerificationFormat.model_validate_json(json_response)
 

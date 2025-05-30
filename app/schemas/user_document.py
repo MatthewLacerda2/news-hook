@@ -12,7 +12,7 @@ class UserDocumentCreateSuccessResponse(BaseModel):
 class UserDocumentItem(BaseModel):
     id: str = Field(..., description="The id of the document")
     name: str = Field(..., description="The name of the document")
-    #The token limit is imposed by gemini-embedding-exp-03-07, the model used to embed the document
+    #Gemini-embedding-exp-03-07 has a 2048 token limit
     content: str = Field(..., lte = 2048 * 4, description="The content of the document itself. Limit of 2048 tokens.")
     uploaded_at: datetime = Field(..., description="The date and time the document was uploaded by the user")
 

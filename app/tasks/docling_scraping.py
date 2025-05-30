@@ -54,4 +54,4 @@ async def process_manual_document(
         
     except Exception as e:
         logger.error(f"Error processing manual document {document_id}: {str(e)}", exc_info=True)
-        raise  # In manual processing, you probably want to know if it failed
+        raise

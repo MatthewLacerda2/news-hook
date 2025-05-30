@@ -344,14 +344,12 @@ async def test_cancel_alert_successful(client, valid_user_with_credits, sample_l
     alert_id = create_response.json()["id"]
     assert mock_llm_validation.called
     
-    # Now cancel the alert using PATCH
     response = await client.patch(
         f"/api/v1/alerts/{alert_id}/cancel",
         headers={"X-API-Key": api_key}
     )
     assert response.status_code == 200
     
-    # Verify the alert is now cancelled by getting it
     list_response = await client.get(
         f"/api/v1/alerts/{alert_id}",
         headers={"X-API-Key": api_key}

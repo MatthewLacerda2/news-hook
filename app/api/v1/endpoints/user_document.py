@@ -36,15 +36,17 @@ async def process_user_document(user_document: MonitoredData):
         sourced_data
     )
 
-@router.post("/", response_model=UserDocumentCreateSuccessResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=UserDocumentCreateSuccessResponse,
+    status_code=status.HTTP_201_CREATED,
+    description="Create a new document"
+)
 async def post_user_document(
     user_document: UserDocumentCreateRequest,
     db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key),
 ):
-    """
-    Create a new document
-    """
 
     new_doc = MonitoredData(
         id=str(uuid.uuid4()),
@@ -70,15 +72,17 @@ async def post_user_document(
         created_at=new_doc.monitored_datetime
     )
 
+@router.get(
+    "/{document_id}",
+    response_model=UserDocumentItem,
+    description="Get a document by ID"
+)
 async def get_user_document(
     document_id: str,
     db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key),
 ):
-    """
-    Get a document by ID
-    """
-    # Query for a document that matches both the document_id and belongs to the user
+    
     query = select(MonitoredData).where(
         MonitoredData.id == document_id,
         MonitoredData.agent_controller_id == user.id
@@ -93,18 +97,9 @@ async def get_user_document(
             detail="Document not found"
         )
     
-    # Convert to response model
     return UserDocumentItem(
         id=document.id,
         name=document.name,
         content=document.content,
         uploaded_at=document.monitored_datetime
     )
-
-#async def list_documents(
-#    agent_controller_id: str,
-#)
-
-#async def delete_document(
-#    document_id: str,
-#)

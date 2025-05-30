@@ -10,5 +10,4 @@ def process_document_http(request):
     Returns:
         JSON response with status or error
     """
-    # Cloud Functions need to wrap async code in a sync function
     return asyncio.run(handle_manual_document(request))

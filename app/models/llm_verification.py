@@ -1,5 +1,5 @@
 from app.models.base import Base
-from sqlalchemy import Column, String, Float, Boolean, Integer, DateTime
+from sqlalchemy import Column, String, Float, Boolean, Integer, DateTime, JSON
 import uuid
 from sqlalchemy import ForeignKey
 
@@ -11,6 +11,8 @@ class LLMVerification(Base):
     
     approval = Column(Boolean, nullable=False)
     chance_score = Column(Float, nullable=False)
+    reason = Column(String, nullable=False)
+    keywords = Column(JSON, nullable=False)
     
     llm_model = Column(String, nullable=False)
     input_tokens_count = Column(Integer, nullable=False)

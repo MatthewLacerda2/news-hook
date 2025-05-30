@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict
 from app.models.alert_prompt import AlertStatus, HttpMethod
 
 class AlertPromptCreateRequestBase(BaseModel):
-    prompt: str = Field(..., description="The natural language prompt describing what to monitor")
+    prompt: str = Field(..., description="The description of what to monitor. Try to be specific, clear and succinct.")
     http_method: HttpMethod = Field(..., description="HTTP method to alert at")
     http_url: HttpUrl = Field(..., description="The URL to alert at")
     http_headers: Optional[Dict] = Field(None, description="HTTP headers to send with the request")
@@ -85,7 +85,7 @@ class AlertPromptCreateRequestBase(BaseModel):
 
 class AlertPromptCreateSuccessResponse(BaseModel):
     id: str = Field(..., description="The ID of the alert")
-    prompt: str = Field(..., description="The natural language prompt describing what to monitor")
+    prompt: str = Field(..., description="The description of what to monitor")
     reason: str = Field(..., description="Reason for the approval or denial")
     created_at: datetime
     keywords: Optional[list[str]] = Field(None, description="keywords required to be in the document that triggers the alert")
@@ -94,7 +94,8 @@ class AlertPromptCreateSuccessResponse(BaseModel):
 
 class AlertPromptItem(BaseModel):
     id: str = Field(..., description="The ID of the alert")
-    prompt: str = Field(..., description="The natural language prompt describing what to monitor")
+    #Using more than 1024 characters is moronic
+    prompt: str = Field(..., lte = 1024, description="The description of what to monitor. Try to be specific, clear and succinct.")
     http_method: HttpMethod
     http_url: HttpUrl
     http_headers: Optional[Dict] = Field(None, description="HTTP headers to send with the request")

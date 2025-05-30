@@ -40,11 +40,14 @@ async def verify_document_matches_alert(
             alert_prompt.llm_model
         )
         
-        print(f"Verification result: {verification_result}")
-        await register_llm_verification(alert_prompt, verification_result, alert_prompt.llm_model, db)
+        llm_model_stmt = select(LLMModel).where(LLMModel.model_name == alert_prompt.llm_model)
+        llm_model_result = await db.execute(llm_model_stmt)
+        llm_model = llm_model_result.scalar_one()
+        
+        await register_llm_verification(alert_prompt, verification_result, llm_model, db)
             
         if verification_result.approval:
-            await generate_and_send_alert(alert_prompt, sourced_document, alert_prompt.llm_model, db)
+            await generate_and_send_alert(alert_prompt, sourced_document, llm_model, db)
             
             if not alert_prompt.is_recurring:
                 alert_prompt.status = AlertStatus.TRIGGERED
@@ -55,24 +58,21 @@ async def verify_document_matches_alert(
     finally:
         await db.close()
         
-async def register_llm_verification(alert_prompt: AlertPrompt, verification_result: LLMVerificationFormat, llm_model: str, db: AsyncSession):
+async def register_llm_verification(alert_prompt: AlertPrompt, verification_result: LLMVerificationFormat, llm_model: LLMModel, db: AsyncSession):
     input_tokens_count = count_tokens(alert_prompt.prompt, alert_prompt.llm_model)
     output_tokens_count = count_tokens(verification_result.__str__(), alert_prompt.llm_model)
-    
-    stmt = select(LLMModel).where(LLMModel.model_name == llm_model)
-    result = await db.execute(stmt)
-    llm_model_db = result.scalar_one_or_none()
     
     llm_verification = LLMVerification(
         alert_prompt_id=alert_prompt.id,
         approval=verification_result.approval,
         chance_score=verification_result.chance_score,
-        #output = verification_result.output, #TODO: add this to the database
+        reason=verification_result.reason,
+        keywords=verification_result.keywords,
+        llm_model=llm_model.model_name,
         input_tokens_count=input_tokens_count,
-        input_tokens_price=input_tokens_count * llm_model_db.input_token_price,
+        input_tokens_price=input_tokens_count * llm_model.input_token_price,
         output_tokens_count=output_tokens_count,
-        output_tokens_price=output_tokens_count * llm_model_db.output_token_price,
-        llm_model=llm_model,
+        output_tokens_price=output_tokens_count * llm_model.output_token_price,
         date_time=datetime.now()
     )
     

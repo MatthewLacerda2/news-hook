@@ -22,19 +22,21 @@ from sqlalchemy import select
 from sqlalchemy import func
 from app.tasks.save_embedding import generate_and_save_alert_embeddings
 import uuid
-from app.utils.env import MAX_DATETIME
+from app.utils.env import MAX_DATETIME, LLM_VERIFICATION_THRESHOLD
 
 router = APIRouter()
 
-#TODO: Gemini models allow us to toggle 'thinking' off at a discount, but we are not allowing the user to do that.
-
-@router.post("/", response_model=AlertPromptCreateSuccessResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=AlertPromptCreateSuccessResponse,
+    status_code=status.HTTP_201_CREATED,
+    description="Create a new alert for monitoring"
+)
 async def create_alert(
     alert_data: AlertPromptCreateRequestBase,
     db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key)
 ):
-    """Create a new alert for monitoring"""
     
     print(alert_data.model_dump_json())
 
@@ -59,8 +61,10 @@ async def create_alert(
             )
 
         llm_validation_response = await get_llm_validation(alert_data, llm_model.model_name)
+        llm_validation_str = llm_validation_response.model_dump_json()
         
-        input_price, output_price = get_token_price(alert_data, llm_validation_response, llm_model)
+        input_price, output_price = get_token_price(alert_data.prompt, llm_validation_str, llm_model)
+        
         tokens_price = input_price + output_price
         
         if user.credit_balance < tokens_price:
@@ -88,7 +92,7 @@ async def create_alert(
         db.add(llm_validation)
         await db.commit()
 
-        if not llm_validation_response.approval or llm_validation_response.chance_score < 0.85:
+        if not llm_validation_response.approval or llm_validation_response.chance_score < LLM_VERIFICATION_THRESHOLD:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail={
@@ -147,18 +151,20 @@ async def create_alert(
             detail=f"Error creating alert: {str(e)}"
         )
 
-@router.get("/", response_model=AlertPromptListResponse)
+@router.get(
+    "/",
+    response_model=AlertPromptListResponse,
+    description="List all alerts for the authenticated user with filtering and pagination"
+)
 async def list_alerts(
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=100),
     prompt_contains: Optional[str] = None,
     max_datetime: Optional[datetime] = None,
     created_after: Optional[datetime] = None,
-    semantic_threshold: Optional[float] = Query(default=0.85, ge=0.0, le=1.0),
     db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key)
 ):
-    """List alerts for the authenticated user with filtering and pagination"""
     
     if created_after and max_datetime and created_after > max_datetime:
         raise HTTPException(
@@ -191,13 +197,16 @@ async def list_alerts(
         total_count=total_count
     )
 
-@router.get("/{alert_id}", response_model=AlertPromptItem)
+@router.get(
+    "/{alert_id}",
+    response_model=AlertPromptItem,
+    description="Get a specific alert by ID"
+)
 async def get_alert(
     alert_id: str,
     db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key)
 ):
-    """Get a specific alert by ID"""
     
     stmt = select(AlertPrompt).where(
         AlertPrompt.id == alert_id,
@@ -230,14 +239,15 @@ def alert_to_schema(alert: AlertPrompt) -> AlertPromptItem:
         is_recurring=alert.is_recurring
     )
 
-#Alert should not be 'deleted'. They costed credits and thus have to be kept register of.
-@router.patch("/{alert_id}/cancel", status_code=status.HTTP_200_OK)
+@router.patch(
+    "/{alert_id}/cancel",
+    status_code=status.HTTP_200_OK,
+    description="Mark an alert as CANCELLED. We do not 'delete' the alert, for billing purposes")
 async def cancel_alert(
     alert_id: str,
     db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key)
 ):
-    """Cancel an existing alert"""
     
     stmt = select(AlertPrompt).where(
         AlertPrompt.id == alert_id,

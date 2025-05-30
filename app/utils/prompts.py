@@ -25,10 +25,10 @@ The alert has to be:
 
 Your job is to validate if the alert's request is reasonable.
 You will respond in a structure format, with the following fields:
-- approval: bool = Whether the alert's request is a valid one
-- chance_score: float = Chance that the document matches the alert's request. 0.85 or higher means approved
+- approval: bool = Is the alert's request valid?
+- chance_score: float = Estimation of the quality of the request. Ranging from 0.0 to 1.0. Must be at least 0.85 to approve
 - reason: str = Reason for the approval or denial. Be succinct
-- keywords: list[str] = keywords required to be in the document that triggers the alert
+- keywords: list[str] = keywords required to be in the document that triggers the alert, like name of a person, company, country, etc.
 
 
 Current date and time: {current_date_time}
@@ -58,8 +58,10 @@ The document is:
 
 Your job is to verify if the document matches the alert's request.
 You will respond in a structure format, with the following fields:
-- approval: bool = Whether the document matches the alert's request
-- chance_score: float = Chance that the document matches the alert's request. 0.85 or higher means approved
+- approval: bool = Does the document match the alert's intent?
+- chance_score: float = Estimation of the quality of the request. Ranging from 0.0 to 1.0. Must be at least 0.85 to approve
+- reason: str = Reason for the approval or denial. Be succinct
+- keywords: list[str] = keywords required to be in the document that triggers the alert, like name of a person, company
 
 
 Current date and time: {current_date_time}

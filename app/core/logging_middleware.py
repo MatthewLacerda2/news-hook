@@ -23,7 +23,6 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             "process_time_ms": round(process_time * 1000, 2),
         }
 
-        # Log response body for error responses (4xx and 5xx)
         if response.status_code >= 400:
             # Get a copy of the original response
             response_body = [chunk async for chunk in response.body_iterator]

@@ -7,8 +7,8 @@ async def handle_manual_document(request):
     
     Expected request body:
     {
-        "name": "Document Title"
-        "content": "# Document Title\nDocument content in markdown",
+        "name": "Document Title",
+        "content": "Document content in markdown",
     }
     """
     try:

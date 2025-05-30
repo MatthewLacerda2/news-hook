@@ -18,8 +18,7 @@ async def list_llm_models(
     """
     List all active LLM models.
     """
-    query = select(LLMModel)
-    query = query.where(LLMModel.is_active == True)
+    query = select(LLMModel).where(LLMModel.is_active == True)
     
     result = await db.execute(query)
     models = result.scalars().all()

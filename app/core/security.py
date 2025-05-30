@@ -25,7 +25,11 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     else:
         expire = datetime.now(UTC) + timedelta(minutes=15)
     
-    to_encode.update({"exp": expire})
+    to_encode.update({
+        "exp": expire,
+        "iss": settings.JWT_ISSUER,  # Add issuer claim
+        "aud": settings.JWT_AUDIENCE  # Add audience claim
+    })
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
     return encoded_jwt
 
@@ -88,7 +92,13 @@ def verify_token(token: str) -> dict:
         HTTPException: If the token is invalid or expired
     """
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        payload = jwt.decode(
+            token, 
+            settings.SECRET_KEY, 
+            algorithms=["HS256"],
+            issuer=settings.JWT_ISSUER,
+            audience=settings.JWT_AUDIENCE
+        )
         return payload
     except JWTError:
         logger.error("Invalid token", exc_info=True)

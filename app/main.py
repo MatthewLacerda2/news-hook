@@ -24,26 +24,6 @@ app = FastAPI(
     version="1.0.0"
 )
 
-@app.on_event("startup")
-async def run_migrations():
-    try:
-        logger.info("Running database migrations...")
-        alembic_ini_path = Path(__file__).parent.parent / "alembic.ini"
-        result = subprocess.run(
-            [sys.executable, "-m", "alembic", "upgrade", "head"],
-            capture_output=True,
-            text=True,
-            check=True
-        )
-        logger.info("Database migrations completed successfully")
-        logger.debug(f"Migration output: {result.stdout}")
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Error running migrations: {e.stderr}")
-        raise e
-    except Exception as e:
-        logger.error(f"Unexpected error running migrations: {str(e)}")
-        raise e
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

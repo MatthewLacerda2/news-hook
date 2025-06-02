@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 client = Client(
     vertexai=True,
-    api_key=os.getenv("GEMINI_API_KEY")
+    project="driven-actor-461001-j0",
+    location="southamerica-east1"
 )
 
 gemini_temperature = 0.0

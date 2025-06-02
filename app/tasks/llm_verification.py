@@ -34,7 +34,7 @@ async def verify_document_matches_alert(
         result = await db.execute(stmt)
         alert_prompt: AlertPrompt = result.scalar_one()
         
-        verification_result = await get_gemini_verification(
+        verification_result = get_gemini_verification(
             alert_prompt.prompt,
             sourced_document.content,
             alert_prompt.llm_model

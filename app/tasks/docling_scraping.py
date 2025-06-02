@@ -26,7 +26,7 @@ async def process_manual_document(
     document_id = str(uuid.uuid4())
     
     try:
-        content_embedding = await get_gemini_embeddings(content, "RETRIEVAL_DOCUMENT")
+        content_embedding = get_gemini_embeddings(content, "RETRIEVAL_DOCUMENT")
         
         monitored_data = MonitoredData(
             id=document_id,

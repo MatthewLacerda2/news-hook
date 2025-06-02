@@ -13,8 +13,7 @@ class Settings(BaseSettings):
     
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: str
-    GOOGLE_REDIRECT_URI: str    
-    GEMINI_API_KEY: str
+    GOOGLE_REDIRECT_URI: str
     
     DATABASE_URL: str  # This will use the URL exactly as provided in .env
     

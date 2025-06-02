@@ -5,10 +5,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-ASYNC_DATABASE_URL = settings.SQLALCHEMY_DATABASE_URI.replace('postgresql://', 'postgresql+asyncpg://')
-
+# Use the DATABASE_URL directly since it's already in the correct format
 engine = create_async_engine(
-    ASYNC_DATABASE_URL,
+    settings.DATABASE_URL,  # Already has postgresql+asyncpg://
     pool_size=5,
     max_overflow=10
 )

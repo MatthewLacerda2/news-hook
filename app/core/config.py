@@ -1,6 +1,6 @@
 from typing import Optional
 from pydantic_settings import BaseSettings
-from pydantic import field_validator, ConfigDict
+from pydantic import ConfigDict
 from functools import lru_cache
 
 class Settings(BaseSettings):
@@ -17,14 +17,7 @@ class Settings(BaseSettings):
     GOOGLE_REDIRECT_URI: str    
     GEMINI_API_KEY: str
     
-    DATABASE_URL: str  # This is required now, not Optional
-    SQLALCHEMY_DATABASE_URI: str = None  # This will be set from DATABASE_URL
-    
-    @field_validator("SQLALCHEMY_DATABASE_URI", mode="before")
-    @classmethod
-    def assemble_db_connection(cls, v: Optional[str], info) -> str:
-        # Always use DATABASE_URL
-        return info.data.get("DATABASE_URL")
+    DATABASE_URL: str  # This will use the URL exactly as provided in .env
     
     model_config = ConfigDict(
         case_sensitive=True, 

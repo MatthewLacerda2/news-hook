@@ -13,7 +13,7 @@ load_dotenv()
 client = Client(
     vertexai=True,
     project="driven-actor-461001-j0",
-    location="southamerica-east1"
+    location="global"
 )
 
 gemini_temperature = 0.0

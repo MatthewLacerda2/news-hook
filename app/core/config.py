@@ -1,4 +1,3 @@
-from typing import Optional
 from pydantic_settings import BaseSettings
 from pydantic import ConfigDict
 from functools import lru_cache

@@ -124,7 +124,7 @@ async def test_login_missing_token(client):
         json={}
     )
     
-    assert response.status_code == 422  # Validation error
+    assert response.status_code == 422
 
 @pytest.mark.asyncio
 async def test_check_credits_successful(client, mock_google_verify, test_db):

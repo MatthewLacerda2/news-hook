@@ -2,6 +2,7 @@ from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+import pgvector.sqlalchemy
 
 from alembic import context
 
@@ -12,8 +13,13 @@ from app.core.config import settings
 # access to the values within the .ini file in use.
 config = context.config
 
-# Override the sqlalchemy.url with the one from settings
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Convert async URL to sync URL for Alembic
+db_url = settings.DATABASE_URL
+if db_url.startswith('postgresql+asyncpg'):
+    db_url = db_url.replace('postgresql+asyncpg', 'postgresql')
+
+# Override the sqlalchemy.url with the synchronous URL
+config.set_main_option("sqlalchemy.url", db_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

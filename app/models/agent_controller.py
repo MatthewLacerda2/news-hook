@@ -13,7 +13,7 @@ class AgentController(Base):
     api_key = Column(String, nullable=False, unique=True)
     google_id = Column(String, unique=True, nullable=False)
     name = Column(String, nullable=True)
-    credit_balance = Column(Float, nullable=False, default=0)   # Using Int when price is per million tokens would be a bitch and life is too short
+    credit_balance = Column(Float, nullable=False, default=0)   # Using Int when price is per million tokens would be a bitch
     created_at = Column(DateTime, nullable=False, default=datetime.now())
     last_login = Column(DateTime, nullable=True)
 

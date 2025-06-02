@@ -19,7 +19,7 @@ class LLMValidation(Base):
     output_tokens = Column(Integer, nullable=False)
     output_price = Column(Float, nullable=False)
     
-    llm_id = Column(String(36), ForeignKey('llm_models.id'), nullable=False)
+    llm_model = Column(String, nullable=False)
     date_time = Column(DateTime, nullable=False)
     
     alert_prompt = relationship("AlertPrompt", back_populates="llm_validations")

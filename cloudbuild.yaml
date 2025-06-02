@@ -16,7 +16,7 @@ steps:
     - '--image'
     - 'gcr.io/$PROJECT_ID/news-hook'
     - '--region'
-    - 'us-central1'
+    - 'southamerica-east1'
     - '--platform'
     - 'managed'
     - '--allow-unauthenticated'
@@ -27,8 +27,3 @@ steps:
 
 images:
   - 'gcr.io/$PROJECT_ID/news-hook'
-
-# Substitutions for sensitive values
-substitutions:
-  _CLOUD_SQL_CONNECTION_NAME: ''  # Fill this with the output of: gcloud sql instances describe news-hook-db --format="value(connectionName)"
-  _SERVICE_ACCOUNT: ''  # Fill this with the service account email from: gcloud iam service-accounts list

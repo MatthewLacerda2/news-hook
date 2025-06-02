@@ -3,20 +3,15 @@ from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
-#This is how it's done now
-ASYNC_DATABASE_URL = settings.SQLALCHEMY_DATABASE_URI.replace('postgresql://', 'postgresql+asyncpg://')
-
-# Create SQLAlchemy async engine
+# Use the DATABASE_URL directly since it's already in the correct format
 engine = create_async_engine(
-    ASYNC_DATABASE_URL,
+    settings.DATABASE_URL,  # Already has postgresql+asyncpg://
     pool_size=5,
     max_overflow=10
 )
 
-# SessionLocal will be used to create database sessions
 AsyncSessionLocal = sessionmaker(
     engine,
     class_=AsyncSession,
@@ -25,7 +20,6 @@ AsyncSessionLocal = sessionmaker(
     autoflush=False,
 )
 
-# Dependency to get DB session
 async def get_db():
     async with AsyncSessionLocal() as session:
         try:

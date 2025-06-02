@@ -11,8 +11,8 @@ OR
 - Receive documents sent by the user
 
 ## Vector Search
-- First we filter the alerts by those whose keywords are found in the document
 - Vector-search to see which alert-prompts are related to the document
+- Filter the alerts by those whose keywords are found in the document
 
 ## LLM Verification
 - The related ones will be sent to an LLM to confirm if the data fulfills the alert

@@ -15,7 +15,8 @@ def get_client():
     return Client(
         vertexai=True,
         project="driven-actor-461001-j0",
-        location="global"
+        location="global",
+        credentials="../../../application_default_credentials.json"
     )
 
 gemini_temperature = 0.0

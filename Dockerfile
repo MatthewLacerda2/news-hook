@@ -1,22 +1,22 @@
-FROM python:3.12-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-    gcc \
-    python3-dev \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Install system dependencies
+RUN apt-get update && apt-get install -y build-essential
 
-# Copy requirements first to leverage Docker cache
+# Install pipenv or pip requirements (assuming requirements.txt exists)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the application code
+# Copy source code
 COPY . .
 
-# Expose the port your app runs on
+# Expose the port Cloud Run expects
 EXPOSE 8080
 
-# Command to run the application
+# Environment variable for Cloud Run
+ENV PORT 8080
+
+# Start the FastAPI app using Uvicorn
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]

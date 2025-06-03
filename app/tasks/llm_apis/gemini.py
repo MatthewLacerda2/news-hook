@@ -22,6 +22,8 @@ def get_client():
         token_uri='https://oauth2.googleapis.com/token',  # This is the standard Google OAuth2 token endpoint
     )
     
+    print(f"Credentials: {credentials}")
+    
     return Client(
         vertexai=True,
         project=settings.GOOGLE_PROJECT_ID,

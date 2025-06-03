@@ -23,6 +23,9 @@ from sqlalchemy import func
 from app.tasks.save_embedding import generate_and_save_alert_embeddings
 import uuid
 from app.utils.env import MAX_DATETIME, LLM_VERIFICATION_THRESHOLD
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -63,9 +66,16 @@ async def create_alert(
         llm_validation_response = get_llm_validation(alert_data, llm_model.model_name)
         llm_validation_str = llm_validation_response.model_dump_json()
         
+        logger.info(f"LLM validation response: {llm_validation_str}")
+        
         input_price, output_price = get_token_price(alert_data.prompt, llm_validation_str, llm_model)
         
+        logger.info(f"Input price: {input_price}")
+        logger.info(f"Output price: {output_price}")
+        
         tokens_price = input_price + output_price
+        
+        logger.info(f"Tokens price: {tokens_price}")
         
         if user.credit_balance < tokens_price:
             raise HTTPException(
@@ -74,6 +84,8 @@ async def create_alert(
             )
             
         now = datetime.now()
+        
+        logger.info(f"Creating LLM validation")
             
         llm_validation = LLMValidation(
             id=str(uuid.uuid4()),

@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from google.oauth2.credentials import Credentials
 from google.genai import Client
-from google.genai.types import GenerateContentConfig, EmbedContentConfig
+from google.genai.types import GenerateContentConfig, EmbedContentConfig, ContentEmbedding
 from app.utils.prompts import get_validation_prompt, get_verification_prompt, get_generation_prompt
 from app.utils.llm_response_formats import LLMValidationFormat, LLMVerificationFormat
 import logging
@@ -43,7 +43,9 @@ def get_gemini_embeddings(text: str, task_type: str) -> np.ndarray:
             task_type=task_type,
         ),
     )
-    return np.array(response.embeddings)
+    # Extract the actual float values from the ContentEmbedding object
+    embedding_values = response.embeddings[0].values
+    return np.array(embedding_values, dtype=np.float32)
 
 def get_gemini_validation(alert_prompt: str, llm_model: str) -> LLMValidationFormat:
     

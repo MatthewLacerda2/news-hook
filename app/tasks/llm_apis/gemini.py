@@ -22,8 +22,6 @@ def get_client():
         token_uri='https://oauth2.googleapis.com/token',  # This is the standard Google OAuth2 token endpoint
     )
     
-    print(f"Credentials: {credentials}")
-    
     return Client(
         vertexai=True,
         project=settings.GOOGLE_PROJECT_ID,
@@ -48,10 +46,10 @@ def get_gemini_embeddings(text: str, task_type: str) -> np.ndarray:
     return np.array(response.embeddings)
 
 def get_gemini_validation(alert_prompt: str, llm_model: str) -> LLMValidationFormat:
-    logger.info(f"Getting Gemini validation for alert prompt: {alert_prompt} and model: {llm_model}")
+    
     client = get_client()
-    full_prompt = get_validation_prompt(alert_prompt)    
-    print("OK LETS DO THIS...")
+    full_prompt = get_validation_prompt(alert_prompt)
+    
     response = client.models.generate_content(
         model=llm_model, contents=full_prompt, config=GenerateContentConfig(
         response_mime_type='application/json',
@@ -59,7 +57,7 @@ def get_gemini_validation(alert_prompt: str, llm_model: str) -> LLMValidationFor
         temperature=gemini_temperature,
         automatic_function_calling={"disable": True}
     ),)
-    print("DONE IT!")
+    
     json_response = response.text
     
     return LLMValidationFormat.model_validate_json(json_response)
@@ -68,9 +66,6 @@ def get_gemini_verification(alert_prompt: str, document: str, llm_model: str) ->
     
     client = get_client()
     full_prompt = get_verification_prompt(alert_prompt, document)
-    
-    print(f"Alert prompt: {alert_prompt}")
-    logger.info(f"Alert prompt: {alert_prompt}")
     
     response = client.models.generate_content(
         model=llm_model, contents=full_prompt, config=GenerateContentConfig(
@@ -89,9 +84,7 @@ def get_gemini_alert_generation(document: str, payload_format: str, alert_prompt
 
     client = get_client()
     full_prompt = get_generation_prompt(document, payload_format, alert_prompt)
-    
-    print(f"Payload format: {payload_format}")
-    
+        
     response = client.models.generate_content(
         model=llm_model, contents=full_prompt, config=GenerateContentConfig(
         response_mime_type='application/json',

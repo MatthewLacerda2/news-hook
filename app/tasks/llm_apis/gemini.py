@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+from google.oauth2.credentials import Credentials
 from google.genai import Client
 from google.genai.types import GenerateContentConfig, EmbedContentConfig
 from app.utils.prompts import get_validation_prompt, get_verification_prompt, get_generation_prompt
@@ -12,11 +13,19 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 def get_client():
+    credentials = Credentials(
+        token=None,  # Token is automatically fetched using refresh token
+        refresh_token=os.getenv('GOOGLE_REFRESH_TOKEN'),
+        client_id=os.getenv('GOOGLE_CLIENT_ID'),
+        client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
+        token_uri='https://oauth2.googleapis.com/token',  # This is the standard Google OAuth2 token endpoint
+    )
+    
     return Client(
         vertexai=True,
-        project="driven-actor-461001-j0",
+        project=os.getenv('GOOGLE_PROJECT_ID'),
         location="global",
-        credentials="../../../application_default_credentials.json"
+        credentials=credentials
     )
 
 gemini_temperature = 0.0
@@ -39,7 +48,7 @@ def get_gemini_validation(alert_prompt: str, llm_model: str) -> LLMValidationFor
     
     client = get_client()
     full_prompt = get_validation_prompt(alert_prompt)    
-    
+    print("OK LETS DO THIS...")
     response = client.models.generate_content(
         model=llm_model, contents=full_prompt, config=GenerateContentConfig(
         response_mime_type='application/json',
@@ -47,7 +56,7 @@ def get_gemini_validation(alert_prompt: str, llm_model: str) -> LLMValidationFor
         temperature=gemini_temperature,
         automatic_function_calling={"disable": True}
     ),)
-    
+    print("DONE IT!")
     json_response = response.text
     
     return LLMValidationFormat.model_validate_json(json_response)

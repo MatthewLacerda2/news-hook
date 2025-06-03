@@ -1,4 +1,7 @@
 from app.tasks.llm_apis.gemini import get_client
+import logging
+
+logger = logging.getLogger(__name__)
 
 def count_tokens(text: str, model: str) -> int:
     
@@ -9,4 +12,4 @@ def count_tokens(text: str, model: str) -> int:
         contents=text
     )
     
-    return total_tokens
+    return total_tokens.total_tokens

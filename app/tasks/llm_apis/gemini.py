@@ -36,7 +36,7 @@ def get_gemini_embeddings(text: str, task_type: str) -> np.ndarray:
     client = get_client()
     
     response = client.models.embed_content(
-        model="gemini-embedding-exp-03-07",
+        model="gemini-embedding-001",
         contents=text,
         config=EmbedContentConfig(
             output_dimensionality=NUM_EMBEDDING_DIMENSIONS,

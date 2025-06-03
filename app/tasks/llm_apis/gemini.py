@@ -8,6 +8,7 @@ from app.utils.llm_response_formats import LLMValidationFormat, LLMVerificationF
 import logging
 import numpy as np
 from app.utils.env import NUM_EMBEDDING_DIMENSIONS
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 load_dotenv()
@@ -15,15 +16,15 @@ load_dotenv()
 def get_client():
     credentials = Credentials(
         token=None,  # Token is automatically fetched using refresh token
-        refresh_token=os.getenv('GOOGLE_REFRESH_TOKEN'),
-        client_id=os.getenv('GOOGLE_CLIENT_ID'),
-        client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
+        refresh_token=settings.GOOGLE_REFRESH_TOKEN,
+        client_id=settings.GOOGLE_CLIENT_ID,
+        client_secret=settings.GOOGLE_CLIENT_SECRET,
         token_uri='https://oauth2.googleapis.com/token',  # This is the standard Google OAuth2 token endpoint
     )
     
     return Client(
         vertexai=True,
-        project=os.getenv('GOOGLE_PROJECT_ID'),
+        project=settings.GOOGLE_PROJECT_ID,
         location="global",
         credentials=credentials
     )
@@ -45,7 +46,7 @@ def get_gemini_embeddings(text: str, task_type: str) -> np.ndarray:
     return np.array(response.embeddings)
 
 def get_gemini_validation(alert_prompt: str, llm_model: str) -> LLMValidationFormat:
-    
+    logger.info(f"Getting Gemini validation for alert prompt: {alert_prompt} and model: {llm_model}")
     client = get_client()
     full_prompt = get_validation_prompt(alert_prompt)    
     print("OK LETS DO THIS...")

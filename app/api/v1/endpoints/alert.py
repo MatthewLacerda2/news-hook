@@ -86,7 +86,7 @@ async def create_alert(
             input_price=input_price,
             output_tokens=count_tokens(llm_validation_response.reason, llm_model.model_name),
             output_price=output_price,
-            llm_id=llm_model.id,
+            llm_model=llm_model.model_name,
             date_time=now
         )
         db.add(llm_validation)

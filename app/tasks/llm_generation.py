@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 async def generate_and_send_alert(alert_prompt: AlertPrompt, sourced_document: SourcedData, llm_model: LLMModel, db: AsyncSession):
     
-    generated_response = await get_gemini_alert_generation(
+    generated_response = get_gemini_alert_generation(
         sourced_document.content,
         alert_prompt.payload_format,
         alert_prompt.prompt,

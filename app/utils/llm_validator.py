@@ -5,12 +5,12 @@ from app.utils.count_tokens import count_tokens
 from app.models.llm_models import LLMModel
 import json
 
-async def get_llm_validation(alert_request: AlertPromptCreateRequestBase, llm_model: str) -> LLMValidationFormat:
+def get_llm_validation(alert_request: AlertPromptCreateRequestBase, llm_model: str) -> LLMValidationFormat:
     """
     Validate the alert request using LLM
     """
 
-    validation_result = await get_gemini_validation(
+    validation_result = get_gemini_validation(
         alert_request.prompt, llm_model
     )
     

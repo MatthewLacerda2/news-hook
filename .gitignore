@@ -180,3 +180,4 @@ cython_debug/
 
 buildsummary.txt
 env.txt
+application_default_credentials.json

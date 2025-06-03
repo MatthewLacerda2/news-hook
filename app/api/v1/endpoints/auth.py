@@ -93,6 +93,10 @@ async def login(
         result = await db.execute(stmt)
         user = result.scalar_one_or_none()
         
+        user.last_login = datetime.now()
+        await db.commit()
+        await db.refresh(user)
+        
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

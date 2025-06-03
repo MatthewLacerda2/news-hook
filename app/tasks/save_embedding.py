@@ -8,10 +8,14 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 async def generate_and_save_alert_embeddings(alert_id, prompt):
-    prompt_embedding = await get_gemini_embeddings(prompt, "RETRIEVAL_QUERY")
-    await save_embeddings_to_db(alert_id, prompt_embedding)
+    prompt_embedding = get_gemini_embeddings(prompt, "RETRIEVAL_QUERY")
+    await save_alert_embeddings_to_db(alert_id, prompt_embedding)
 
-async def save_embeddings_to_db(alert_id, prompt_embedding):
+async def generate_and_save_document_embeddings(document_id : str, content : str):
+    document_embedding = get_gemini_embeddings(content, "RETRIEVAL_DOCUMENT")
+    await save_document_embeddings_to_db(document_id, document_embedding)
+
+async def save_alert_embeddings_to_db(alert_id, prompt_embedding):
     async for session in get_db():
         result = await session.execute(
             select(AlertPrompt).where(AlertPrompt.id == alert_id)
@@ -25,12 +29,10 @@ async def save_embeddings_to_db(alert_id, prompt_embedding):
         else:
             logger.error(f"Alert with id {alert_id} not found")
             raise ValueError(f"Alert with id {alert_id} not found")
-        
-async def generate_and_save_document_embeddings(document_id : str, content : str):
-    document_embedding = await get_gemini_embeddings(content, "RETRIEVAL_DOCUMENT")
-    await save_embeddings_to_db(document_id, document_embedding)
+    
+    logger.info(f"Alert embedding saved to db")
 
-async def save_embeddings_to_db(document_id: str, document_embedding: np.ndarray):
+async def save_document_embeddings_to_db(document_id: str, document_embedding: np.ndarray):
     async for session in get_db():
         result = await session.execute(
             select(MonitoredData).where(MonitoredData.id == document_id)

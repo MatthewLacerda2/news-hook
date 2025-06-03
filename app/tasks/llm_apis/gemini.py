@@ -1,35 +1,55 @@
 import os
 from dotenv import load_dotenv
+from google.oauth2.credentials import Credentials
 from google.genai import Client
-from google.genai.types import GenerateContentConfig, EmbedContentConfig
+from google.genai.types import GenerateContentConfig, EmbedContentConfig, ContentEmbedding
 from app.utils.prompts import get_validation_prompt, get_verification_prompt, get_generation_prompt
 from app.utils.llm_response_formats import LLMValidationFormat, LLMVerificationFormat
 import logging
 import numpy as np
 from app.utils.env import NUM_EMBEDDING_DIMENSIONS
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 load_dotenv()
-client = Client(
-    vertexai=True,
-    api_key=os.getenv("GEMINI_API_KEY")
-)
+
+def get_client():
+    credentials = Credentials(
+        token=None,  # Token is automatically fetched using refresh token
+        refresh_token=settings.GOOGLE_REFRESH_TOKEN,
+        client_id=settings.GOOGLE_CLIENT_ID,
+        client_secret=settings.GOOGLE_CLIENT_SECRET,
+        token_uri='https://oauth2.googleapis.com/token',  # This is the standard Google OAuth2 token endpoint
+    )
+    
+    return Client(
+        vertexai=True,
+        project=settings.GOOGLE_PROJECT_ID,
+        location="global",
+        credentials=credentials
+    )
 
 gemini_temperature = 0.0
 
-async def get_gemini_embeddings(text: str, task_type: str) -> np.ndarray:
+def get_gemini_embeddings(text: str, task_type: str) -> np.ndarray:
+    
+    client = get_client()
+    
     response = client.models.embed_content(
-        model="gemini-embedding-exp-03-07",
+        model="gemini-embedding-001",
         contents=text,
         config=EmbedContentConfig(
             output_dimensionality=NUM_EMBEDDING_DIMENSIONS,
             task_type=task_type,
         ),
     )
-    return np.array(response.embeddings)
+    # Extract the actual float values from the ContentEmbedding object
+    embedding_values = response.embeddings[0].values
+    return np.array(embedding_values, dtype=np.float32)
 
-async def get_gemini_validation(alert_prompt: str, llm_model: str) -> LLMValidationFormat:
+def get_gemini_validation(alert_prompt: str, llm_model: str) -> LLMValidationFormat:
     
+    client = get_client()
     full_prompt = get_validation_prompt(alert_prompt)
     
     response = client.models.generate_content(
@@ -44,11 +64,9 @@ async def get_gemini_validation(alert_prompt: str, llm_model: str) -> LLMValidat
     
     return LLMValidationFormat.model_validate_json(json_response)
 
-async def get_gemini_verification(alert_prompt: str, document: str, llm_model: str) -> LLMVerificationFormat:
+def get_gemini_verification(alert_prompt: str, document: str, llm_model: str) -> LLMVerificationFormat:
     
-    print(f"Alert prompt: {alert_prompt}")
-    logger.info(f"Alert prompt: {alert_prompt}")
-    
+    client = get_client()
     full_prompt = get_verification_prompt(alert_prompt, document)
     
     response = client.models.generate_content(
@@ -64,10 +82,11 @@ async def get_gemini_verification(alert_prompt: str, document: str, llm_model: s
     # Parse the JSON string into our Pydantic model
     return LLMVerificationFormat.model_validate_json(json_response)
 
-async def get_gemini_alert_generation(document: str, payload_format: str, alert_prompt: str, llm_model: str) -> str:
+def get_gemini_alert_generation(document: str, payload_format: str, alert_prompt: str, llm_model: str) -> str:
 
+    client = get_client()
     full_prompt = get_generation_prompt(document, payload_format, alert_prompt)
-    print(f"Payload format: {payload_format}")
+        
     response = client.models.generate_content(
         model=llm_model, contents=full_prompt, config=GenerateContentConfig(
         response_mime_type='application/json',

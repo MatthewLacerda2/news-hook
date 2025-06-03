@@ -23,9 +23,18 @@ Make sure you have the .env file. Than:
 
 ```bash
 .\venv\Scripts\activate
+gcloud auth application-default login
+```
+
+That gcloud command will generate a application_default_credentials.json and give you the path for it in your computer
+That file is needed for VertexAI authorization
+On Windows, that path is "AppData\Roaming\gcloud". Copy that json to the root folder
+
+```bash
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
+
 After that, to generate the client-sdk for the front-end:
 - Go to http://127.0.0.1:8000/openapi.json
 - Save it to desktop

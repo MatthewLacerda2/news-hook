@@ -23,6 +23,9 @@ from sqlalchemy import func
 from app.tasks.save_embedding import generate_and_save_alert_embeddings
 import uuid
 from app.utils.env import MAX_DATETIME, LLM_VERIFICATION_THRESHOLD
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -37,8 +40,6 @@ async def create_alert(
     db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key)
 ):
-    
-    print(alert_data.model_dump_json())
 
     if user.credit_balance <= 0:
         raise HTTPException(
@@ -60,9 +61,9 @@ async def create_alert(
                 detail=f"Invalid LLM model"
             )
 
-        llm_validation_response = await get_llm_validation(alert_data, llm_model.model_name)
+        llm_validation_response = get_llm_validation(alert_data, llm_model.model_name)
         llm_validation_str = llm_validation_response.model_dump_json()
-        
+                
         input_price, output_price = get_token_price(alert_data.prompt, llm_validation_str, llm_model)
         
         tokens_price = input_price + output_price
@@ -86,7 +87,7 @@ async def create_alert(
             input_price=input_price,
             output_tokens=count_tokens(llm_validation_response.reason, llm_model.model_name),
             output_price=output_price,
-            llm_id=llm_model.id,
+            llm_model=llm_model.model_name,
             date_time=now
         )
         db.add(llm_validation)

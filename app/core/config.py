@@ -3,20 +3,23 @@ from pydantic import ConfigDict
 from functools import lru_cache
 
 class Settings(BaseSettings):
-    API_V1_STR: str = "/api/v1"
-    PROJECT_NAME: str = "News Hook"
+
+    DATABASE_URL: str
+    
+    GOOGLE_CLIENT_ID: str
+    GOOGLE_CLIENT_SECRET: str
+    GOOGLE_REDIRECT_URI: str
+    
+    GOOGLE_REFRESH_TOKEN: str
+    GOOGLE_PROJECT_ID: str
     
     JWT_ISSUER: str
     JWT_AUDIENCE: str
     SECRET_KEY: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30
     
-    GOOGLE_CLIENT_ID: str
-    GOOGLE_CLIENT_SECRET: str
-    GOOGLE_REDIRECT_URI: str    
-    GEMINI_API_KEY: str
-    
-    DATABASE_URL: str  # This will use the URL exactly as provided in .env
+    API_V1_STR: str = "/api/v1"
+    PROJECT_NAME: str = "News Hook"
     
     model_config = ConfigDict(
         case_sensitive=True, 

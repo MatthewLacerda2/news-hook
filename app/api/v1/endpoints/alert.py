@@ -186,6 +186,9 @@ async def list_alerts(
         stmt = stmt.filter(AlertPrompt.created_at >= created_after)
         count_stmt = count_stmt.filter(AlertPrompt.created_at >= created_after)
 
+    # Add ordering by created_at
+    stmt = stmt.order_by(AlertPrompt.created_at.desc())
+
     alerts = await db.execute(stmt.offset(offset).limit(limit))
     
     total_count = await db.execute(count_stmt)

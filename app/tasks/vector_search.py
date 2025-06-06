@@ -36,13 +36,14 @@ async def perform_embed_and_vector_search(sourced_document: SourcedData):
         active_alerts = await find_matching_alerts(db, document_embedding, sourced_document.agent_controller_id)
         active_alerts = filter_by_keywords(active_alerts, sourced_document.content)
         
-        logger.info(f"Found {len(active_alerts)} matching alerts before keywords")
-        
         for alert in active_alerts:
             await verify_document_matches_alert(
                 alert_id=str(alert.id),
                 sourced_document=sourced_document,
             )
+        
+        for alert in active_alerts:
+            logger.info(f"Alert prompt matching: {alert.prompt}")
             
         logger.info(f"Completed vector search for document: {sourced_document.name}")
                 

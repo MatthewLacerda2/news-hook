@@ -97,13 +97,10 @@ async def create_alert(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail={
-                    "message": "Invalid alert request",
-                    "validation": {
-                        "approval": llm_validation_response.approval,
-                        "chance_score": llm_validation_response.chance_score,
-                        "reason": llm_validation_response.reason,
-                        "keywords": llm_validation_response.keywords
-                    }
+                    "approval": llm_validation_response.approval,
+                    "chance_score": llm_validation_response.chance_score,
+                    "reason": llm_validation_response.reason,
+                    "keywords": llm_validation_response.keywords
                 }
             )
         

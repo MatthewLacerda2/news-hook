@@ -82,6 +82,7 @@ def get_gemini_verification(alert_prompt: str, document: str, llm_model: str) ->
     # Parse the JSON string into our Pydantic model
     return LLMVerificationFormat.model_validate_json(json_response)
 
+#TODO: we gotta support schemaless generation
 def get_gemini_alert_generation(document: str, payload_format: str, alert_prompt: str, llm_model: str) -> str:
 
     client = get_client()

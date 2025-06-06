@@ -13,6 +13,7 @@ class AlertEvent(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     alert_prompt_id = Column(String(36), ForeignKey('alert_prompts.id'), nullable=False)
+    #TODO:agent_controller_id = Column(String(36), ForeignKey('agent_controllers.id'), nullable=False)
     scraped_data_id = Column(String(36), ForeignKey('monitored_data.id'), nullable=False)
     triggered_at = Column(DateTime, nullable=False, default=datetime.now())
     input_tokens = Column(Integer, nullable=False)

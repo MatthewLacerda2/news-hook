@@ -7,7 +7,6 @@ from app.schemas.alert_event import AlertEventListResponse
 
 @pytest.mark.asyncio
 async def test_list_events_successful(client, valid_user_with_credits):
-    #TODO: create a test alert prompt
     """Test successful event listing with valid parameters"""
     list_params = {
         "offset": 0,

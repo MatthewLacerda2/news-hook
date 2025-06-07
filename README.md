@@ -36,14 +36,14 @@ uvicorn app.main:app --reload
 ```
 
 After that, to generate the client-sdk for the front-end:
-- Go to http://127.0.0.1:8000/openapi.json
+- Go to http://127.0.0.1:8080/openapi.json
 - Save it to desktop
 - Run ```openapi-generator-cli generate -i ../../../openapi.json -g typescript-fetch -o client-sdk``` from the '/src' folder
 
 For build-and-test-ing, you can run `build-and-test.bat` on Windows
 For simple testing, you can run `pytest`
 
-# What's the infrastructure
+# What's the pipeline
 
 ## Alert-Prompt / Alert-Request
 
@@ -61,6 +61,13 @@ For simple testing, you can run `pytest`
         - The LLM confirms that the document fulfills the alert-request
     - We ask an LLM to generate a payload
     - We send the alert via HTTP request
+
+# What's the infrastructure
+
+We have a back-end and front-end repositories which trigger a Cloud Run for deploying when there is a change to the 'main' branch
+Both read from their Dockerfile and cloudbuild.yaml
+
+The DB is in Cloud SQL with Postgre SQL
 
 # Pricing model
 

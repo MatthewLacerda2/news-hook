@@ -3,7 +3,7 @@ import json
 
 os.environ["GOOGLE_CLIENT_ID"] = "dummy_client_id"
 os.environ["GOOGLE_CLIENT_SECRET"] = "dummy_client_secret"
-os.environ["GOOGLE_REDIRECT_URI"] = "http://localhost:8000/auth/callback"
+os.environ["GOOGLE_REDIRECT_URI"] = "http://localhost:8080/auth/callback"
 os.environ["SECRET_KEY"] = "your-secret-key-here"
 
 import pytest

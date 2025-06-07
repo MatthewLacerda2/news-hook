@@ -1,0 +1,8 @@
+project_id           = "driven-actor-461001-j0"
+region              = "southamerica-east1"
+db_tier             = "db-f1-micro"
+github_owner        = "your-github-username"
+database_password    = "your-db-password"
+google_client_id    = "764086051850-6qr4p6gpi6hn506pt8ejuq83di341hur.apps.googleusercontent.com"
+google_client_secret = "your-client-secret"
+jwt_secret          = "your-jwt-secret" 

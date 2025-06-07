@@ -1,0 +1,8 @@
+project_id           = "your-project-id"
+region              = "your-region"
+db_tier             = "db-f1-micro"
+github_owner        = "your-github-username"
+database_password    = "your-database-password"
+google_client_id    = "your-google-client-id"
+google_client_secret = "your-google-client-secret"
+jwt_secret          = "your-jwt-secret" 

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, and_, func, cast
 from app.schemas.user_document import UserDocumentCreateRequest, UserDocumentCreateSuccessResponse, UserDocumentItem, UserDocumentListResponse
 from app.tasks.save_embedding import generate_and_save_document_embeddings
 from app.tasks.vector_search import perform_embed_and_vector_search
@@ -15,6 +15,7 @@ import numpy as np
 import asyncio
 import uuid
 from typing import Optional
+from sqlalchemy.types import String
 
 router = APIRouter()
 
@@ -117,21 +118,25 @@ async def get_user_documents(
     db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key),
 ):
-    query = select(MonitoredData).where(
-        MonitoredData.agent_controller_id == user.id
-    )
+    # Base query
+    base_filter = (MonitoredData.agent_controller_id == user.id)
     
+    # Add contains filter if provided
     if contains:
-        query = query.where(
-            or_(
-                MonitoredData.name.ilike(f"%{contains}%"),
-                MonitoredData.content.ilike(f"%{contains}%")
-            )
+        contains_filter = or_(
+            MonitoredData.name.ilike(f"%{contains}%"),
+            cast(MonitoredData.content, String).ilike(f"%{contains}%")  # Cast JSON to string before ILIKE
         )
+        base_filter = and_(base_filter, contains_filter)
     
-    query = query.offset(offset).limit(limit)
+    # Get total count
+    count_stmt = select(func.count()).select_from(MonitoredData).where(base_filter)
+    total_count = await db.execute(count_stmt)
+    total_count = total_count.scalar()
     
-    result = await db.execute(query)
+    # Get paginated results
+    stmt = select(MonitoredData).where(base_filter).offset(offset).limit(limit)
+    result = await db.execute(stmt)
     documents = result.scalars().all()
     
     return UserDocumentListResponse(
@@ -144,5 +149,5 @@ async def get_user_documents(
             )
             for doc in documents
         ],
-        total_count=len(documents)
+        total_count=total_count
     )

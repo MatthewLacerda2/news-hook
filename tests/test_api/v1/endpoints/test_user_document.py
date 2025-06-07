@@ -1,5 +1,6 @@
 import pytest
 import uuid
+from app.schemas.user_document import UserDocumentListResponse
 
 @pytest.mark.asyncio
 async def test_post_user_document_success(client, valid_user_with_credits):
@@ -110,10 +111,10 @@ async def test_get_user_documents_success(client, valid_user_with_credits):
     headers = {"X-API-Key": user["api_key"], "X-User-Id": user["id"]}
     doc_data = [
         {
-            "name": f"My Document {i}",
+            "name": f"My Document {i} exampletext",
             "content": f"This is a sufficiently long document content {i}."
         }
-        for i in range(3)
+        for i in range(2)
     ]
     for doc in doc_data:
         await client.post(
@@ -123,15 +124,15 @@ async def test_get_user_documents_success(client, valid_user_with_credits):
         )
     
     response = await client.get(
-        "/api/v1/user_documents/?offset=1&limit=1",
+        "/api/v1/user_documents/?offset=1&limit=2&contains=exampletext",
         headers=headers
     )
+    
     assert response.status_code == 200
-    data = response.json()
-    assert len(data["documents"]) == 1
-    assert data["documents"][0]["name"] == doc_data[1]["name"]
-    assert data["documents"][0]["content"] == doc_data[1]["content"]
-    assert data["total_count"] == 1
+    data = UserDocumentListResponse.model_validate(response.json())    
+    assert "exampletext" in data.documents[0].name
+    assert len(data.documents) == 1
+    assert data.total_count == 1
 
 @pytest.mark.asyncio
 async def test_get_user_documents_invalid_api_key(client, valid_user_with_credits):

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from app.schemas.user_document import UserDocumentCreateRequest, UserDocumentCreateSuccessResponse, UserDocumentItem, UserDocumentListResponse
 from app.tasks.save_embedding import generate_and_save_document_embeddings
 from app.tasks.vector_search import perform_embed_and_vector_search
@@ -111,8 +111,7 @@ async def get_user_document(
     description="List all documents for the authenticated user. Can filter by substrings in the name or content."
 )
 async def get_user_documents(
-    name_contains: Optional[str] = None,
-    content_contains: Optional[str] = None,
+    contains: Optional[str] = None,
     offset: int = 0,
     limit: int = 50,
     db: AsyncSession = Depends(get_db),
@@ -122,11 +121,13 @@ async def get_user_documents(
         MonitoredData.agent_controller_id == user.id
     )
     
-    if name_contains:
-        query = query.where(MonitoredData.name.ilike(f"%{name_contains}%"))
-        
-    if content_contains:
-        query = query.where(MonitoredData.content.ilike(f"%{content_contains}%"))
+    if contains:
+        query = query.where(
+            or_(
+                MonitoredData.name.ilike(f"%{contains}%"),
+                MonitoredData.content.ilike(f"%{contains}%")
+            )
+        )
     
     query = query.offset(offset).limit(limit)
     

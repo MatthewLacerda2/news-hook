@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from app.schemas.user_document import UserDocumentCreateRequest, UserDocumentCreateSuccessResponse, UserDocumentItem
+from app.schemas.user_document import UserDocumentCreateRequest, UserDocumentCreateSuccessResponse, UserDocumentItem, UserDocumentListResponse
 from app.tasks.save_embedding import generate_and_save_document_embeddings
 from app.tasks.vector_search import perform_embed_and_vector_search
 from app.utils.sourced_data import SourcedData
@@ -14,6 +14,7 @@ from app.utils.env import NUM_EMBEDDING_DIMENSIONS
 import numpy as np
 import asyncio
 import uuid
+from typing import Optional
 
 router = APIRouter()
 
@@ -102,4 +103,45 @@ async def get_user_document(
         name=document.name,
         content=document.content,
         uploaded_at=document.monitored_datetime
+    )
+   
+@router.get(
+    "/",
+    response_model=UserDocumentListResponse,
+    description="List all documents for the authenticated user. Can filter by substrings in the name or content."
+)
+async def get_user_documents(
+    name_contains: Optional[str] = None,
+    content_contains: Optional[str] = None,
+    offset: int = 0,
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db),
+    user: AgentController = Depends(get_user_by_api_key),
+):
+    query = select(MonitoredData).where(
+        MonitoredData.agent_controller_id == user.id
+    )
+    
+    if name_contains:
+        query = query.where(MonitoredData.name.ilike(f"%{name_contains}%"))
+        
+    if content_contains:
+        query = query.where(MonitoredData.content.ilike(f"%{content_contains}%"))
+    
+    query = query.offset(offset).limit(limit)
+    
+    result = await db.execute(query)
+    documents = result.scalars().all()
+    
+    return UserDocumentListResponse(
+        documents=[
+            UserDocumentItem(
+                id=doc.id,
+                name=doc.name,
+                content=doc.content,
+                uploaded_at=doc.monitored_datetime
+            )
+            for doc in documents
+        ],
+        total_count=len(documents)
     )

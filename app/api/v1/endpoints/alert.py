@@ -97,13 +97,10 @@ async def create_alert(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail={
-                    "message": "Invalid alert request",
-                    "validation": {
-                        "approval": llm_validation_response.approval,
-                        "chance_score": llm_validation_response.chance_score,
-                        "reason": llm_validation_response.reason,
-                        "keywords": llm_validation_response.keywords
-                    }
+                    "approval": llm_validation_response.approval,
+                    "chance_score": llm_validation_response.chance_score,
+                    "reason": llm_validation_response.reason,
+                    "keywords": llm_validation_response.keywords
                 }
             )
         
@@ -185,6 +182,9 @@ async def list_alerts(
     if created_after:
         stmt = stmt.filter(AlertPrompt.created_at >= created_after)
         count_stmt = count_stmt.filter(AlertPrompt.created_at >= created_after)
+
+    # Add ordering by created_at
+    stmt = stmt.order_by(AlertPrompt.created_at.desc())
 
     alerts = await db.execute(stmt.offset(offset).limit(limit))
     

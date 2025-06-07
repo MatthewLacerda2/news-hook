@@ -17,3 +17,9 @@ class UserDocumentItem(BaseModel):
     uploaded_at: datetime = Field(..., description="The date and time the document was uploaded by the user")
 
     model_config = ConfigDict(from_attributes=True)
+    
+class UserDocumentListResponse(BaseModel):
+    documents: list[UserDocumentItem]
+    total_count: int
+    
+    model_config = ConfigDict(from_attributes=True)

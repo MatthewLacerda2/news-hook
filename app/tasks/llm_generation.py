@@ -58,18 +58,20 @@ async def send_alert_event(alert_event: NewsEvent, db: AsyncSession):
         retry = Retry(
             total=5,
             backoff_factor=1,
-            status_forcelist=[status for status in range(400, 600)],
-            raise_on_connect_errors=False
+            status_forcelist=[status for status in range(400, 600)]
         )
         
         transport = HTTPTransport(retries=retry)
         
         with httpx.Client(transport=transport, timeout=10) as client:
             if alert_prompt.http_method == HttpMethod.POST:
+                logger.info(f"Sending {alert_prompt.http_method} to {alert_prompt.http_url} with data: {alert_event.structured_data}")
                 response = client.post(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers or {})
             elif alert_prompt.http_method == HttpMethod.PUT:
+                logger.info(f"Sending {alert_prompt.http_method} to {alert_prompt.http_url} with data: {alert_event.structured_data}")
                 response = client.put(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers or {})
             elif alert_prompt.http_method == HttpMethod.PATCH:
+                logger.info(f"Sending {alert_prompt.http_method} to {alert_prompt.http_url} with data: {alert_event.structured_data}")
                 response = client.patch(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers or {})
             else:
                 raise ValueError(f"Unsupported HTTP method: {alert_prompt.http_method}")

@@ -1,38 +1,37 @@
 from datetime import datetime
 
 validation_prompt = """
-You are a helpful assistant that validates if an alert's request is reasonable.
+You are a helpful assistant that validates whether an alert request is reasonable.
+An alert request is when someone asks to be notified if and when a specific event happens.
 
-Alert request is when someone asks us to alert when and if an event does happen.
 
-
-The alert's request was:
+The alert request is:
 <alert_request>
 {alert_prompt}
 </alert_request>
 
 
-The alert has to be:
+A valid alert request must meet the following criteria:
 - Clear
 - Specific
 - Unambiguous
-- Have a plausible chance of happening
-- Self-contained (not requiring multiple documents)
+- Has a plausible chance of occurring
+- Self-contained (does not require multiple documents to verify)
 - NOT vague
-- NOT a matter of personal opinion or preference
-- NOT require long reasoning
+- NOT based on personal opinion or preference
+- NOT require long or complex reasoning
 
+Your job is to validate whether the alert request is reasonable.
 
-Your job is to validate if the alert's request is reasonable.
-You will respond in a structure format, with the following fields:
-- approval: bool = Is the alert's request valid?
-- chance_score: float = Estimation of the quality of the request. Ranging from 0.0 to 1.0. Must be at least 0.85 to approve
-- reason: str = Reason for the approval or denial. Be succinct
-- keywords: list[str] = keywords required to be in the document that triggers the alert, like name of a person, company, country, etc.
-
+Respond using the following structured format:
+- approval: bool — Is the alert request valid?
+- chance_score: float — Estimated quality of the request, from 0.0 to 1.0. Must be ≥ 0.85 to approve.
+- reason: str — Succinct justification of the approval or denial.
+- keywords: list[str] — Primitive, single-word keywords that must be present in the triggering document.
 
 Current date and time: {current_date_time}
 """
+
 
 def get_validation_prompt(alert_prompt: str):
     current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -42,10 +41,11 @@ def get_validation_prompt(alert_prompt: str):
     )
 
 verification_prompt = """
-You are a helpful assistant that verifies if a document matches an alert's request.
-Alert request is when someone asks us to alert when and if an event does happen.
+You are a helpful assistant that verifies whether a document matches an alert request.
+An alert request is when someone asks to be notified if and when a specific event happens.
 
-The alert's request is:
+
+The alert request is:
 <alert_request>
 {alert_prompt}
 </alert_request>
@@ -56,13 +56,12 @@ The document is:
 </document>
 
 
-Your job is to verify if the document matches the alert's request.
-You will respond in a structure format, with the following fields:
-- approval: bool = Does the document match the alert's intent?
-- chance_score: float = Estimation of the quality of the request. Ranging from 0.0 to 1.0. Must be at least 0.85 to approve
-- reason: str = Reason for the approval or denial. Be succinct
-- keywords: list[str] = keywords required to be in the document that triggers the alert, like name of a person, company
-
+Your job is to verify whether the document matches the alert request.
+Respond using the following structured format:
+- approval: bool — Does the document match the alert request?
+- chance_score: float — Estimation of the quality of the match, from 0.0 to 1.0. Must be ≥ 0.85 to approve.
+- reason: str — Succinct justification of the approval or denial.
+- keywords: list[str] — Primitive, single-word keywords that must be present in the triggering document.
 
 Current date and time: {current_date_time}
 """
@@ -79,9 +78,7 @@ generation_prompt = """
 You are a helpful assistant that generate an information alert in a structured format.
 
 The user had set an alert request to be informed when and if an event happens.
-We received a document that matches the alert's request and the event did happen.
-You will be given the alert request and the document that matches the alert's request.
-Generate an information alert in a structured format.
+You will be given the alert request and the document that matches the alert request.
 
 
 The alert request was:
@@ -100,12 +97,10 @@ Your response must follow the user's requested payload format exactly:
 </payload_format>
 
 
-You answer must be self-contained, using the document as the source of truth and respond fully to the alert request.
-Your answer must written with an unbiased and journalistic tone.
-You must be succinct. Skip the preamble and just provide the answer without telling the user what you are doing.
-
+Your alert must be self-contained, using the document as the source of truth and respond fully to the alert request.
+Your alert must be written with an unbiased and journalistic tone.
+You must be succinct. Skip the preamble and just provide the alert without telling the user what you are doing.
 Write in the language/dialect of the user's request.
-If the alert request is in English, your response must be in English. If the alert request is in Spanish, your response must be in Spanish. And so on.
 
 Current date and time: {current_date_time}
 """

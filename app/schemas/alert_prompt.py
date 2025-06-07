@@ -1,17 +1,16 @@
 from datetime import datetime, timedelta
-from enum import Enum
 from typing import Optional, Dict, List
 from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict
 from app.models.alert_prompt import AlertStatus, HttpMethod
 
 class AlertPromptCreateRequestBase(BaseModel):
     prompt: str = Field(..., description="The description of what to monitor. Try to be specific, clear and succinct.")
-    http_method: HttpMethod = Field(..., description="HTTP method to alert at")
     http_url: HttpUrl = Field(..., description="The URL to alert at")
     http_headers: Optional[Dict] = Field(None, description="HTTP headers to send with the request")
-    is_recurring: bool = Field(..., description="Whether the alert is recurring")
+    is_recurring: bool = Field(..., description="Should we send the alert every time the condition is met?")
     
     # Optional fields
+    http_method: Optional[HttpMethod] = Field(default=HttpMethod.POST, description="HTTP method to alert at")
     llm_model: Optional[str] = Field(default="gemini-2.0-flash", description="The LLM model to use for the alert")
     payload_format: Optional[Dict] = Field(None, description="A JSON schema describing the expected payload (e.g., from .model_json_schema())")
     max_datetime: Optional[datetime] = Field(None, description="Monitoring window. Must be within the next 300 days")

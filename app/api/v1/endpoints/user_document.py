@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from app.schemas.user_document import UserDocumentCreateRequest, UserDocumentCreateSuccessResponse, UserDocumentItem
+from sqlalchemy import select, or_, and_, func, cast
+from app.schemas.user_document import UserDocumentCreateRequest, UserDocumentCreateSuccessResponse, UserDocumentItem, UserDocumentListResponse
 from app.tasks.save_embedding import generate_and_save_document_embeddings
 from app.tasks.vector_search import perform_embed_and_vector_search
 from app.utils.sourced_data import SourcedData
@@ -14,6 +14,8 @@ from app.utils.env import NUM_EMBEDDING_DIMENSIONS
 import numpy as np
 import asyncio
 import uuid
+from typing import Optional
+from sqlalchemy.types import String
 
 router = APIRouter()
 
@@ -102,4 +104,50 @@ async def get_user_document(
         name=document.name,
         content=document.content,
         uploaded_at=document.monitored_datetime
+    )
+   
+@router.get(
+    "/",
+    response_model=UserDocumentListResponse,
+    description="List all documents for the authenticated user. Can filter by substrings in the name or content."
+)
+async def get_user_documents(
+    contains: Optional[str] = None,
+    offset: int = 0,
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db),
+    user: AgentController = Depends(get_user_by_api_key),
+):
+    # Base query
+    base_filter = (MonitoredData.agent_controller_id == user.id)
+    
+    # Add contains filter if provided
+    if contains:
+        contains_filter = or_(
+            MonitoredData.name.ilike(f"%{contains}%"),
+            cast(MonitoredData.content, String).ilike(f"%{contains}%")  # Cast JSON to string before ILIKE
+        )
+        base_filter = and_(base_filter, contains_filter)
+    
+    # Get total count
+    count_stmt = select(func.count()).select_from(MonitoredData).where(base_filter)
+    total_count = await db.execute(count_stmt)
+    total_count = total_count.scalar()
+    
+    # Get paginated results
+    stmt = select(MonitoredData).where(base_filter).offset(offset).limit(limit)
+    result = await db.execute(stmt)
+    documents = result.scalars().all()
+    
+    return UserDocumentListResponse(
+        documents=[
+            UserDocumentItem(
+                id=doc.id,
+                name=doc.name,
+                content=doc.content,
+                uploaded_at=doc.monitored_datetime
+            )
+            for doc in documents
+        ],
+        total_count=total_count
     )

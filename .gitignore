@@ -183,7 +183,7 @@ env.txt
 application_default_credentials.json
 
 # Terraform files
-*.tfvars
+terraform.tfvars
 !terraform.tfvars.example
 .terraform/
 .terraform.lock.hcl

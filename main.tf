@@ -26,14 +26,9 @@ resource "google_cloud_run_service" "news_hook" {
           container_port = 8080
         }
 
-        env { 
-            name = "PORT"
-            value = "8080"
-        }
-
         env {
           name  = "DATABASE_URL"
-          value = "postgresql+asyncpg://${google_sql_user.news_hook.name}:${var.database_password}@${google_sql_database_instance.news_hook.private_ip_address}:5432/${google_sql_database.news_hook.name}"
+          value = "postgresql+asyncpg://news-hook-id:${var.database_password}@${data.google_sql_database_instance.existing.public_ip_address}:5432/news_hook"
         }
         
         env {
@@ -92,35 +87,15 @@ resource "google_cloud_run_service" "news_hook" {
   }
 }
 
-# Cloud SQL instance
-resource "google_sql_database_instance" "news_hook" {
-  name             = "news-hook-db"
-  database_version = "POSTGRES_15"
-  region           = var.region
-  deletion_protection = false
-
-  settings {
-    tier = var.db_tier
-
-    backup_configuration {
-      enabled = true
-      start_time = "04:00"
-    }
-
-    ip_configuration {
-      ipv4_enabled = true
-      authorized_networks {
-        name = "all"
-        value = "0.0.0.0/0"
-      }
-    }
-  }
+# Reference to existing Cloud SQL instance
+data "google_sql_database_instance" "existing" {
+  name = "news-hook-id"
 }
 
-# Cloud SQL database
-resource "google_sql_database" "news_hook" {
+# Reference existing database
+data "google_sql_database" "existing" {
   name     = "news_hook"
-  instance = google_sql_database_instance.news_hook.name
+  instance = data.google_sql_database_instance.existing.name
 }
 
 # Cloud Build trigger
@@ -153,9 +128,3 @@ resource "google_cloud_run_service_iam_member" "public_access" {
   member   = "allUsers"
 }
 
-# Add database user
-resource "google_sql_user" "news_hook" {
-  name     = "news-hook-id"
-  instance = google_sql_database_instance.news_hook.name
-  password = var.database_password
-}

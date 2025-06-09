@@ -1,8 +1,0 @@
-project_id           = "driven-actor-461001-j0"
-region              = "southamerica-east1"
-db_tier             = "db-f1-micro"
-github_owner        = "MatthewLacerda2"
-database_password    = "l3ndacerda"
-google_client_id    = "764086051850-6qr4p6gpi6hn506pt8ejuq83di341hur.apps.googleusercontent.com"
-google_client_secret = "d-FL95Q19q7MQmFpd7hHD0Ty"
-jwt_secret          = "immaGonnaDoThisLikeInDotNeTcOREandMAKETHISatleast64CharactersLong" 

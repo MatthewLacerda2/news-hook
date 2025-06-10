@@ -3,7 +3,7 @@ import json
 
 os.environ["GOOGLE_CLIENT_ID"] = "dummy_client_id"
 os.environ["GOOGLE_CLIENT_SECRET"] = "dummy_client_secret"
-os.environ["GOOGLE_REDIRECT_URI"] = "http://localhost:8000/auth/callback"
+os.environ["GOOGLE_REDIRECT_URI"] = "http://localhost:8080/auth/callback"
 os.environ["SECRET_KEY"] = "your-secret-key-here"
 
 import pytest
@@ -153,7 +153,7 @@ async def valid_user_with_credits(test_db, client, mock_google_verify):
     user_data = signup_response.json()["agent_controller"]
 
     user = await test_db.get(AgentController, user_data["id"])
-    user.credit_balance = 5000
+    user.credit_balance = 10
     await test_db.commit()
     await test_db.refresh(user)
 

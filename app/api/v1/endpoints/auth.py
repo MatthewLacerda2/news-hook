@@ -41,7 +41,7 @@ async def signup(
             name=user_info.get("name"),
             google_id=user_info["sub"],
             api_key=str(uuid.uuid4()),
-            credit_balance=5000
+            credit_balance=10
         )
         
         db.add(user)

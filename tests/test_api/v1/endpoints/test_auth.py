@@ -19,7 +19,7 @@ async def test_signup_successful(client, mock_google_verify, test_db):
     assert token_response.agent_controller.email == "test1@example.com"
     assert token_response.agent_controller.name == "Test User 1"
     assert token_response.agent_controller.google_id == "12345"
-    assert token_response.agent_controller.credit_balance == 5000
+    assert token_response.agent_controller.credit_balance == 10
     assert token_response.agent_controller.api_key is not None
 
 @pytest.mark.asyncio
@@ -82,7 +82,7 @@ async def test_login_successful(client, mock_google_verify, test_db):
     assert token_response.agent_controller.email == "test1@example.com"
     assert token_response.agent_controller.name == "Test User 1"
     assert token_response.agent_controller.google_id == "12345"
-    assert token_response.agent_controller.credit_balance == 5000
+    assert token_response.agent_controller.credit_balance == 10
     assert token_response.agent_controller.api_key is not None
 
 @pytest.mark.asyncio

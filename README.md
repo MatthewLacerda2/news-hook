@@ -38,7 +38,7 @@ uvicorn app.main:app --reload
 After that, to generate the client-sdk for the front-end:
 - Go to http://127.0.0.1:8000/openapi.json
 - Save it to desktop
-- Run ```openapi-generator-cli generate -i ../../../openapi.json -g typescript-fetch -o client-sdk``` from the '/src' folder
+- Run ```openapi-generator-cli generate -i ../../../openapi.json -g typescript-axios -o client-sdk``` from the '/src' folder
 
 For build-and-test-ing, you can run `build-and-test.bat` on Windows
 For simple testing, you can run `pytest`

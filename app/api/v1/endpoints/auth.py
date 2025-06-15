@@ -75,7 +75,7 @@ async def signup(
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid Google token"
+            detail="Invalid Google token at signup"
         )
 
 @router.post("/login", response_model=TokenResponse)
@@ -118,11 +118,6 @@ async def login(
         
     except HTTPException:
         raise
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid Google token"
-        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

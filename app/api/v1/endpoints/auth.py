@@ -121,7 +121,7 @@ async def login(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            detail=f"Internal server error at login: {str(e)}"
         )
 
 @router.get("/credits")

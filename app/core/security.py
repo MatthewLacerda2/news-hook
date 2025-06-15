@@ -73,7 +73,7 @@ def verify_google_token(token: str) -> dict:
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid Google token at verify_google_token exception"
+            detail=f"Invalid Google token at verify_google_token exception: {str(e)}"
         )
 
 def verify_token(token: str) -> dict:

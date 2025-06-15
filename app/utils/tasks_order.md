@@ -4,9 +4,7 @@
 - An LLM validates the alert request
 
 ## Monitoring
-- Webscrape the active webscrape sources at each's given interval
-  - docling_scraping
-  - youtube_scraping
+- Document manually upload
 OR
 - Receive documents sent by the user
 

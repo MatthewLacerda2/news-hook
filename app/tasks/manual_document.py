@@ -1,5 +1,5 @@
 from app.core.database import AsyncSessionLocal
-from app.tasks.docling_scraping import process_manual_document
+from app.tasks.process_manual_document import process_manual_document
 
 async def handle_manual_document(request):
     """

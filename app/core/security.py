@@ -3,7 +3,7 @@ from typing import Optional
 from jose import jwt, JWTError
 from google.oauth2 import id_token
 from google.auth.transport import requests
-from fastapi import HTTPException, status, Depends, Security
+from fastapi import HTTPException, status, Depends, Security, Header
 from fastapi.security import HTTPBearer, APIKeyHeader, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
@@ -11,8 +11,12 @@ from app.core.database import get_db
 from app.models.agent_controller import AgentController
 from sqlalchemy import select
 import logging
+from google.cloud import iam_credentials_v1
 
 logger = logging.getLogger(__name__)
+
+security = HTTPBearer()
+api_key_header = APIKeyHeader(name="X-API-Key")
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """
@@ -105,7 +109,67 @@ def verify_token(token: str) -> dict:
             detail="Invalid token"
         )
 
-security = HTTPBearer()
+async def verify_gcloud_admin_token(
+    authorization: str = Header(None)
+) -> dict:
+    """
+    Verify a Google Cloud IAM token and check for admin-level permissions.
+    """
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated Google Cloud token"
+        )
+        
+    try:
+        # Remove 'Bearer ' prefix if present
+        token = authorization.replace('Bearer ', '')
+        
+        # Verify the token
+        idinfo = id_token.verify_oauth2_token(
+            token,
+            requests.Request(),
+            settings.GOOGLE_CLIENT_ID
+        )
+        
+        # Get the service account email from the token
+        service_account_email = idinfo.get('email')
+        if not service_account_email:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token does not contain service account email"
+            )
+
+        # Create IAM client
+        iam_client = iam_credentials_v1.IAMCredentialsClient()
+        
+        # Check if the service account has admin permissions
+        # This will check against the actual IAM roles in your GCP project
+        try:
+            # Test for a specific admin permission
+            # You can adjust this based on what level of admin access you need
+            iam_client.test_iam_permissions(
+                resource=f"projects/{settings.GOOGLE_PROJECT_ID}",
+                permissions=["iam.serviceAccounts.setIamPolicy"]
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions - requires admin access"
+            )
+            
+        return idinfo
+        
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid Google Cloud token: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Could not validate Google Cloud token: {str(e)}"
+        )
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -149,8 +213,6 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials"
         )
-
-api_key_header = APIKeyHeader(name="X-API-Key")
 
 async def get_user_by_api_key(
     api_key: str = Security(api_key_header),

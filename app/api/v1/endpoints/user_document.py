@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, and_, func, cast
 from app.schemas.user_document import UserDocumentCreateRequest, UserDocumentCreateSuccessResponse, UserDocumentItem, UserDocumentListResponse
@@ -6,7 +6,7 @@ from app.tasks.save_embedding import generate_and_save_document_embeddings
 from app.tasks.vector_search import perform_embed_and_vector_search
 from app.utils.sourced_data import SourcedData
 from app.models.agent_controller import AgentController
-from app.core.security import get_user_by_api_key
+from app.core.security import get_user_by_api_key, verify_gcloud_admin_token
 from app.core.database import get_db
 from datetime import datetime
 from app.models.monitored_data import MonitoredData, DataSource
@@ -16,22 +16,25 @@ import asyncio
 import uuid
 from typing import Optional
 from sqlalchemy.types import String
+from google.oauth2 import id_token
+from google.auth.transport import requests
+from app.core.config import settings
 
 router = APIRouter()
 
-async def process_user_document(user_document: MonitoredData):
+async def process_user_document(document: MonitoredData):
     await generate_and_save_document_embeddings(
-        user_document.id,
-        user_document.content
+        document.id,
+        document.content
     )
     
     sourced_data = SourcedData(
-        source=DataSource.USER_DOCUMENT,
-        content=user_document.content,
+        source=document.source,
+        content=document.content,
         content_embedding=np.zeros(NUM_EMBEDDING_DIMENSIONS),
-        name=user_document.name,
-        agent_controller_id=user_document.agent_controller_id,
-        document_id=user_document.id
+        name=document.name,
+        agent_controller_id=document.agent_controller_id,
+        document_id=document.id
     )
     
     await perform_embed_and_vector_search(
@@ -68,6 +71,41 @@ async def post_user_document(
         process_user_document(new_doc)
     )
 
+    return UserDocumentCreateSuccessResponse(
+        id=new_doc.id,
+        name=new_doc.name,
+        created_at=new_doc.monitored_datetime
+    )
+    
+@router.post(
+    "/manual",
+    response_model=UserDocumentCreateSuccessResponse,
+    status_code=status.HTTP_201_CREATED,
+    description="Admin documents"
+)
+async def post_admin_document(
+    user_document: UserDocumentCreateRequest,
+    db: AsyncSession = Depends(get_db),
+    gcloud_token: dict = Depends(verify_gcloud_admin_token),
+):
+    new_doc = MonitoredData(
+        id=str(uuid.uuid4()),
+        agent_controller_id=gcloud_token['sub'],  # Use the Google Cloud user ID
+        source=DataSource.MANUAL_DOCUMENT,
+        name=user_document.name,
+        content=user_document.content,
+        content_embedding=None,
+        monitored_datetime=datetime.now()
+    )
+    
+    db.add(new_doc)
+    await db.commit()
+    await db.refresh(new_doc)
+    
+    asyncio.create_task(
+        process_user_document(new_doc)
+    )
+    
     return UserDocumentCreateSuccessResponse(
         id=new_doc.id,
         name=new_doc.name,

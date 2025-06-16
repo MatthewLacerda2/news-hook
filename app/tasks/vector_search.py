@@ -6,6 +6,7 @@ import logging
 
 from app.core.database import AsyncSessionLocal
 from app.models.alert_prompt import AlertPrompt, AlertStatus
+from app.models.monitored_data import DataSource
 from app.tasks.llm_verification import verify_document_matches_alert
 from app.utils.sourced_data import SourcedData
 from app.tasks.llm_apis.gemini import get_gemini_embeddings
@@ -32,8 +33,10 @@ async def perform_embed_and_vector_search(sourced_document: SourcedData):
         document_embedding = sourced_document.content_embedding
         if document_embedding is None or np.all(document_embedding == 0):
             document_embedding = get_gemini_embeddings(sourced_document.content, "RETRIEVAL_DOCUMENT")
+            
+        agent_controller_id = sourced_document.agent_controller_id if sourced_document.source == DataSource.USER_DOCUMENT else None
         
-        active_alerts = await find_matching_alerts(db, document_embedding, sourced_document.agent_controller_id)
+        active_alerts = await find_matching_alerts(db, document_embedding, agent_controller_id)
         active_alerts = filter_by_keywords(active_alerts, sourced_document.content)
         
         for alert in active_alerts:

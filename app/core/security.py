@@ -113,7 +113,7 @@ async def verify_gcloud_admin_token(
     authorization: str = Header(None)
 ) -> dict:
     """
-    Verify a Google Cloud IAM token and check for admin-level permissions.
+    Verify a Google Cloud IAM token for project membership.
     """
     if not authorization:
         raise HTTPException(
@@ -132,30 +132,18 @@ async def verify_gcloud_admin_token(
             settings.GOOGLE_CLIENT_ID
         )
         
-        # Get the service account email from the token
-        service_account_email = idinfo.get('email')
-        if not service_account_email:
+        # Check if the token was issued for our project
+        if idinfo.get('aud') != settings.GOOGLE_CLIENT_ID:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token does not contain service account email"
+                detail="Token was not issued for this project"
             )
-
-        # Create IAM client
-        iam_client = iam_credentials_v1.IAMCredentialsClient()
-        
-        # Check if the service account has admin permissions
-        # This will check against the actual IAM roles in your GCP project
-        try:
-            # Test for a specific admin permission
-            # You can adjust this based on what level of admin access you need
-            iam_client.test_iam_permissions(
-                resource=f"projects/{settings.GOOGLE_PROJECT_ID}",
-                permissions=["iam.serviceAccounts.setIamPolicy"]
-            )
-        except Exception as e:
+            
+        # Ensure we have the required fields
+        if 'sub' not in idinfo:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Insufficient permissions - requires admin access"
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token does not contain required 'sub' field"
             )
             
         return idinfo

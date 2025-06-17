@@ -19,14 +19,19 @@ from sqlalchemy.types import String
 from google.oauth2 import id_token
 from google.auth.transport import requests
 from app.core.config import settings
+import logging
 
 router = APIRouter()
 
+logger = logging.getLogger(__name__)
+
 async def process_user_document(document: MonitoredData):
+    logger.info(f"Generating embedding for document: {document.id}")
     await generate_and_save_document_embeddings(
         document.id,
         document.content
     )
+    logger.info(f"Document embeddings generated and saved for: {document.id}")
     
     sourced_data = SourcedData(
         source=document.source,
@@ -36,6 +41,9 @@ async def process_user_document(document: MonitoredData):
         agent_controller_id=document.agent_controller_id,
         document_id=document.id
     )
+    logger.info(f"Sourced data created for: {document.id}")
+
+    logger.info("pERFORMING VECTOR SEARCH")
     
     await perform_embed_and_vector_search(
         sourced_data
@@ -88,9 +96,24 @@ async def post_admin_document(
     db: AsyncSession = Depends(get_db),
     gcloud_token: dict = Depends(verify_gcloud_admin_token),
 ):
+    # Get the email from the verified token
+    user_email = gcloud_token['email']
+    
+    # Look up the agent controller by email
+    agent_controller = await db.execute(
+        select(AgentController).where(AgentController.email == user_email)
+    )
+    agent_controller = agent_controller.scalar_one_or_none()
+    
+    if not agent_controller:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="IAM User not found in agent controllers. Create your account in the project, man."
+        )
+    
     new_doc = MonitoredData(
         id=str(uuid.uuid4()),
-        agent_controller_id=gcloud_token['sub'],  # Use the Google Cloud user ID
+        agent_controller_id=agent_controller.id,  # Use the actual agent controller ID
         source=DataSource.MANUAL_DOCUMENT,
         name=user_document.name,
         content=user_document.content,
@@ -101,6 +124,9 @@ async def post_admin_document(
     db.add(new_doc)
     await db.commit()
     await db.refresh(new_doc)
+    
+    logger.info(f"New document created: {new_doc.id}")
+    logger.info("Caling for process user doc now...")
     
     asyncio.create_task(
         process_user_document(new_doc)

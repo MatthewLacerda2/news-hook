@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException, Header
+from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, and_, func, cast
 from app.schemas.user_document import UserDocumentCreateRequest, UserDocumentCreateSuccessResponse, UserDocumentItem, UserDocumentListResponse
@@ -6,7 +6,7 @@ from app.tasks.save_embedding import generate_and_save_document_embeddings
 from app.tasks.vector_search import perform_embed_and_vector_search
 from app.utils.sourced_data import SourcedData
 from app.models.agent_controller import AgentController
-from app.core.security import get_user_by_api_key, verify_gcloud_admin_token
+from app.core.security import get_user_by_api_key
 from app.core.database import get_db
 from datetime import datetime
 from app.models.monitored_data import MonitoredData, DataSource

@@ -6,7 +6,7 @@ from app.tasks.save_embedding import generate_and_save_document_embeddings
 from app.tasks.vector_search import perform_embed_and_vector_search
 from app.utils.sourced_data import SourcedData
 from app.models.agent_controller import AgentController
-from app.core.security import get_user_by_api_key, verify_gcloud_admin_token
+from app.core.security import get_user_by_api_key
 from app.core.database import get_db
 from datetime import datetime
 from app.models.monitored_data import MonitoredData, DataSource
@@ -92,19 +92,13 @@ async def post_user_document(
 async def post_admin_document(
     user_document: UserDocumentCreateRequest,
     db: AsyncSession = Depends(get_db),
-    gcloud_token: dict = Depends(verify_gcloud_admin_token),
+    agent_controller: AgentController = Depends(get_user_by_api_key),
 ):
-    user_email = gcloud_token['email']
     
-    agent_controller = await db.execute(
-        select(AgentController).where(AgentController.email == user_email)
-    )
-    agent_controller = agent_controller.scalar_one_or_none()
-    
-    if not agent_controller:
+    if agent_controller.email != "matheus.l1996@gmail.com": #TODO: change to check by IAM token
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="IAM User not found in agent controllers. Create your account in the project, man."
+            detail="Only authorized users can create documents"
         )
     
     new_doc = MonitoredData(

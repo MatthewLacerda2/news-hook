@@ -5,29 +5,34 @@
 
 import json
 import requests
+import sys
+import os
 
-def manual_scraping():
-    # Get the token from user
-    print("Enter the token here ('gcloud auth print-identity-token'):")
-    token = input("Token:")
+def manual_scraping(filepath: str):
+    # Validate file extension
+    if not filepath.lower().endswith('.txt'):
+        print("Error: Only .txt files are supported")
+        sys.exit(1)
     
-    # Prompt for document details
-    print("\nEnter document details:")
-    name = input("Document name: ")
-    print("Enter document content (press Enter twice to finish):")
-    content_lines = []
-    while True:
-        line = input()
-        if line == "" and content_lines and content_lines[-1] == "":
-            break
-        content_lines.append(line)
-    content = "\n".join(content_lines[:-1])  # Remove the last empty line
+    # Get the API key from user
+    print("Enter your API key:")
+    api_key = input("API Key: ").strip()
+    
+    # Get filename without extension for the name parameter
+    name : str = os.path.splitext(os.path.basename(filepath))[0]
+    
+    # Read file content
+    try:
+        with open(filepath, 'r', encoding='utf-8') as file:
+            content : str = file.read()
+    except Exception as e:
+        print(f"Error reading file: {e}")
+        sys.exit(1)
     
     # Prepare the request
-    #url = "https://newshookmvp-205743657377.southamerica-east1.run.app/api/v1/user_documents/manual"
     url = "http://127.0.0.1:8000/api/v1/user_documents/manual"
     headers = {
-        "Authorization": f"Bearer {token}",
+        "X-API-Key": api_key,
         "Content-Type": "application/json"
     }
     data = {
@@ -39,7 +44,7 @@ def manual_scraping():
     print("\nRequest:")
     print(json.dumps({
         "url": url,
-        "headers": {k: v for k, v in headers.items() if k != "Authorization"},  # Hide token
+        "headers": {k: v for k, v in headers.items() if k != "X-API-Key"},  # Hide API key
         "data": data
     }, indent=2))
     
@@ -58,4 +63,9 @@ def manual_scraping():
             print(f"Response text: {e.response.text}")
 
 if __name__ == "__main__":
-    manual_scraping()
+    if len(sys.argv) != 2:
+        print("Usage: python manual_scraping.py <filepath>")
+        sys.exit(1)
+    
+    filepath = sys.argv[1]
+    manual_scraping(filepath)

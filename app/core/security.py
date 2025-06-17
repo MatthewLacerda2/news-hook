@@ -109,56 +109,6 @@ def verify_token(token: str) -> dict:
             detail="Invalid token"
         )
 
-async def verify_gcloud_admin_token(
-    authorization: str = Header(None)
-) -> dict:
-    """
-    Verify a Google Cloud IAM token for project membership.
-    """
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated Google Cloud token"
-        )
-        
-    try:
-        # Remove 'Bearer ' prefix if present
-        token = authorization.replace('Bearer ', '')
-        
-        # Verify the token
-        idinfo = id_token.verify_oauth2_token(
-            token,
-            requests.Request(),
-            settings.GOOGLE_CLIENT_ID
-        )
-        
-        # Check if the token was issued for our project
-        if idinfo.get('aud') != settings.GOOGLE_CLIENT_ID:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token was not issued for this project"
-            )
-            
-        # Ensure we have the required fields
-        if 'sub' not in idinfo:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token does not contain required 'sub' field"
-            )
-            
-        return idinfo
-        
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid Google Cloud token: {str(e)}"
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Could not validate Google Cloud token: {str(e)}"
-        )
-
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db)

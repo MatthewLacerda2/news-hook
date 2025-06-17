@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException, Header
+from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, and_, func, cast
 from app.schemas.user_document import UserDocumentCreateRequest, UserDocumentCreateSuccessResponse, UserDocumentItem, UserDocumentListResponse
@@ -6,7 +6,7 @@ from app.tasks.save_embedding import generate_and_save_document_embeddings
 from app.tasks.vector_search import perform_embed_and_vector_search
 from app.utils.sourced_data import SourcedData
 from app.models.agent_controller import AgentController
-from app.core.security import get_user_by_api_key, verify_gcloud_admin_token
+from app.core.security import get_user_by_api_key
 from app.core.database import get_db
 from datetime import datetime
 from app.models.monitored_data import MonitoredData, DataSource
@@ -16,19 +16,23 @@ import asyncio
 import uuid
 from typing import Optional
 from sqlalchemy.types import String
-from google.oauth2 import id_token
-from google.auth.transport import requests
-from app.core.config import settings
+
+import logging
 
 router = APIRouter()
 
+logger = logging.getLogger(__name__)
+
 async def process_user_document(document: MonitoredData):
+    logger.info(f"Generating embedding for document: {document.id}")
     await generate_and_save_document_embeddings(
         document.id,
         document.content
     )
+    logger.info(f"Document embeddings generated and saved for: {document.id}")
     
     sourced_data = SourcedData(
+        id=document.id,
         source=document.source,
         content=document.content,
         content_embedding=np.zeros(NUM_EMBEDDING_DIMENSIONS),
@@ -36,6 +40,9 @@ async def process_user_document(document: MonitoredData):
         agent_controller_id=document.agent_controller_id,
         document_id=document.id
     )
+    logger.info(f"Sourced data created for: {document.id}")
+
+    logger.info("pERFORMING VECTOR SEARCH")
     
     await perform_embed_and_vector_search(
         sourced_data
@@ -86,11 +93,18 @@ async def post_user_document(
 async def post_admin_document(
     user_document: UserDocumentCreateRequest,
     db: AsyncSession = Depends(get_db),
-    gcloud_token: dict = Depends(verify_gcloud_admin_token),
+    agent_controller: AgentController = Depends(get_user_by_api_key),
 ):
+    
+    if agent_controller.email != "matheus.l1996@gmail.com": #TODO: change to check by IAM token
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only authorized users can create documents"
+        )
+    
     new_doc = MonitoredData(
         id=str(uuid.uuid4()),
-        agent_controller_id=gcloud_token['sub'],  # Use the Google Cloud user ID
+        agent_controller_id=agent_controller.id,
         source=DataSource.MANUAL_DOCUMENT,
         name=user_document.name,
         content=user_document.content,
@@ -102,6 +116,8 @@ async def post_admin_document(
     await db.commit()
     await db.refresh(new_doc)
     
+    logger.info(f"New document created: {new_doc.id}")
+    logger.info("Caling for process user doc now...")
     asyncio.create_task(
         process_user_document(new_doc)
     )

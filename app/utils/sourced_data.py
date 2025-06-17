@@ -1,7 +1,6 @@
 from app.models.monitored_data import DataSource
 from datetime import datetime
 from pgvector.sqlalchemy import Vector
-import uuid
 from dataclasses import dataclass
 
 @dataclass
@@ -16,8 +15,8 @@ class SourcedData:
     content: str
     content_embedding: Vector
     
-    def __init__(self, source: DataSource, content: str, content_embedding: Vector, name: str, agent_controller_id: str = None, document_id: str = ""):
-        self.id = str(uuid.uuid4())
+    def __init__(self, id: str, source: DataSource, content: str, content_embedding: Vector, name: str, agent_controller_id: str = None, document_id: str = ""):
+        self.id = id
         self.retrieved_datetime = datetime.now()
         self.source = source
         self.content = content

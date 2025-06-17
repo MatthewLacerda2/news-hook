@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException, Header
+from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, and_, func, cast
 from app.schemas.user_document import UserDocumentCreateRequest, UserDocumentCreateSuccessResponse, UserDocumentItem, UserDocumentListResponse
@@ -16,9 +16,6 @@ import asyncio
 import uuid
 from typing import Optional
 from sqlalchemy.types import String
-from google.oauth2 import id_token
-from google.auth.transport import requests
-from app.core.config import settings
 import logging
 
 router = APIRouter()
@@ -34,6 +31,7 @@ async def process_user_document(document: MonitoredData):
     logger.info(f"Document embeddings generated and saved for: {document.id}")
     
     sourced_data = SourcedData(
+        id=document.id,
         source=document.source,
         content=document.content,
         content_embedding=np.zeros(NUM_EMBEDDING_DIMENSIONS),
@@ -96,10 +94,8 @@ async def post_admin_document(
     db: AsyncSession = Depends(get_db),
     gcloud_token: dict = Depends(verify_gcloud_admin_token),
 ):
-    # Get the email from the verified token
     user_email = gcloud_token['email']
     
-    # Look up the agent controller by email
     agent_controller = await db.execute(
         select(AgentController).where(AgentController.email == user_email)
     )
@@ -113,7 +109,7 @@ async def post_admin_document(
     
     new_doc = MonitoredData(
         id=str(uuid.uuid4()),
-        agent_controller_id=agent_controller.id,  # Use the actual agent controller ID
+        agent_controller_id=agent_controller.id,
         source=DataSource.MANUAL_DOCUMENT,
         name=user_document.name,
         content=user_document.content,

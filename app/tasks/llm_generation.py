@@ -28,10 +28,7 @@ async def generate_and_send_alert(alert_prompt: AlertPrompt, sourced_document: S
         alert_prompt.prompt,
         llm_model.model_name
     )
-    
-    # First save the document to satisfy foreign key constraints
-    await save_document(sourced_document, db)
-    
+        
     llm_generation_result = NewsEvent(
         id=str(uuid.uuid4()),
         document_id=sourced_document.id,

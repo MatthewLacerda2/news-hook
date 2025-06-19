@@ -11,7 +11,6 @@ from app.core.database import get_db
 from app.models.agent_controller import AgentController
 from sqlalchemy import select
 import logging
-from google.cloud import iam_credentials_v1
 
 logger = logging.getLogger(__name__)
 

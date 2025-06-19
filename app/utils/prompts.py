@@ -59,7 +59,7 @@ The document is:
 Your job is to verify whether the document matches the alert request.
 Respond using the following structured format:
 - approval: bool — Does the document match the alert request?
-- chance_score: float — Estimation of the quality of the match, from 0.0 to 1.0. Must be ≥ 0.85 to approve.
+- chance_score: float — Estimation of the quality of the match, from 0.0 to 1.0. Must be ≥ 0.9 to approve.
 - reason: str — Succinct justification of the approval or denial.
 - keywords: list[str] — Primitive, single-word keywords that must be present in the triggering document.
 

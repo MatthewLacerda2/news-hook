@@ -19,7 +19,7 @@ from sqlalchemy.types import String
 
 router = APIRouter()
 
-async def process_user_document(document: MonitoredData):
+async def process_document(document: MonitoredData):
     await generate_and_save_document_embeddings(
         document.id,
         document.content
@@ -66,7 +66,7 @@ async def post_user_document(
     await db.refresh(new_doc)
     
     asyncio.create_task(
-        process_user_document(new_doc)
+        process_document(new_doc)
     )
 
     return UserDocumentCreateSuccessResponse(
@@ -74,7 +74,7 @@ async def post_user_document(
         name=new_doc.name,
         created_at=new_doc.monitored_datetime
     )
-    
+
 @router.post(
     "/manual",
     response_model=UserDocumentCreateSuccessResponse,
@@ -108,7 +108,7 @@ async def post_admin_document(
     await db.refresh(new_doc)
     
     asyncio.create_task(
-        process_user_document(new_doc)
+        process_document(new_doc)
     )
     
     return UserDocumentCreateSuccessResponse(

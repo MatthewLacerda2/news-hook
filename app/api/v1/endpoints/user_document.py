@@ -19,19 +19,20 @@ from sqlalchemy.types import String
 
 router = APIRouter()
 
-async def process_user_document(user_document: MonitoredData):
+async def process_user_document(document: MonitoredData):
     await generate_and_save_document_embeddings(
-        user_document.id,
-        user_document.content
+        document.id,
+        document.content
     )
     
     sourced_data = SourcedData(
-        source=DataSource.USER_DOCUMENT,
-        content=user_document.content,
+        id=document.id,
+        source=document.source,
+        content=document.content,
         content_embedding=np.zeros(NUM_EMBEDDING_DIMENSIONS),
-        name=user_document.name,
-        agent_controller_id=user_document.agent_controller_id,
-        document_id=user_document.id
+        name=document.name,
+        agent_controller_id=document.agent_controller_id,
+        document_id=document.id
     )
     
     await perform_embed_and_vector_search(
@@ -68,6 +69,48 @@ async def post_user_document(
         process_user_document(new_doc)
     )
 
+    return UserDocumentCreateSuccessResponse(
+        id=new_doc.id,
+        name=new_doc.name,
+        created_at=new_doc.monitored_datetime
+    )
+    
+@router.post(
+    "/manual",
+    response_model=UserDocumentCreateSuccessResponse,
+    status_code=status.HTTP_201_CREATED,
+    description="Admin documents"
+)
+async def post_admin_document(
+    user_document: UserDocumentCreateRequest,
+    db: AsyncSession = Depends(get_db),
+    agent_controller: AgentController = Depends(get_user_by_api_key),
+):
+    
+    if agent_controller.email != "matheus.l1996@gmail.com": #TODO: change to check by IAM token.
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only authorized users can create documents"
+        )
+        
+    new_doc = MonitoredData(
+        id=str(uuid.uuid4()),
+        agent_controller_id=agent_controller.id,
+        source=DataSource.MANUAL_DOCUMENT,
+        name=user_document.name,
+        content=user_document.content,
+        content_embedding=None,
+        monitored_datetime=datetime.now()
+    )
+    
+    db.add(new_doc)
+    await db.commit()
+    await db.refresh(new_doc)
+    
+    asyncio.create_task(
+        process_user_document(new_doc)
+    )
+    
     return UserDocumentCreateSuccessResponse(
         id=new_doc.id,
         name=new_doc.name,

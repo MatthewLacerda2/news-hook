@@ -26,7 +26,7 @@ def get_client():
         vertexai=True,
         project=settings.GOOGLE_PROJECT_ID,
         location="global",
-        credentials=credentials
+        #credentials=credentials    #TODO: uncomment this when you figure the values out. They were fine until they weren't
     )
 
 gemini_temperature = 0.0

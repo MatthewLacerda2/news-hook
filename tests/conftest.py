@@ -1,5 +1,4 @@
 import os
-import json
 
 os.environ["GOOGLE_CLIENT_ID"] = "dummy_client_id"
 os.environ["GOOGLE_CLIENT_SECRET"] = "dummy_client_secret"

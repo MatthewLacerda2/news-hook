@@ -4,6 +4,9 @@ from app.tasks.llm_apis.gemini import get_gemini_validation
 from app.utils.count_tokens import count_tokens
 from app.models.llm_models import LLMModel
 import json
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from app.models.alert_prompt import AlertPrompt, AlertStatus
 
 def get_llm_validation(alert_request: AlertPromptCreateRequestBase, llm_model: str) -> LLMValidationFormat:
     """
@@ -31,3 +34,20 @@ def get_token_price(input: str, output: str, llm_model: LLMModel) -> float:
     output_price = output_token_count * (llm_model.output_token_price/1000)
     
     return input_price, output_price
+
+async def is_alert_duplicated(alert_request: AlertPromptCreateRequestBase, agent_controller_id: str, db: AsyncSession) -> bool:
+    """
+    Check if the alert is duplicated
+    """
+    
+    stmt = select(AlertPrompt).where(
+        AlertPrompt.prompt == alert_request.prompt,
+        AlertPrompt.agent_controller_id == agent_controller_id,
+        AlertPrompt.http_url == alert_request.http_url, 
+        AlertPrompt.is_recurring == alert_request.is_recurring,
+        AlertPrompt.status == AlertStatus.ACTIVE
+    )
+    result = await db.execute(stmt)
+    alert_prompt_db = result.scalar_one_or_none()
+    
+    return alert_prompt_db is not None

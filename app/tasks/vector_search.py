@@ -20,10 +20,6 @@ async def perform_embed_and_vector_search(sourced_document: SourcedData):
     Process a document from a webscrape source and store it in the vector database.
     For each ACTIVE alert that has matching keywords, perform vector similarity search
     to determine if the document is relevant to the alert's intent.
-    
-    Args:
-        md_document: The markdown text to process, as returned by docling
-        source_id: The ID of the webscrape source that generated this document
     """
     try:
         db = AsyncSessionLocal()

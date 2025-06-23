@@ -22,10 +22,6 @@ async def verify_document_matches_alert(
 ):
     """
     Use LLM to verify if a document actually matches an alert's intent.
-    
-    Args:
-        alert_id: The ID of the alert prompt to verify against
-        document: The document to verify, as returned by docling
     """
     try:
         db = AsyncSessionLocal()

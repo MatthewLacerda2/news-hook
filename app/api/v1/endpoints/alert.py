@@ -22,7 +22,7 @@ from sqlalchemy import select
 from sqlalchemy import func
 from app.tasks.save_embedding import generate_and_save_alert_embeddings
 import uuid
-from app.utils.env import MAX_DATETIME, LLM_VERIFICATION_THRESHOLD
+from app.utils.env import MAX_DATETIME, LLM_VERIFICATION_THRESHOLD, ALERT_CREATION_PRICE
 import logging
 
 logger = logging.getLogger(__name__)
@@ -122,6 +122,7 @@ async def create_alert(
         db.add(new_alert)
         
         user.credit_balance -= tokens_price
+        user.credit_balance -= ALERT_CREATION_PRICE
         await db.commit()
         await db.refresh(new_alert)
         

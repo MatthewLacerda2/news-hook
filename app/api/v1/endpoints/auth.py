@@ -5,7 +5,7 @@ from app.core.security import create_access_token, verify_google_token, verify_t
 from app.core.database import get_db
 from app.schemas.agent_controller import OAuth2Request, TokenResponse
 from app.models.agent_controller import AgentController
-
+from app.utils.env import INITIAL_CREDITS
 from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
@@ -41,7 +41,7 @@ async def signup(
             name=user_info.get("name"),
             google_id=user_info["sub"],
             api_key=str(uuid.uuid4()),
-            credit_balance=10.00
+            credit_balance=INITIAL_CREDITS
         )
         
         db.add(user)

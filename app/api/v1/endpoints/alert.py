@@ -14,7 +14,7 @@ from app.schemas.alert_prompt import (
 )
 from app.core.security import get_user_by_api_key
 from app.models.llm_models import LLMModel
-from app.utils.llm_validator import get_llm_validation, get_token_price
+from app.utils.llm_validator import get_llm_validation, get_token_price, is_alert_duplicated
 from app.utils.count_tokens import count_tokens
 from app.models.llm_validation import LLMValidation
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -59,6 +59,13 @@ async def create_alert(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid LLM model"
+            )
+
+        is_duplicated = await is_alert_duplicated(alert_data, user.id, db)  #TODO: test
+        if is_duplicated:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Alert already exists"
             )
 
         llm_validation_response = get_llm_validation(alert_data, llm_model.model_name)

@@ -43,7 +43,7 @@ async def is_alert_duplicated(alert_request: AlertPromptCreateRequestBase, agent
     stmt = select(AlertPrompt).where(
         AlertPrompt.prompt == alert_request.prompt,
         AlertPrompt.agent_controller_id == agent_controller_id,
-        AlertPrompt.http_url == alert_request.http_url, 
+        AlertPrompt.http_url == str(alert_request.http_url),
         AlertPrompt.is_recurring == alert_request.is_recurring,
         AlertPrompt.status == AlertStatus.ACTIVE
     )

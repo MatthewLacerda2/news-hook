@@ -61,7 +61,7 @@ async def create_alert(
                 detail=f"Invalid LLM model"
             )
 
-        is_duplicated = await is_alert_duplicated(alert_data, user.id, db)
+        is_duplicated = await is_alert_duplicated(alert_data, user.id, db)  #TODO: test
         if is_duplicated:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

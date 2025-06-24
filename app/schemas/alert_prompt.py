@@ -8,7 +8,7 @@ class AlertPromptCreateRequestBase(BaseModel):
     prompt: str = Field(..., description="The description of what to monitor. Try to be specific, clear and succinct.")
     http_url: HttpUrl = Field(..., description="The URL to alert at")
     http_headers: Optional[Dict] = Field(None, description="HTTP headers to send with the request")
-    is_recurring: bool = Field(..., description="Should we send the alert every time the condition is met?")
+    is_recurring: Optional[bool] = Field(None, description="Should we send the alert every time the condition is met?")
     
     # Optional fields
     http_method: Optional[HttpMethod] = Field(default=HttpMethod.POST, description="HTTP method to alert at")

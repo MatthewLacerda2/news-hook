@@ -61,7 +61,7 @@ Your job is to verify whether the document matches the alert request.
 Respond using the following structured format:
 - approval: bool — Does the document match the alert request?
 - chance_score: float — Estimated quality of the match, from 0.0 to 1.0. Must be ≥ 0.9 to approve.
-- reason: str — Succinct justification of the approval or denial.
+- reason: str — Briefly explain your decision. Be as succinct and short as possible.
 - keywords: list[str] — Primitive, single-word keywords that must be present in the triggering document.
 
 Current date and time: {current_date_time}

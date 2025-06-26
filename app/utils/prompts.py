@@ -26,7 +26,7 @@ The alert request is:
 Respond using the following structured format:
 - approval: bool — Is the alert request valid?
 - chance_score: float — Estimated quality of the request, from 0.0 to 1.0. Must be ≥ 0.85 to approve.
-- reason: str — Succinct justification of the approval or denial.
+- reason: str — Succinct and short justification of the approval or denial.
 - keywords: list[str] — Primitive, single-word keywords that must be present in the triggering document.
 
 Current date and time: {current_date_time}
@@ -61,7 +61,7 @@ The document is:
 Respond using the following structured format:
 - approval: bool — Does the document match the alert request?
 - chance_score: float — Estimated quality of the match, from 0.0 to 1.0. Must be ≥ 0.9 to approve.
-- reason: str — Briefly explain your decision. Be as succinct and short as possible.
+- reason: str — Succinct and short justification of the approval or denial.
 - keywords: list[str] — Primitive, single-word keywords that must be present in the triggering document.
 
 Current date and time: {current_date_time}
@@ -91,11 +91,6 @@ The document was:
 <document>
 {document}
 </document>
-
-Your response must follow the user's requested payload format exactly:
-<payload_format>
-{payload_format}
-</payload_format>
 
 
 Your alert must be self-contained, using the document as the source of truth and respond fully to the alert request.

@@ -9,6 +9,7 @@ class LLMValidation(Base):
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     prompt_id = Column(String(36), ForeignKey('alert_prompts.id'), nullable=True)
+    #TODO: what about alert_chats?
     prompt = Column(String(255), nullable=False)
     reason = Column(String(128), nullable=False)
     

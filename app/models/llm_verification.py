@@ -2,6 +2,7 @@ from app.models.base import Base
 from sqlalchemy import Column, String, Float, Boolean, Integer, DateTime, JSON
 import uuid
 from sqlalchemy import ForeignKey
+from sqlalchemy.orm import relationship
 
 class LLMVerification(Base):
     __tablename__ = "llm_verifications"
@@ -22,4 +23,6 @@ class LLMVerification(Base):
     output_tokens_price = Column(Float, nullable=False)
     
     date_time = Column(DateTime, nullable=False)
-
+    
+    alert_prompt = relationship("AlertPrompt", back_populates="llm_verifications")
+    monitored_data = relationship("MonitoredData")

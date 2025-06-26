@@ -223,3 +223,49 @@ async def delete_user_document(
     await db.commit()
     
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@router.get(
+    "/public",
+    response_model=UserDocumentListResponse,
+    description="List public documents"
+)
+async def get_public_documents(
+    contains: Optional[str] = None,
+    offset: int = 0,
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db),
+    user: AgentController = Depends(get_user_by_api_key)
+):
+    # Base query - filter for documents that are not user documents
+    base_filter = (MonitoredData.source != DataSource.USER_DOCUMENT)
+    
+    # Add contains filter if provided
+    if contains:
+        contains_filter = or_(
+            MonitoredData.name.ilike(f"%{contains}%"),
+            cast(MonitoredData.content, String).ilike(f"%{contains}%")  # Cast JSON to string before ILIKE
+        )
+        base_filter = and_(base_filter, contains_filter)
+    
+    # Get total count
+    count_stmt = select(func.count()).select_from(MonitoredData).where(base_filter)
+    total_count = await db.execute(count_stmt)
+    total_count = total_count.scalar()
+    
+    # Get paginated results
+    stmt = select(MonitoredData).where(base_filter).offset(offset).limit(limit)
+    result = await db.execute(stmt)
+    documents = result.scalars().all()
+    
+    return UserDocumentListResponse(
+        documents=[
+            UserDocumentItem(
+                id=doc.id,
+                name=doc.name,
+                content=doc.content,
+                uploaded_at=doc.monitored_datetime
+            )
+            for doc in documents
+        ],
+        total_count=total_count
+    )

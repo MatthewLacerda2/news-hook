@@ -40,7 +40,7 @@ async def verify_document_matches_alert(
         llm_model_result = await db.execute(llm_model_stmt)
         llm_model = llm_model_result.scalar_one()
         
-        await register_llm_verification(alert_prompt, verification_result, llm_model, db)
+        await register_llm_verification(alert_prompt, verification_result, llm_model, sourced_document.id, db)
             
         if verification_result.approval:
             await generate_and_send_alert(alert_prompt, sourced_document, llm_model, db)
@@ -54,12 +54,13 @@ async def verify_document_matches_alert(
     finally:
         await db.close()
         
-async def register_llm_verification(alert_prompt: AlertPrompt, verification_result: LLMVerificationFormat, llm_model: LLMModel, db: AsyncSession):
+async def register_llm_verification(alert_prompt: AlertPrompt, verification_result: LLMVerificationFormat, llm_model: LLMModel, document_id: str, db: AsyncSession):
     input_tokens_count = count_tokens(alert_prompt.prompt, alert_prompt.llm_model)
     output_tokens_count = count_tokens(verification_result.__str__(), alert_prompt.llm_model)
     
     llm_verification = LLMVerification(
         alert_prompt_id=alert_prompt.id,
+        document_id=verification_result.document_id,
         approval=verification_result.approval,
         chance_score=verification_result.chance_score,
         reason=verification_result.reason,

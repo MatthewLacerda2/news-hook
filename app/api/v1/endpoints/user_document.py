@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, and_, func, cast
 from app.schemas.user_document import UserDocumentCreateRequest, UserDocumentCreateSuccessResponse, UserDocumentItem, UserDocumentListResponse
@@ -194,3 +194,32 @@ async def get_user_documents(
         ],
         total_count=total_count
     )
+    
+@router.delete(
+    "/{document_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    description="Delete a document by ID"
+)
+async def delete_user_document(
+    document_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: AgentController = Depends(get_user_by_api_key),
+):
+    query = select(MonitoredData).where(
+        MonitoredData.id == document_id,
+        MonitoredData.agent_controller_id == user.id
+    )
+    
+    result = await db.execute(query)
+    document = result.scalar_one_or_none()
+    
+    if not document:
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found" #hehe
+        )
+    
+    await db.delete(document)
+    await db.commit()
+    
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -9,6 +9,7 @@ class AlertEventItem(BaseModel):
     alert_prompt_id: str = Field(..., description="The ID of the alert prompt")
     triggered_at: datetime = Field(..., description="The datetime the alert event was sent")
     structured_data: Dict[str, Any] = Field(..., description="The json schema requested for the alert")
+    status_code: int = Field(..., description="The status code of the response")
     
     #ALERT_PROMPT MODEL FIELDS
     prompt: str = Field(..., description="The alert prompt that this event answered to")    

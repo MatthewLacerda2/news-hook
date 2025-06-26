@@ -39,13 +39,13 @@ async def generate_and_send_alert(alert_prompt: AlertPrompt, sourced_document: S
         structured_data=json.loads(generated_response)
     )
 
-    await send_alert_event(llm_generation_result, db)
-    await save_alert_event(llm_generation_result, generated_response, llm_model, db)
+    response_status_code = await send_alert_event(llm_generation_result, db)
+    await save_alert_event(llm_generation_result, generated_response, response_status_code, llm_model, db)
     await register_credit_usage(alert_prompt, generated_response, db)
     
     return llm_generation_result
 
-async def send_alert_event(alert_event: NewsEvent, db: AsyncSession):
+async def send_alert_event(alert_event: NewsEvent, db: AsyncSession) -> int:
     
     stmt = select(AlertPrompt).where(AlertPrompt.id == alert_event.alert_prompt_id)
     result = await db.execute(stmt)
@@ -63,33 +63,39 @@ async def send_alert_event(alert_event: NewsEvent, db: AsyncSession):
         with httpx.Client(transport=transport, timeout=10) as client:
             if alert_prompt.http_method == HttpMethod.POST:
                 logger.info(f"Sending {alert_prompt.http_method} to {alert_prompt.http_url} with data: {alert_event.structured_data}")
-                response = client.post(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers or {})
+                response : httpx.Response = client.post(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers or {})
             elif alert_prompt.http_method == HttpMethod.PUT:
                 logger.info(f"Sending {alert_prompt.http_method} to {alert_prompt.http_url} with data: {alert_event.structured_data}")
-                response = client.put(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers or {})
+                response : httpx.Response = client.put(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers or {})
             elif alert_prompt.http_method == HttpMethod.PATCH:
                 logger.info(f"Sending {alert_prompt.http_method} to {alert_prompt.http_url} with data: {alert_event.structured_data}")
-                response = client.patch(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers or {})
+                response : httpx.Response = client.patch(alert_prompt.http_url, json=alert_event.structured_data, headers=alert_prompt.http_headers or {})
             else:
-                raise ValueError(f"Unsupported HTTP method: {alert_prompt.http_method}")
+                logger.error(f"Unsupported HTTP method: {alert_prompt.http_method}")
+                # Return a mock response with error status to indicate "nobody was home"
+                return 400  # or whatever status code you want to represent this error
             
             if response.status_code >= 400:
                 logger.error(f"Alert webhook failed with status {response.status_code}: {response.text}")
-                return str(f"{response.status_code}: {response.text}")
+                return response.status_code
             else:
-                return None
+                return response.status_code
             
     except httpx.TimeoutException as e:
         logger.error(f"Timeout while sending alert to {alert_prompt.http_url}: {str(e)}")
+        return 408  # Request Timeout
     except httpx.ConnectError as e:
         logger.error(f"Connection error while sending alert to {alert_prompt.http_url}: {str(e)}")
+        return 503  # Service Unavailable
     except httpx.RequestError as e:
         status = getattr(e.response, 'status_code', 'unknown')
         logger.error(f"Request error (status {status}) while sending alert to {alert_prompt.http_url}: {str(e)}")
+        return 500
     except Exception as e:
         logger.error(f"Unexpected error while sending alert to {alert_prompt.http_url}: {str(e)}")
+        return 500  # Internal Server Error
 
-async def save_alert_event(alert_event: NewsEvent, generated_response: str, llm_model: LLMModel, db: AsyncSession) -> AlertEvent:
+async def save_alert_event(alert_event: NewsEvent, generated_response: str, response_status_code: int, llm_model: LLMModel, db: AsyncSession) -> AlertEvent:
 
     input_tokens = count_tokens(generated_response, llm_model.model_name)
     output_tokens = count_tokens(str(alert_event.structured_data), llm_model.model_name)
@@ -103,7 +109,8 @@ async def save_alert_event(alert_event: NewsEvent, generated_response: str, llm_
         input_tokens=input_tokens,
         output_tokens=output_tokens,
         input_price=input_tokens * (llm_model.input_token_price/1000),
-        output_price=output_tokens * (llm_model.output_token_price/1000)
+        output_price=output_tokens * (llm_model.output_token_price/1000),
+        status_code=response_status_code
     )
     db.add(alert_event_db)
     await db.commit()

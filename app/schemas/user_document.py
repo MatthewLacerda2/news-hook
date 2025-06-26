@@ -1,11 +1,9 @@
 from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
-from typing import Optional
 
 class UserDocumentCreateRequest(BaseModel):
     name: str = Field(..., min_length=3, description="The name of the document")
     content: str = Field(..., min_length=10, description="The actual content of the document")
-    should_save: Optional[bool] = Field(True, description="Should we save the document?")  #TODO: implement
 
 class UserDocumentCreateSuccessResponse(BaseModel):
     id: str = Field(..., description="The id of the document")

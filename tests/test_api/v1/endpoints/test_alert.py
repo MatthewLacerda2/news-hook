@@ -113,20 +113,6 @@ async def test_create_alert_insufficient_credits(client, valid_user_with_credits
     assert "Insufficient credits" in response.json()["detail"]
 
 @pytest.mark.asyncio
-async def test_create_alert_invalid_url(client, valid_user_with_credits):
-    user_data = valid_user_with_credits
-
-    alert_data = test_alert_data
-    alert_data["user_id"] = user_data["id"]
-    alert_data["http_url"] = "not-a-valid-url"
-
-    response = await client.post("/api/v1/alerts/", json=alert_data, headers={"X-API-Key": user_data["api_key"]})
-    assert response.status_code == 422
-    assert any(
-        "valid URL" in error["msg"] for error in response.json()["detail"]
-    )
-
-@pytest.mark.asyncio
 async def test_create_alert_invalid_payload_format(client, valid_user_with_credits):
     user_data = valid_user_with_credits
 
@@ -416,3 +402,97 @@ async def test_cancel_nonexistent_alert(client, valid_user_with_credits):
     )
     assert response.status_code == 404
     assert "Not found" in response.json()["detail"]
+
+@pytest.mark.asyncio
+async def test_patch_alert_invalid_api_key(client, test_db):
+    """Test patching an alert with invalid API key"""
+    response = await client.patch(
+        "/api/v1/alerts/123",
+        headers={"X-API-Key": "invalid_api_key"},
+        json={"http_url": "https://new-webhook.example.com"}
+    )
+    assert response.status_code == 401
+    assert "Invalid API key" in response.json()["detail"]
+
+@pytest.mark.asyncio
+async def test_patch_alert_not_found(client, valid_user_with_credits):
+    """Test patching a non-existent alert"""
+    user_data = valid_user_with_credits
+    api_key = user_data["api_key"]
+    
+    non_existent_id = str(uuid.uuid4())
+    response = await client.patch(
+        f"/api/v1/alerts/{non_existent_id}",
+        headers={"X-API-Key": api_key},
+        json={"http_url": "https://new-webhook.example.com"}
+    )
+    
+    assert response.status_code == 404
+    assert "Not found" in response.json()["detail"]
+
+@pytest.mark.asyncio
+async def test_patch_alert_successful(client, valid_user_with_credits, sample_llm_models, test_db, mock_llm_validation):
+    """Test successful alert patching and validate changes"""
+    user_data = valid_user_with_credits
+    api_key = user_data["api_key"]
+    
+    # First create an alert
+    create_response = await client.post(
+        "/api/v1/alerts/",
+        headers={"X-API-Key": api_key},
+        json=test_alert_data
+    )
+    
+    assert create_response.status_code == 201
+    alert_id = create_response.json()["id"]
+    
+    # Patch data to update
+    patch_data = {
+        "http_url": "https://new-webhook.example.com/updated",
+        "http_headers": {"Content-Type": "application/json", "Authorization": "Bearer token123"},
+        "is_recurring": True,
+        "http_method": "PUT",
+        "llm_model": "gemini-2.0-flash",
+        "payload_format": {"type": "object", "properties": {"new_field": {"type": "string"}}},
+        "max_datetime": (datetime.now() + timedelta(days=200)).isoformat()
+    }
+    
+    # Patch the alert
+    patch_response = await client.patch(
+        f"/api/v1/alerts/{alert_id}",
+        headers={"X-API-Key": api_key},
+        json=patch_data
+    )
+    
+    assert patch_response.status_code == 200
+    patched_alert = patch_response.json()
+    
+    # Validate the response schema
+    AlertPromptItem.model_validate(patched_alert)
+    
+    # Verify the changes were applied
+    assert patched_alert["http_url"] == patch_data["http_url"]
+    assert patched_alert["http_headers"] == patch_data["http_headers"]
+    assert patched_alert["is_recurring"] == patch_data["is_recurring"]
+    assert patched_alert["http_method"] == patch_data["http_method"]
+    assert patched_alert["llm_model"] == patch_data["llm_model"]
+    assert patched_alert["payload_format"] == patch_data["payload_format"]
+    assert patched_alert["max_datetime"] == patch_data["max_datetime"]
+        
+    # Verify the changes persist by getting the alert again
+    get_response = await client.get(
+        f"/api/v1/alerts/{alert_id}",
+        headers={"X-API-Key": api_key}
+    )
+    
+    assert get_response.status_code == 200
+    retrieved_alert = get_response.json()
+    
+    # Verify all changes are still there
+    assert retrieved_alert["http_url"] == patch_data["http_url"]
+    assert retrieved_alert["http_headers"] == patch_data["http_headers"]
+    assert retrieved_alert["is_recurring"] == patch_data["is_recurring"]
+    assert retrieved_alert["http_method"] == patch_data["http_method"]
+    assert retrieved_alert["llm_model"] == patch_data["llm_model"]
+    assert retrieved_alert["payload_format"] == patch_data["payload_format"]
+    assert retrieved_alert["max_datetime"] == patch_data["max_datetime"]

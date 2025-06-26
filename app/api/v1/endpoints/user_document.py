@@ -216,7 +216,7 @@ async def delete_user_document(
     if not document:
         raise HTTPException(
             status_code=404,
-            detail="Document not found" #hehe
+            detail="Document not found"
         )
     
     await db.delete(document)

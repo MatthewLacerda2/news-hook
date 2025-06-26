@@ -10,7 +10,8 @@ from app.schemas.alert_prompt import (
     AlertPromptCreateRequestBase,
     AlertPromptCreateSuccessResponse,
     AlertPromptListResponse,
-    AlertPromptItem
+    AlertPromptItem,
+    AlertPatchRequest
 )
 from app.core.security import get_user_by_api_key
 from app.models.llm_models import LLMModel
@@ -31,8 +32,8 @@ router = APIRouter()
 
 @router.post(
     "/",
-    response_model=AlertPromptCreateSuccessResponse,
     status_code=status.HTTP_201_CREATED,
+    response_model=AlertPromptCreateSuccessResponse,
     description="Create a new alert for monitoring"
 )
 async def create_alert(
@@ -275,3 +276,48 @@ async def cancel_alert(
     await db.commit()
     
     return {"message": "Alert cancelled successfully"}
+
+@router.patch(
+    "/{alert_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=AlertPromptItem,
+    description="Patch an alert"
+)
+async def patch_alert(
+    alert_id: str,
+    alert_data: AlertPatchRequest,
+    db: AsyncSession = Depends(get_db),
+    user: AgentController = Depends(get_user_by_api_key)
+):
+    
+    stmt = select(AlertPrompt).where(
+        AlertPrompt.id == alert_id,
+        AlertPrompt.agent_controller_id == user.id
+    )
+    result = await db.execute(stmt)
+    alert = result.scalar_one_or_none()
+    
+    if not alert:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not found"
+        )
+    
+    if alert_data.http_url:
+        alert.http_url = str(alert_data.http_url)
+    if alert_data.http_headers:
+        alert.http_headers = alert_data.http_headers
+    if alert_data.is_recurring:
+        alert.is_recurring = alert_data.is_recurring
+    if alert_data.http_method:
+        alert.http_method = alert_data.http_method
+    if alert_data.llm_model:
+        alert.llm_model = alert_data.llm_model
+    if alert_data.payload_format:
+        alert.payload_format = alert_data.payload_format
+    if alert_data.max_datetime:
+        alert.expires_at = alert_data.max_datetime.replace(tzinfo=None) if alert_data.max_datetime else (datetime.now() + timedelta(days=MAX_DATETIME))
+        
+    await db.commit()
+    
+    return alert_to_schema(alert)

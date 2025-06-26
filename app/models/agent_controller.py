@@ -11,6 +11,7 @@ class AgentController(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     email = Column(String, nullable=False, unique=True)
+    phone_number = Column(String, nullable=True)
     api_key = Column(String, nullable=False, unique=True)
     google_id = Column(String, unique=True, nullable=False)
     name = Column(String, nullable=True)

@@ -45,7 +45,9 @@ async def verify_document_matches_alert(
         if verification_result.approval:
             await generate_and_send_alert(alert_prompt, sourced_document, llm_model, db)
             
-            if not alert_prompt.is_recurring:
+            if alert_prompt.is_recurring:
+                alert_prompt.status = AlertStatus.WARNED
+            else:
                 alert_prompt.status = AlertStatus.TRIGGERED
             await db.commit()
             

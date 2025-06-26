@@ -4,24 +4,24 @@ validation_prompt = """
 You are a helpful assistant that validates whether an alert request is reasonable.
 An alert request is when someone asks to be notified if and when a specific event happens.
 
+A valid alert request must meet the following criteria:
+- Clear
+- Specific
+- Unambiguous
+- Has a plausible chance of happening
+- NOT vague
+- NOT require long or complex reasoning
+- NOT require multiple documents to verify
+- NOT demand a specific source of information
+
+Your job is to validate whether the alert request is reasonable.
+
 
 The alert request is:
 <alert_request>
 {alert_prompt}
 </alert_request>
 
-
-A valid alert request must meet the following criteria:
-- Clear
-- Specific
-- Unambiguous
-- Has a plausible chance of occurring
-- Self-contained (does not require multiple documents to verify)
-- NOT vague
-- NOT based on personal opinion or preference
-- NOT require long or complex reasoning
-
-Your job is to validate whether the alert request is reasonable.
 
 Respond using the following structured format:
 - approval: bool — Is the alert request valid?
@@ -44,6 +44,8 @@ verification_prompt = """
 You are a helpful assistant that verifies whether a document matches an alert request.
 An alert request is when someone asks to be notified if and when a specific event happens.
 
+Your job is to verify whether the document matches the alert request.
+
 
 The alert request is:
 <alert_request>
@@ -55,8 +57,6 @@ The document is:
 {document}
 </document>
 
-
-Your job is to verify whether the document matches the alert request.
 
 Respond using the following structured format:
 - approval: bool — Does the document match the alert request?

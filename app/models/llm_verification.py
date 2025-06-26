@@ -9,7 +9,7 @@ class LLMVerification(Base):
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     alert_prompt_id = Column(String(36), ForeignKey('alert_prompts.id'), nullable=False)
-    document_id = Column(String(36), ForeignKey('monitored_data.id'), nullable=False)
+    document_id = Column(String(36), ForeignKey('monitored_data.id', ondelete='SET NULL'), nullable=True)
     
     approval = Column(Boolean, nullable=False)
     chance_score = Column(Float, nullable=False)

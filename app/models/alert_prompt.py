@@ -48,3 +48,4 @@ class AlertPrompt(Base):
     user = relationship("AgentController", back_populates="alert_prompts")
     alert_events = relationship("AlertEvent", back_populates="alert_prompt")
     llm_validations = relationship("LLMValidation", back_populates="alert_prompt")
+    llm_verifications = relationship("LLMVerification", back_populates="alert_prompt")

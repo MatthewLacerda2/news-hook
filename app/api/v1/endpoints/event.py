@@ -76,6 +76,7 @@ async def list_events(
             "alert_prompt_id": event.alert_prompt_id,
             "triggered_at": event.triggered_at,
             "structured_data": event.structured_data,
+            "status_code": event.status_code,
             "prompt": prompt,
             "http_method": http_method,
             "http_url": http_url,

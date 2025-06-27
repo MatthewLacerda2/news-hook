@@ -69,7 +69,7 @@ async def create_alert(
                 detail="Alert already exists"
             )
 
-        llm_validation_response = get_llm_validation(alert_data, llm_model.model_name)
+        llm_validation_response = get_llm_validation(alert_data.prompt, llm_model.model_name)
         llm_validation_str = llm_validation_response.model_dump_json()
                 
         input_price, output_price = get_token_price(alert_data.prompt, llm_validation_str, llm_model)
@@ -301,6 +301,12 @@ async def patch_alert(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Not found"
+        )
+    
+    if alert.status != AlertStatus.ACTIVE and alert.status != AlertStatus.WARNED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Alert is not active"
         )
     
     if alert_data.http_url:

@@ -7,14 +7,15 @@ import json
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models.alert_prompt import AlertPrompt, AlertStatus
+from app.models.alert_chat import AlertChat
 
-def get_llm_validation(alert_request: AlertPromptCreateRequestBase, llm_model: str) -> LLMValidationFormat:
+def get_llm_validation(prompt: str, llm_model: str) -> LLMValidationFormat:
     """
     Validate the alert request using LLM
     """
 
     validation_result = get_gemini_validation(
-        alert_request.prompt, llm_model
+        prompt, llm_model
     )
     
     if isinstance(validation_result, str):
@@ -51,3 +52,17 @@ async def is_alert_duplicated(alert_request: AlertPromptCreateRequestBase, agent
     alert_prompt_db = result.scalar_one_or_none()
     
     return alert_prompt_db is not None
+
+async def is_alert_chat_duplicated(prompt: str, agent_controller_id: str, db: AsyncSession) -> bool:
+    """
+    Check if the alert chat is duplicated
+    """
+    
+    stmt = select(AlertChat).where(
+        AlertChat.prompt == prompt,
+        AlertChat.agent_controller_id == agent_controller_id
+    )
+    result = await db.execute(stmt)
+    alert_chat_db = result.scalar_one_or_none()
+    
+    return alert_chat_db is not None

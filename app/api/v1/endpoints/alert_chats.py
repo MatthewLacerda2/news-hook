@@ -15,6 +15,7 @@ import uuid
 import asyncio
 from app.tasks.save_embedding import generate_and_save_alert_chat_embeddings
 from sqlalchemy import select
+from app.schemas.alert_chat import AlertChatItem
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +107,7 @@ async def cancel_alert():
 
 @router.get(
     "/",
-    response_model=list[str],
+    response_model=str,
     description="List all active alerts"
 )
 async def list_alerts(agent_controller_id: str, db: AsyncSession = Depends(get_db)):
@@ -119,4 +120,13 @@ async def list_alerts(agent_controller_id: str, db: AsyncSession = Depends(get_d
     result = await db.execute(stmt)
     alerts = result.scalars().all()
     
-    return [alert.prompt for alert in alerts]
+    if not alerts:
+        return "There are no active alerts."
+    
+    alert_strings = []
+    for alert in alerts:
+        expires_at_str = alert.expires_at.strftime("%d/%m/%y")
+        alert_string = f"Expires At: {expires_at_str}. Prompt: {alert.prompt}."
+        alert_strings.append(alert_string)
+    
+    return "\n".join(alert_strings)

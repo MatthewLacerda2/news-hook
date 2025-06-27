@@ -24,7 +24,7 @@ class AlertChat(Base):
     )
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    agent_controller_id = Column(String(36), ForeignKey('agent_controllers.id'), nullable=False)
+    telegram_id = Column(String(36), ForeignKey('agent_controllers.id'), nullable=False)
     prompt = Column(String, nullable=False)
     prompt_embedding = Column(Vector(NUM_EMBEDDING_DIMENSIONS), nullable=True)
     
@@ -34,7 +34,6 @@ class AlertChat(Base):
     created_at = Column(DateTime, nullable=False, default=datetime.now())
     expires_at = Column(DateTime, nullable=False)
 
-    user = relationship("AgentController", back_populates="alert_prompts")
     alert_events = relationship("AlertEvent", back_populates="alert_prompt")
     llm_validations = relationship("LLMValidation", back_populates="alert_chat")
     llm_verifications = relationship("LLMVerification", back_populates="alert_chat")

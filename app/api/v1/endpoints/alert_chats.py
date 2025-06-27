@@ -27,9 +27,9 @@ router = APIRouter()
     response_model=str,
     description="Create a new alert for monitoring"
 )
-async def create_alert_chat(prompt: str, agent_controller_id: str, db: AsyncSession = Depends(get_db)):
+async def create_alert_chat(prompt: str, telegram_id: str, db: AsyncSession = Depends(get_db)):
     
-    is_duplicated = await is_alert_chat_duplicated(prompt, agent_controller_id, db)
+    is_duplicated = await is_alert_chat_duplicated(prompt, telegram_id, db)
     if is_duplicated:
         return "That Alert is already active"
     
@@ -65,7 +65,7 @@ async def create_alert_chat(prompt: str, agent_controller_id: str, db: AsyncSess
     
     new_alert_chat = AlertChat(
         id=str(uuid.uuid4()),
-        agent_controller_id=agent_controller_id,
+        agent_controller_id=telegram_id,
         prompt=prompt,
         keywords=llm_validation_response.keywords,
         created_at=now,
@@ -99,7 +99,7 @@ async def cancel_alert_chat(alert_id: str, agent_controller_id: str, db: AsyncSe
         
     stmt = select(AlertChat).where(
         AlertChat.id == alert_id,
-        AlertChat.agent_controller_id == agent_controller_id
+        AlertChat.telegram_id == agent_controller_id
     )
     result = await db.execute(stmt)
     alert = result.scalar_one_or_none()
@@ -121,7 +121,7 @@ async def cancel_alert_chat(alert_id: str, agent_controller_id: str, db: AsyncSe
 async def list_alerts_chats(agent_controller_id: str, db: AsyncSession = Depends(get_db)):
     
     stmt = select(AlertChat).where(
-        AlertChat.agent_controller_id == agent_controller_id,
+        AlertChat.telegram_id == agent_controller_id,
         AlertChat.status == AlertStatus.ACTIVE or AlertStatus.WARNED,
         AlertChat.created_at >= datetime.now()
     )

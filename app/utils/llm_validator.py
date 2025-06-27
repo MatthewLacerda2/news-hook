@@ -60,7 +60,7 @@ async def is_alert_chat_duplicated(prompt: str, agent_controller_id: str, db: As
     
     stmt = select(AlertChat).where(
         AlertChat.prompt == prompt,
-        AlertChat.agent_controller_id == agent_controller_id
+        AlertChat.telegram_id == agent_controller_id
     )
     result = await db.execute(stmt)
     alert_chat_db = result.scalar_one_or_none()

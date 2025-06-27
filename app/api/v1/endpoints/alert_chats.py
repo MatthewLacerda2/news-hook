@@ -28,7 +28,7 @@ router = APIRouter()
     response_model=str,
     description="Create a new alert for monitoring"
 )
-async def create_alert(prompt: str, agent_controller_id: str, db: AsyncSession = Depends(get_db)):
+async def create_alert_chat(prompt: str, agent_controller_id: str, db: AsyncSession = Depends(get_db)):
     
     is_duplicated = await is_alert_chat_duplicated(prompt, agent_controller_id, db)
     if is_duplicated:
@@ -96,21 +96,30 @@ async def create_alert(prompt: str, agent_controller_id: str, db: AsyncSession =
     status_code=status.HTTP_200_OK,
     response_model=str,
     description="Mark an alert as CANCELLED. We do not 'delete' the alert") #Not for billing purposes, but for metrics
-async def cancel_alert():
+async def cancel_alert_chat(alert_id: str, agent_controller_id: str, db: AsyncSession = Depends(get_db)):
+        
+    stmt = select(AlertChat).where(
+        AlertChat.id == alert_id,
+        AlertChat.agent_controller_id == agent_controller_id
+    )
+    result = await db.execute(stmt)
+    alert = result.scalar_one_or_none()
     
-    #check if alert with that id and owned by that user is in the db
-    #if not, return 404
-    #if it is, update the status to cancelled
-    #reply back
+    if not alert:
+        return "That alert does not exist"
     
-    pass
+    alert.status = AlertStatus.CANCELLED
+    await db.commit()
+    
+    return "Alert cancelled!"
+    
 
 @router.get(
     "/",
     response_model=str,
     description="List all active alerts"
 )
-async def list_alerts(agent_controller_id: str, db: AsyncSession = Depends(get_db)):
+async def list_alerts_chats(agent_controller_id: str, db: AsyncSession = Depends(get_db)):
     
     stmt = select(AlertChat).where(
         AlertChat.agent_controller_id == agent_controller_id,

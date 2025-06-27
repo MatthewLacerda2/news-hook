@@ -24,7 +24,7 @@ class AlertChat(Base):
     )
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    telegram_id = Column(String(36), ForeignKey('agent_controllers.id'), nullable=False)
+    telegram_id = Column(String(36), nullable=False)
     prompt = Column(String, nullable=False)
     prompt_embedding = Column(Vector(NUM_EMBEDDING_DIMENSIONS), nullable=True)
     

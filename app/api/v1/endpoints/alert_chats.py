@@ -65,7 +65,7 @@ async def create_alert_chat(prompt: str, telegram_id: str, db: AsyncSession = De
     
     new_alert_chat = AlertChat(
         id=str(uuid.uuid4()),
-        agent_controller_id=telegram_id,
+        telegram_id=telegram_id,
         prompt=prompt,
         keywords=llm_validation_response.keywords,
         created_at=now,
@@ -85,21 +85,21 @@ async def create_alert_chat(prompt: str, telegram_id: str, db: AsyncSession = De
         )
     )
     
-    expire_date : str = expire_date.strftime("%d/%m/%y")
+    expire_date_str : str = expire_date.strftime("%d/%m/%y")
     keyword_hashtags : str = " ".join([f"#{keyword}" for keyword in llm_validation_response.keywords])
     
-    return f"Got it! Alert created. Id: {new_alert_chat.id}, will be active until {expire_date} {keyword_hashtags}"
+    return f"Got it! Alert created. Id: {new_alert_chat.id}, will be active until {expire_date_str} {keyword_hashtags}"
 
 @router.patch(
     "/{alert_id}/cancel",
     status_code=status.HTTP_200_OK,
     response_model=str,
     description="Mark an alert as CANCELLED. We do not 'delete' the alert") #Not for billing purposes, but for metrics
-async def cancel_alert_chat(alert_id: str, agent_controller_id: str, db: AsyncSession = Depends(get_db)):
+async def cancel_alert_chat(alert_id: str, telegram_id: str, db: AsyncSession = Depends(get_db)):
         
     stmt = select(AlertChat).where(
         AlertChat.id == alert_id,
-        AlertChat.telegram_id == agent_controller_id
+        AlertChat.telegram_id == telegram_id
     )
     result = await db.execute(stmt)
     alert = result.scalar_one_or_none()
@@ -118,10 +118,10 @@ async def cancel_alert_chat(alert_id: str, agent_controller_id: str, db: AsyncSe
     response_model=str,
     description="List all active alerts"
 )
-async def list_alerts_chats(agent_controller_id: str, db: AsyncSession = Depends(get_db)):
+async def list_alerts_chats(telegram_id: str, db: AsyncSession = Depends(get_db)):
     
     stmt = select(AlertChat).where(
-        AlertChat.telegram_id == agent_controller_id,
+        AlertChat.telegram_id == telegram_id,
         AlertChat.status == AlertStatus.ACTIVE or AlertStatus.WARNED,
         AlertChat.created_at >= datetime.now()
     )

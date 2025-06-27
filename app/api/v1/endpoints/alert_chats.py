@@ -15,7 +15,6 @@ import uuid
 import asyncio
 from app.tasks.save_embedding import generate_and_save_alert_chat_embeddings
 from sqlalchemy import select
-from app.schemas.alert_chat import AlertChatItem
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +88,7 @@ async def create_alert_chat(prompt: str, agent_controller_id: str, db: AsyncSess
     expire_date : str = expire_date.strftime("%d/%m/%y")
     keyword_hashtags : str = " ".join([f"#{keyword}" for keyword in llm_validation_response.keywords])
     
-    return f"Got it! Alert created, will be active until {expire_date} {keyword_hashtags}"
+    return f"Got it! Alert created. Id: {new_alert_chat.id}, will be active until {expire_date} {keyword_hashtags}"
 
 @router.patch(
     "/{alert_id}/cancel",
@@ -135,7 +134,7 @@ async def list_alerts_chats(agent_controller_id: str, db: AsyncSession = Depends
     alert_strings = []
     for alert in alerts:
         expires_at_str = alert.expires_at.strftime("%d/%m/%y")
-        alert_string = f"Expires At: {expires_at_str}. Prompt: {alert.prompt}."
+        alert_string = f"Id: {alert.id}. Expires At: {expires_at_str}. Prompt: {alert.prompt}."
         alert_strings.append(alert_string)
     
     return "\n".join(alert_strings)

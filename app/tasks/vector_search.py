@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
-async def perform_embed_and_vector_search(sourced_document: SourcedData):
+async def vector_search(sourced_document: SourcedData):
     """
     Process a document from a webscrape source and store it in the vector database.
     For each ACTIVE alert that has matching keywords, perform vector similarity search
@@ -30,11 +30,9 @@ async def perform_embed_and_vector_search(sourced_document: SourcedData):
         if document_embedding is None or np.all(document_embedding == 0):
             document_embedding = get_gemini_embeddings(sourced_document.content, "RETRIEVAL_DOCUMENT")
         
-        agent_controller_id = sourced_document.agent_controller_id if sourced_document.source != DataSource.MANUAL_DOCUMENT else None
+        agent_controller_id = sourced_document.agent_controller_id if sourced_document.source == DataSource.USER_DOCUMENT else None
         
-        active_alerts = await find_matching_alerts(db, document_embedding, agent_controller_id)
-        
-        active_alerts = filter_by_keywords(active_alerts, sourced_document.content)
+        active_alerts = await find_matching_alerts(db, document_embedding, agent_controller_id, sourced_document.content)
         
         for alert in active_alerts:
             await verify_document_matches_alert(
@@ -44,15 +42,13 @@ async def perform_embed_and_vector_search(sourced_document: SourcedData):
         
         for alert in active_alerts:
             logger.info(f"Alert prompt matching: {alert.prompt}")
-            
-        logger.info(f"Completed vector search for document: {sourced_document.name}")
                 
     except Exception as e:
         logger.error(f"Error in vector search processing: {str(e)}", exc_info=True)
     finally:
         await db.close()
 
-async def find_matching_alerts(db: AsyncSession, document_embedding: np.ndarray, agent_controller_id: str | None) -> List[AlertPrompt]:
+async def find_matching_alerts(db: AsyncSession, document_embedding: np.ndarray, agent_controller_id: str | None, document_content: str) -> List[AlertPrompt]:
     """
     Find active alerts where the prompt_embedding is similar to the document_embedding using PostgreSQL vector search.
     If agent_controller_id is provided, only return alerts belonging to that controller.
@@ -63,7 +59,7 @@ async def find_matching_alerts(db: AsyncSession, document_embedding: np.ndarray,
     conditions = [
         AlertPrompt.status == AlertStatus.ACTIVE,
         AlertPrompt.expires_at > datetime.now(),
-        AlertPrompt.prompt_embedding.cosine_distance(embedding_list) < DATA_SIMILARITY_THRESHOLD
+        AlertPrompt.prompt_embedding.cosine_distance(embedding_list) <= DATA_SIMILARITY_THRESHOLD,
     ]
     
     if agent_controller_id is not None:
@@ -71,19 +67,8 @@ async def find_matching_alerts(db: AsyncSession, document_embedding: np.ndarray,
     
     stmt = select(AlertPrompt).where(*conditions)
     result = await db.execute(stmt)
-    return result.scalars().all()
-
-def filter_by_keywords(alerts: List[AlertPrompt], document_content: str) -> List[AlertPrompt]:
-    """
-    Filter alerts by checking if any of their keywords appear in the document content.
+    alerts = result.scalars().all()
     
-    Args:
-        alerts: List of AlertPrompt objects to filter
-        document_content: The document text to check against
-        
-    Returns:
-        List of AlertPrompt objects where at least one keyword appears in the document
-    """
     filtered_alerts = []
     
     for alert in alerts:

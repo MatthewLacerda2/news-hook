@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 async def verify_document_matches_alert(
     alert_id: str,
     sourced_document: SourcedData,
-):
+) -> bool:
     """
     Use LLM to verify if a document actually matches an alert's intent.
     """
@@ -51,6 +51,8 @@ async def verify_document_matches_alert(
                 alert_prompt.status = AlertStatus.TRIGGERED
             await db.commit()
             
+        return verification_result.approval
+    
     except Exception as e:
         logger.error(f"Error in LLM verification: {str(e)}", exc_info=True)
     finally:

@@ -1,14 +1,14 @@
 import uuid
 from datetime import datetime
 from enum import Enum
-from sqlalchemy import Column, String, DateTime, JSON, Enum as SQLEnum, ForeignKey, Index, Boolean
+from sqlalchemy import Column, String, DateTime, JSON, Enum as SQLEnum, Index
 import uuid
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
 from app.utils.env import NUM_EMBEDDING_DIMENSIONS
 from app.models.base import Base
 
-class AlertStatus(Enum):
+class AlertChatStatus(Enum):
     ACTIVE = "ACTIVE"
     TRIGGERED = "TRIGGERED"
     CANCELLED = "CANCELLED"
@@ -28,9 +28,8 @@ class AlertChat(Base):
     prompt = Column(String, nullable=False)
     prompt_embedding = Column(Vector(NUM_EMBEDDING_DIMENSIONS), nullable=True)
     
-    is_recurring = Column(Boolean, nullable=False, default=False)
     keywords = Column(JSON, nullable=False)
-    status = Column(SQLEnum(AlertStatus), nullable=False, default=AlertStatus.ACTIVE)
+    status = Column(SQLEnum(AlertChatStatus), nullable=False, default=AlertChatStatus.ACTIVE)
     created_at = Column(DateTime, nullable=False, default=datetime.now())
     expires_at = Column(DateTime, nullable=False)
 

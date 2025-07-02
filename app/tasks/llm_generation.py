@@ -14,7 +14,7 @@ from sqlalchemy import select
 import httpx
 import logging
 import json
-from app.models.alert_prompt import HttpMethod
+from app.models.alert_prompt import HttpMethod, AlertStatus
 from urllib3 import Retry
 from httpx import HTTPTransport
 
@@ -42,6 +42,7 @@ async def generate_and_send_alert(alert_prompt: AlertPrompt, sourced_document: S
     response_status_code = await send_alert_event(llm_generation_result, db)
     await save_alert_event(llm_generation_result, generated_response, response_status_code, llm_model, db)
     await register_credit_usage(alert_prompt, generated_response, db)
+    await db.commit()
     
     return llm_generation_result
 
@@ -83,17 +84,17 @@ async def send_alert_event(alert_event: NewsEvent, db: AsyncSession) -> int:
             
     except httpx.TimeoutException as e:
         logger.error(f"Timeout while sending alert to {alert_prompt.http_url}: {str(e)}")
-        return 408  # Request Timeout
+        return 408
     except httpx.ConnectError as e:
         logger.error(f"Connection error while sending alert to {alert_prompt.http_url}: {str(e)}")
-        return 503  # Service Unavailable
+        return 503
     except httpx.RequestError as e:
         status = getattr(e.response, 'status_code', 'unknown')
         logger.error(f"Request error (status {status}) while sending alert to {alert_prompt.http_url}: {str(e)}")
         return 500
     except Exception as e:
         logger.error(f"Unexpected error while sending alert to {alert_prompt.http_url}: {str(e)}")
-        return 500  # Internal Server Error
+        return 500
 
 async def save_alert_event(alert_event: NewsEvent, generated_response: str, response_status_code: int, llm_model: LLMModel, db: AsyncSession) -> AlertEvent:
 
@@ -115,20 +116,6 @@ async def save_alert_event(alert_event: NewsEvent, generated_response: str, resp
     db.add(alert_event_db)
     await db.commit()
 
-async def save_document(sourced_document: SourcedData, db: AsyncSession):
-    monitored_data_db = MonitoredData(
-        id=sourced_document.id,
-        source=sourced_document.source,
-        name=sourced_document.name,
-        content=sourced_document.content,
-        content_embedding=sourced_document.content_embedding,
-        monitored_datetime=sourced_document.retrieved_datetime,
-        agent_controller_id=sourced_document.agent_controller_id,
-    )
-    db.add(monitored_data_db)
-    await db.commit()
-    await db.refresh(monitored_data_db)
-
 async def register_credit_usage(alert_prompt: AlertPrompt, generated_response: str, db: AsyncSession):
     
     input_tokens_count = count_tokens(alert_prompt.prompt, alert_prompt.llm_model)
@@ -147,4 +134,6 @@ async def register_credit_usage(alert_prompt: AlertPrompt, generated_response: s
     
     agent_controller_db.credit_balance -= (input_tokens_price + output_tokens_price)
     
+    alert_prompt.status = AlertStatus.WARNED if alert_prompt.is_recurring else AlertStatus.TRIGGERED
+        
     await db.commit()

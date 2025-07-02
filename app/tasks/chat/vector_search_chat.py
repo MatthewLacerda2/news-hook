@@ -1,27 +1,29 @@
-from typing import List
+import logging
+import numpy as np
+from typing import List 
 from datetime import datetime
 from sqlalchemy import select
-import numpy as np
-import logging
-
-from app.core.database import AsyncSessionLocal
-from app.models.alert_prompt import AlertPrompt, AlertStatus
-from app.tasks.llm_verification import verify_document_matches_alert
-from app.utils.sourced_data import SourcedData
-from app.tasks.llm_apis.gemini import get_gemini_embeddings
-from app.models.monitored_data import DataSource
-from app.utils.env import DATA_SIMILARITY_THRESHOLD
+from app.models.llm_models import LLMModel
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.database import AsyncSessionLocal
+from app.models.monitored_data import DataSource
+from app.utils.sourced_data import SourcedData
+from app.utils.env import DATA_SIMILARITY_THRESHOLD
+from app.models.llm_verification import LLMVerification
+from app.models.alert_chat import AlertChat, AlertChatStatus
+from app.tasks.llm_apis.gemini import get_gemini_embeddings
+from app.tasks.chat.llm_chat_verification import verify_document_matches_alert_chat
+
 
 logger = logging.getLogger(__name__)
 
-async def vector_search(sourced_document: SourcedData):
+
+async def vector_search_chat(sourced_document: SourcedData):
     """
     Process a document from a webscrape source and store it in the vector database.
     For each ACTIVE alert that has matching keywords, perform vector similarity search
     to determine if the document is relevant to the alert's intent.
     """
-
     db = AsyncSessionLocal()
     
     logger.info(f"Performing vector search for document: {sourced_document.name}")
@@ -32,10 +34,10 @@ async def vector_search(sourced_document: SourcedData):
     
     agent_controller_id = sourced_document.agent_controller_id if sourced_document.source == DataSource.USER_DOCUMENT else None
     
-    active_alerts = await find_matching_alerts(db, document_embedding, agent_controller_id, sourced_document.content)
+    active_alerts = await find_matching_alert_chats(db, document_embedding, agent_controller_id, sourced_document.content)
     
     for alert in active_alerts:
-        await verify_document_matches_alert(
+        await verify_document_matches_alert_chat(
             alert_id=str(alert.id),
             sourced_document=sourced_document,
         )
@@ -43,7 +45,7 @@ async def vector_search(sourced_document: SourcedData):
     for alert in active_alerts:
         logger.info(f"Alert prompt matching: {alert.prompt}")
 
-async def find_matching_alerts(db: AsyncSession, document_embedding: np.ndarray, agent_controller_id: str | None, document_content: str) -> List[AlertPrompt]:
+async def find_matching_alert_chats(db: AsyncSession, document_embedding: np.ndarray, agent_controller_id: str | None, document_content: str) -> List[AlertChat]:
     """
     Find active alerts where the prompt_embedding is similar to the document_embedding using PostgreSQL vector search.
     If agent_controller_id is provided, only return alerts belonging to that controller.
@@ -52,15 +54,12 @@ async def find_matching_alerts(db: AsyncSession, document_embedding: np.ndarray,
     embedding_list = [float(x) for x in document_embedding.tolist()]
     
     conditions = [
-        AlertPrompt.status == AlertStatus.ACTIVE or AlertPrompt.status == AlertStatus.WARNED,
-        AlertPrompt.expires_at > datetime.now(),
-        AlertPrompt.prompt_embedding.cosine_distance(embedding_list) <= DATA_SIMILARITY_THRESHOLD,
+        AlertChat.status == AlertChatStatus.ACTIVE or AlertChat.status == AlertChatStatus.WARNED,
+        AlertChat.expires_at > datetime.now(),
+        AlertChat.prompt_embedding.cosine_distance(embedding_list) <= DATA_SIMILARITY_THRESHOLD,
     ]
     
-    if agent_controller_id is not None:
-        conditions.append(AlertPrompt.agent_controller_id == agent_controller_id)
-    
-    stmt = select(AlertPrompt).where(*conditions)
+    stmt = select(AlertChat).where(*conditions)
     result = await db.execute(stmt)
     alerts = result.scalars().all()
     
@@ -71,4 +70,3 @@ async def find_matching_alerts(db: AsyncSession, document_embedding: np.ndarray,
             filtered_alerts.append(alert)
             
     return filtered_alerts
-    

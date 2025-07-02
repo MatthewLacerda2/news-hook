@@ -16,6 +16,7 @@ import asyncio
 import uuid
 from typing import Optional
 from sqlalchemy.types import String
+from app.tasks.chat.vector_search_chat import vector_search_chat
 
 router = APIRouter()
 
@@ -38,6 +39,10 @@ async def process_document(document: MonitoredData):
     await vector_search(
         sourced_data
     )
+    if document.source != DataSource.USER_DOCUMENT:
+        await vector_search_chat(
+            sourced_data
+        )
 
 @router.post(
     "/",

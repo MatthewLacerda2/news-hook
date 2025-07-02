@@ -12,6 +12,7 @@ import httpx
 import logging
 import json
 from httpx import HTTPTransport
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -37,12 +38,16 @@ async def generate_and_send_alert_chat(alert_chat: AlertChat, sourced_document: 
 
 async def send_alert_chat(generated_response: str, telegram_id: str, db: AsyncSession) -> int:
     
-    logger.info(f"Sending alert_chat to telegram_id {telegram_id}: {generated_response}")   #TODO: abreviar o generated_response para o logging
+    logger.info(f"Sending alert_chat to telegram_id {telegram_id}: {generated_response[:34]}")
     
     transport = HTTPTransport()
     with httpx.Client(transport=transport, timeout=10) as client:
-        telegram_url = f"https://telegram:/TOKEN:/{telegram_id}"    #TODO: telegram token here
-        response : httpx.Response = client.post("", json=generated_response)
+        telegram_url = f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/sendMessage"
+        json = {
+            "chat_id": telegram_id,
+            "text": generated_response
+        }
+        response : httpx.Response = client.post(telegram_url, json=json)
     return response.status_code
 
 async def save_alert_event(alert_event: ChatEvent, generated_response: str, response_status_code: int, llm_model: LLMModel, db: AsyncSession) -> AlertEvent:

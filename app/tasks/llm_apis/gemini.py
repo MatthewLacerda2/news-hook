@@ -14,13 +14,13 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 def get_client():
-    credentials = Credentials(
-        token=None,  # Token is automatically fetched using refresh token
-        refresh_token=settings.GOOGLE_REFRESH_TOKEN,
-        client_id=settings.GOOGLE_CLIENT_ID,
-        client_secret=settings.GOOGLE_CLIENT_SECRET,
-        token_uri='https://oauth2.googleapis.com/token',  # This is the standard Google OAuth2 token endpoint
-    )
+    #credentials = Credentials(
+        #token=None,  # Token is automatically fetched using refresh token
+        #refresh_token=settings.GOOGLE_REFRESH_TOKEN,
+        #client_id=settings.GOOGLE_CLIENT_ID,
+        #client_secret=settings.GOOGLE_CLIENT_SECRET,
+        #token_uri='https://oauth2.googleapis.com/token',  # This is the standard Google OAuth2 token endpoint
+    #)
     
     return Client(
         vertexai=True,
@@ -82,7 +82,7 @@ def get_gemini_verification(alert_prompt: str, document: str, llm_model: str) ->
     # Parse the JSON string into our Pydantic model
     return LLMVerificationFormat.model_validate_json(json_response)
 
-#TODO: we gotta support schemaless generation
+
 def get_gemini_alert_generation(document: str, payload_format: str, alert_prompt: str, llm_model: str) -> str:
     
     client = get_client()

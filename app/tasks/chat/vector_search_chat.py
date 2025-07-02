@@ -45,7 +45,7 @@ async def vector_search_chat(sourced_document: SourcedData):
     for alert in active_alerts:
         logger.info(f"Alert prompt matching: {alert.prompt}")
 
-async def find_matching_alert_chats(db: AsyncSession, document_embedding: np.ndarray, agent_controller_id: str | None, document_content: str) -> List[AlertChat]:
+async def find_matching_alert_chats(db: AsyncSession, document_embedding: np.ndarray, document_content: str) -> List[AlertChat]:
     """
     Find active alerts where the prompt_embedding is similar to the document_embedding using PostgreSQL vector search.
     If agent_controller_id is provided, only return alerts belonging to that controller.

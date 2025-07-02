@@ -1,4 +1,5 @@
 from app.models.agent_controller import AgentController
+from app.models.alert_chat import AlertChat
 from app.models.alert_event import AlertEvent
 from app.models.alert_prompt import AlertPrompt
 from app.models.api_source import APISource

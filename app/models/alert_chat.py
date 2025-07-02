@@ -33,6 +33,6 @@ class AlertChat(Base):
     created_at = Column(DateTime, nullable=False, default=datetime.now())
     expires_at = Column(DateTime, nullable=False)
 
-    alert_events = relationship("AlertEvent", back_populates="alert_prompt")
+    alert_events = relationship("AlertEvent", back_populates="alert_chat")
     llm_validations = relationship("LLMValidation", back_populates="alert_chat")
     llm_verifications = relationship("LLMVerification", back_populates="alert_chat")

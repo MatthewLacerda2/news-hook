@@ -9,7 +9,7 @@ from app.utils.env import LLM_VERIFICATION_THRESHOLD, FLAGSHIP_MODEL
 from app.utils.llm_validator import get_token_price
 from app.models.llm_validation import LLMValidation
 from app.utils.llm_validator import count_tokens
-from app.models.alert_chat import AlertChat, AlertStatus
+from app.models.alert_chat import AlertChat, AlertChatStatus
 from datetime import datetime, timedelta
 import uuid
 import asyncio
@@ -107,7 +107,7 @@ async def cancel_alert_chat(alert_id: str, telegram_id: str, db: AsyncSession = 
     if not alert:
         return "That alert does not exist"
     
-    alert.status = AlertStatus.CANCELLED
+    alert.status = AlertChatStatus.CANCELLED
     await db.commit()
     
     return "Alert cancelled!"
@@ -122,7 +122,7 @@ async def list_alerts_chats(telegram_id: str, db: AsyncSession = Depends(get_db)
     
     stmt = select(AlertChat).where(
         AlertChat.telegram_id == telegram_id,
-        AlertChat.status == AlertStatus.ACTIVE or AlertStatus.WARNED,
+        AlertChat.status == AlertChatStatus.ACTIVE or AlertChatStatus.WARNED,
         AlertChat.created_at >= datetime.now()
     )
     result = await db.execute(stmt)

@@ -20,7 +20,7 @@ async def generate_and_send_alert_chat(alert_chat: AlertChat, sourced_document: 
     
     generated_response = get_gemini_alert_generation(
         sourced_document.content,
-        None,
+        False,
         alert_chat.prompt,
         llm_model.model_name
     )

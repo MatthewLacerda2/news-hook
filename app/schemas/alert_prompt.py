@@ -13,7 +13,6 @@ class AlertPromptCreateRequestBase(BaseModel):
     # Optional fields
     http_method: Optional[HttpMethod] = Field(default=HttpMethod.POST, description="HTTP method to alert at")
     llm_model: Optional[str] = Field(default=FLAGSHIP_MODEL, description="The LLM model to use for the alert")
-    payload_format: Optional[Dict] = Field(None, description="A JSON schema describing the expected payload (e.g., from .model_json_schema())")
     max_datetime: Optional[datetime] = Field(None, description=f"Monitoring window. Must be within the next {MAX_DATETIME} days")
     
 
@@ -49,40 +48,6 @@ class AlertPromptCreateRequestBase(BaseModel):
                 
         return v
 
-    @field_validator('payload_format')
-    @classmethod
-    def validate_payload_format(cls, v: Optional[Dict]) -> Optional[Dict]:
-        if v is None:
-            return v
-            
-        required_schema_fields = {'properties', 'title', 'type'}
-        if not all(field in v for field in required_schema_fields):
-            raise ValueError("Payload format must be a valid JSON Schema with 'type' and 'properties' fields")
-                
-        if not isinstance(v.get('properties'), dict):
-            raise ValueError("Properties must be a dictionary of field definitions")    
-        
-        if v.get('type') != 'object':
-            raise ValueError("Root schema type must be 'object'")
-        
-        for prop_name, prop_def in v['properties'].items():
-            if not isinstance(prop_def, dict):
-                raise ValueError(f"Property definition for {prop_name} must be a dictionary")
-            if 'type' not in prop_def:
-                raise ValueError(f"Property {prop_name} must have a 'type' field")
-        
-        required_fields = v.get('required', [])
-        if required_fields:
-            if not isinstance(required_fields, list):
-                raise ValueError("'required' must be a list of field names")
-            if not all(isinstance(field, str) for field in required_fields):
-                raise ValueError("All required field names must be strings")
-            for field in required_fields:
-                if field not in v['properties']:
-                    raise ValueError(f"Required field '{field}' must be defined in properties")
-                
-        return v
-
 class AlertPromptCreateSuccessResponse(BaseModel):
     id: str = Field(..., description="The ID of the alert")
     prompt: str = Field(..., description="The description of what to monitor")
@@ -99,7 +64,6 @@ class AlertPromptItem(BaseModel):
     http_method: HttpMethod
     http_url: HttpUrl
     http_headers: Optional[Dict] = Field(None, description="HTTP headers to send with the request")
-    payload_format: Optional[Dict] = Field(None, description="A JSON schema describing the expected payload")
     is_recurring: bool = Field(..., description="Whether the alert is recurring")
     tags: List[str] = Field(default_factory=list, description="Tags for hinting")
     status: AlertStatus 
@@ -121,5 +85,4 @@ class AlertPatchRequest(BaseModel):
     is_recurring: Optional[bool] = Field(None, description="Should we send the alert every time the condition is met?")
     http_method: Optional[HttpMethod] = Field(None, description="HTTP method to alert at")
     llm_model: Optional[str] = Field(None, description="The LLM model to use for the alert")
-    payload_format: Optional[Dict] = Field(None, description="A JSON schema describing the expected payload (e.g., from .model_json_schema())")
     max_datetime: Optional[datetime] = Field(None, description=f"Monitoring window. Must be within the next {MAX_DATETIME} days")

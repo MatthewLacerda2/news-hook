@@ -16,7 +16,6 @@ test_alert_data = {
     "http_headers": {
         "Content-Type": "application/json"
     },
-    "payload_format": TestPayload.model_json_schema(),
     "llm_model": "gemini-2.5-pro",
     "max_datetime": (datetime.now() + timedelta(days=300)).isoformat(),
     "is_recurring": False,
@@ -111,20 +110,6 @@ async def test_create_alert_insufficient_credits(client, valid_user_with_credits
     )
     assert response.status_code == 403
     assert "Insufficient credits" in response.json()["detail"]
-
-@pytest.mark.asyncio
-async def test_create_alert_invalid_payload_format(client, valid_user_with_credits):
-    user_data = valid_user_with_credits
-
-    alert_data = test_alert_data
-    alert_data["payload_format"] = "not-a-valid-json"
-
-    response = await client.post("/api/v1/alerts/", json=alert_data, headers={"X-API-Key": user_data["api_key"]})
-    assert response.status_code == 422
-        
-    assert any(
-        "Input should be a valid dictionary" in error["msg"] for error in response.json()["detail"]
-    )
 
 @pytest.mark.asyncio
 async def test_create_alert_invalid_max_datetime(client, valid_user_with_credits):
@@ -453,7 +438,6 @@ async def test_patch_alert_successful(client, valid_user_with_credits, sample_ll
         "is_recurring": True,
         "http_method": "PUT",
         "llm_model": "gemini-2.0-flash",
-        "payload_format": {"type": "object", "properties": {"new_field": {"type": "string"}}},
         "max_datetime": (datetime.now() + timedelta(days=200)).isoformat()
     }
     
@@ -476,7 +460,6 @@ async def test_patch_alert_successful(client, valid_user_with_credits, sample_ll
     assert patched_alert["is_recurring"] == patch_data["is_recurring"]
     assert patched_alert["http_method"] == patch_data["http_method"]
     assert patched_alert["llm_model"] == patch_data["llm_model"]
-    assert patched_alert["payload_format"] == patch_data["payload_format"]
     assert patched_alert["max_datetime"] == patch_data["max_datetime"]
         
     # Verify the changes persist by getting the alert again
@@ -494,5 +477,4 @@ async def test_patch_alert_successful(client, valid_user_with_credits, sample_ll
     assert retrieved_alert["is_recurring"] == patch_data["is_recurring"]
     assert retrieved_alert["http_method"] == patch_data["http_method"]
     assert retrieved_alert["llm_model"] == patch_data["llm_model"]
-    assert retrieved_alert["payload_format"] == patch_data["payload_format"]
     assert retrieved_alert["max_datetime"] == patch_data["max_datetime"]

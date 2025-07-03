@@ -83,17 +83,16 @@ def get_gemini_verification(alert_prompt: str, document: str, llm_model: str) ->
     return LLMVerificationFormat.model_validate_json(json_response)
 
 
-def get_gemini_alert_generation(document: str, payload_format: str, alert_prompt: str, llm_model: str) -> str:
+def get_gemini_alert_generation(document: str, is_json: bool, alert_prompt: str, llm_model: str) -> str:
     
     client = get_client()
-    full_prompt = get_generation_prompt(document, payload_format, alert_prompt)
+    full_prompt = get_generation_prompt(document, alert_prompt)
     
-    response_type = 'application/json' if payload_format is not None else 'text'
+    response_type = 'application/json' if is_json else 'text'
         
     response = client.models.generate_content(
         model=llm_model, contents=full_prompt, config=GenerateContentConfig(
         response_mime_type=response_type,
-        response_schema=payload_format,
         temperature=gemini_temperature,
         automatic_function_calling={"disable": True}
     ),)

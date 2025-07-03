@@ -101,11 +101,10 @@ Write in the language/dialect of the user's request.
 Current date and time: {current_date_time}
 """
 
-def get_generation_prompt(document: str, payload_format: str, alert_prompt: str):
+def get_generation_prompt(document: str, alert_prompt: str):
     current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return generation_prompt.format(
         document=document,
-        payload_format=payload_format,
         alert_prompt=alert_prompt,
         current_date_time=current_date_time
     )

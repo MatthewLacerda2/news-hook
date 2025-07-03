@@ -24,7 +24,7 @@ async def generate_and_send_alert(alert_prompt: AlertPrompt, sourced_document: S
     
     generated_response = get_gemini_alert_generation(
         sourced_document.content,
-        alert_prompt.payload_format,
+        True,
         alert_prompt.prompt,
         llm_model.model_name
     )

@@ -23,7 +23,7 @@ from sqlalchemy import select
 from sqlalchemy import func
 from app.tasks.save_embedding import generate_and_save_alert_embeddings
 import uuid
-from app.utils.env import MAX_DATETIME, LLM_VERIFICATION_THRESHOLD, ALERT_CREATION_PRICE
+from app.utils.env import MAX_DATETIME, LLM_VERIFICATION_THRESHOLD, ALERT_CREATION_PRICE, FLAGSHIP_MODEL
 import logging
 
 logger = logging.getLogger(__name__)
@@ -49,6 +49,9 @@ async def create_alert(
         )
     
     try:
+        
+        if alert_data.llm_model is None:
+            alert_data.llm_model = FLAGSHIP_MODEL
                 
         stmt = select(LLMModel).where(
             LLMModel.model_name == alert_data.llm_model,

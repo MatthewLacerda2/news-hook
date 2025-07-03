@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
 from app.utils.env import LLM_VERIFICATION_THRESHOLD, FLAGSHIP_MODEL
 from app.utils.llm_validator import get_token_price
+from app.models.llm_models import LLMModel
 from app.models.llm_validation import LLMValidation
 from app.utils.llm_validator import count_tokens
 from app.models.alert_chat import AlertChat, AlertChatStatus
@@ -33,10 +34,16 @@ async def create_alert_chat(prompt: str, telegram_id: str, db: AsyncSession = De
     if is_duplicated:
         return "That Alert is already active"
     
-    llm_validation_response = get_llm_validation(prompt, FLAGSHIP_MODEL)    
+    stmt = select(LLMModel).where(
+        LLMModel.model_name == FLAGSHIP_MODEL
+    )
+    result = await db.execute(stmt)
+    llm_model = result.scalar_one_or_none()
+    
+    llm_validation_response = get_llm_validation(prompt, llm_model.model_name)
     llm_validation_str = llm_validation_response.model_dump_json()
                 
-    input_price, output_price = get_token_price(prompt, llm_validation_str, FLAGSHIP_MODEL)    
+    input_price, output_price = get_token_price(prompt, llm_validation_str, llm_model)
         
     now = datetime.now()
         
@@ -59,7 +66,7 @@ async def create_alert_chat(prompt: str, telegram_id: str, db: AsyncSession = De
     await db.commit()
 
     if not llm_validation_response.approval or llm_validation_response.chance_score < LLM_VERIFICATION_THRESHOLD:
-        return "I'm sorry, I cannot create an alert for you. Reason: " + llm_validation_response.reason
+        return "I'm sorry, I cannot create an alert on that. Reason: " + llm_validation_response.reason
     
     expire_date = (now + timedelta(days=30)).replace(hour=23, minute=59, second=59)
     
@@ -122,7 +129,7 @@ async def list_alerts_chats(telegram_id: str, db: AsyncSession = Depends(get_db)
     
     stmt = select(AlertChat).where(
         AlertChat.telegram_id == telegram_id,
-        AlertChat.status == AlertChatStatus.ACTIVE or AlertChatStatus.WARNED,
+        AlertChat.status == AlertChatStatus.ACTIVE or AlertChat.status == AlertChatStatus.WARNED,
         AlertChat.created_at >= datetime.now()
     )
     result = await db.execute(stmt)

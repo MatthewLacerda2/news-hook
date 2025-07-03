@@ -28,6 +28,11 @@ class AlertChat(Base):
     prompt = Column(String, nullable=False)
     prompt_embedding = Column(Vector(NUM_EMBEDDING_DIMENSIONS), nullable=True)
     
+    username = Column(String, nullable=True)
+    language_code = Column(String, nullable=True)
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+    
     keywords = Column(JSON, nullable=False)
     status = Column(SQLEnum(AlertChatStatus), nullable=False, default=AlertChatStatus.ACTIVE)
     created_at = Column(DateTime, nullable=False, default=datetime.now())

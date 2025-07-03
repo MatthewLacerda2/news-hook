@@ -1,10 +1,9 @@
 import logging
-from fastapi import APIRouter
-from fastapi import status
+from fastapi import APIRouter, HTTPException, status
+from fastapi import Depends
 from app.utils.llm_validator import is_alert_chat_duplicated, get_llm_validation
 from app.core.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import Depends
 from app.utils.env import LLM_VERIFICATION_THRESHOLD, FLAGSHIP_MODEL
 from app.utils.llm_validator import get_token_price
 from app.models.llm_models import LLMModel
@@ -16,19 +15,25 @@ import uuid
 import asyncio
 from app.tasks.save_embedding import generate_and_save_alert_chat_embeddings
 from sqlalchemy import select
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-#TODO: tests for them' all
 
-@router.post(
-    "/",
-    status_code=status.HTTP_201_CREATED,
-    response_model=str,
-    description="Create a new alert for monitoring"
-)
-async def create_alert_chat(prompt: str, telegram_id: str, db: AsyncSession = Depends(get_db)):
+async def create_alert_chat(
+    command_text: str, 
+    telegram_id: str, 
+    db: AsyncSession,
+    username: str = None,
+    language_code: str = None,
+    first_name: str = "Unknown",
+    last_name: str = ""
+):
+    prompt = command_text.replace("/create", "").strip()
+    
+    if not prompt:
+        return "Please provide a prompt after /create"
     
     is_duplicated = await is_alert_chat_duplicated(prompt, telegram_id, db)
     if is_duplicated:
@@ -70,11 +75,22 @@ async def create_alert_chat(prompt: str, telegram_id: str, db: AsyncSession = De
     
     expire_date = (now + timedelta(days=30)).replace(hour=23, minute=59, second=59)
     
+    if username:
+        user_display_name = f"@{username}"
+    elif last_name:
+        user_display_name = f"{first_name} {last_name}"
+    else:
+        user_display_name = first_name
+    
     new_alert_chat = AlertChat(
         id=str(uuid.uuid4()),
         telegram_id=telegram_id,
         prompt=prompt,
         keywords=llm_validation_response.keywords,
+        username=username,
+        language_code=language_code,
+        first_name=first_name,
+        last_name=last_name,
         created_at=now,
         expires_at=expire_date
     )
@@ -92,18 +108,17 @@ async def create_alert_chat(prompt: str, telegram_id: str, db: AsyncSession = De
         )
     )
     
-    expire_date_str : str = expire_date.strftime("%d/%m/%y")
-    keyword_hashtags : str = " ".join([f"#{keyword}" for keyword in llm_validation_response.keywords])
+    expire_date_str = expire_date.strftime("%d/%m/%y")
+    keyword_hashtags = " ".join([f"#{keyword}" for keyword in llm_validation_response.keywords])
     
-    return f"Got it! Alert created. Id: {new_alert_chat.id}, will be active until {expire_date_str} {keyword_hashtags}"
+    return f"Got it, {user_display_name}! Alert created. Id: {new_alert_chat.id}, will be active until {expire_date_str} {keyword_hashtags}"
 
-@router.patch(
-    "/{alert_id}/cancel",
-    status_code=status.HTTP_200_OK,
-    response_model=str,
-    description="Mark an alert as CANCELLED. We do not 'delete' the alert") #Not for billing purposes, but for metrics
-async def cancel_alert_chat(alert_id: str, telegram_id: str, db: AsyncSession = Depends(get_db)):
-        
+async def cancel_alert_chat(command_text: str, telegram_id: str, db: AsyncSession):
+    alert_id = command_text.replace("/cancel", "").strip()
+    
+    if not alert_id:
+        return "Please provide an alert ID after /cancel"
+    
     stmt = select(AlertChat).where(
         AlertChat.id == alert_id,
         AlertChat.telegram_id == telegram_id
@@ -118,15 +133,8 @@ async def cancel_alert_chat(alert_id: str, telegram_id: str, db: AsyncSession = 
     await db.commit()
     
     return "Alert cancelled!"
-    
 
-@router.get(
-    "/",
-    response_model=str,
-    description="List all active alerts"
-)
-async def list_alerts_chats(telegram_id: str, db: AsyncSession = Depends(get_db)):
-    
+async def list_alerts_chats(telegram_id: str, db: AsyncSession):
     stmt = select(AlertChat).where(
         AlertChat.telegram_id == telegram_id,
         AlertChat.status == AlertChatStatus.ACTIVE or AlertChat.status == AlertChatStatus.WARNED,
@@ -145,3 +153,42 @@ async def list_alerts_chats(telegram_id: str, db: AsyncSession = Depends(get_db)
         alert_strings.append(alert_string)
     
     return "\n".join(alert_strings)
+
+@router.post("/webhook/{token}")
+async def handle_telegram_webhook(
+    token: str,
+    update: dict,
+    db: AsyncSession = Depends(get_db)
+):
+    if token != settings.TELEGRAM_BOT_TOKEN:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid bot token"
+        )
+    
+    message = update.get("message", {})
+    if not message:
+        return "No message found in update"
+    
+    text = message.get("text", "")
+    if not text:
+        return "No text found in message"
+    
+    from_user = message.get("from", {})
+    telegram_id = str(from_user.get("id"))
+    if not telegram_id:
+        return "No user ID found in message"
+    
+    username = from_user.get("username")
+    language_code = from_user.get("language_code")
+    first_name = from_user.get("first_name", "Unknown")
+    last_name = from_user.get("last_name", "")
+    
+    if text.startswith("/create"):
+        return await create_alert_chat(text, telegram_id, db, username, language_code, first_name, last_name)
+    elif text.startswith("/cancel"):
+        return await cancel_alert_chat(text, telegram_id, db)
+    elif text.startswith("/list"):
+        return await list_alerts_chats(telegram_id, db)
+    else:
+        return "Unknown command. Use /create, /cancel, or /list"

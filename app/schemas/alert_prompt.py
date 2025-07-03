@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, List
 from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict
 from app.models.alert_prompt import AlertStatus, HttpMethod
-from app.utils.env import MAX_DATETIME
+from app.utils.env import MAX_DATETIME, FLAGSHIP_MODEL
 
 class AlertPromptCreateRequestBase(BaseModel):
     prompt: str = Field(..., description="The description of what to monitor. Try to be specific, clear and succinct.")
@@ -12,7 +12,7 @@ class AlertPromptCreateRequestBase(BaseModel):
     
     # Optional fields
     http_method: Optional[HttpMethod] = Field(default=HttpMethod.POST, description="HTTP method to alert at")
-    llm_model: Optional[str] = Field(default="gemini-2.0-flash", description="The LLM model to use for the alert")
+    llm_model: Optional[str] = Field(default=FLAGSHIP_MODEL, description="The LLM model to use for the alert")
     payload_format: Optional[Dict] = Field(None, description="A JSON schema describing the expected payload (e.g., from .model_json_schema())")
     max_datetime: Optional[datetime] = Field(None, description=f"Monitoring window. Must be within the next {MAX_DATETIME} days")
     

@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, and_, func, cast
 from app.schemas.user_document import UserDocumentCreateRequest, UserDocumentCreateSuccessResponse, UserDocumentItem, UserDocumentListResponse
 from app.tasks.save_embedding import generate_and_save_document_embeddings
-from app.tasks.vector_search import perform_embed_and_vector_search
+from app.tasks.vector_search import vector_search
 from app.utils.sourced_data import SourcedData
 from app.models.agent_controller import AgentController
 from app.core.security import get_user_by_api_key
@@ -16,6 +16,7 @@ import asyncio
 import uuid
 from typing import Optional
 from sqlalchemy.types import String
+from app.tasks.chat.vector_search_chat import vector_search_chat
 
 router = APIRouter()
 
@@ -35,9 +36,13 @@ async def process_document(document: MonitoredData):
         document_id=document.id
     )
     
-    await perform_embed_and_vector_search(
+    await vector_search(
         sourced_data
     )
+    if document.source != DataSource.USER_DOCUMENT:
+        await vector_search_chat(
+            sourced_data
+        )
 
 @router.post(
     "/",

@@ -8,7 +8,8 @@ class LLMVerification(Base):
     __tablename__ = "llm_verifications"
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    alert_prompt_id = Column(String(36), ForeignKey('alert_prompts.id'), nullable=False)
+    alert_prompt_id = Column(String(36), ForeignKey('alert_prompts.id'), nullable=True)
+    alert_chat_id = Column(String(36), ForeignKey('alert_chats.id'), nullable=True)
     document_id = Column(String(36), ForeignKey('monitored_data.id', ondelete='SET NULL'), nullable=True)
     
     approval = Column(Boolean, nullable=False)
@@ -25,4 +26,5 @@ class LLMVerification(Base):
     date_time = Column(DateTime, nullable=False)
     
     alert_prompt = relationship("AlertPrompt", back_populates="llm_verifications")
+    alert_chat = relationship("AlertChat", back_populates="llm_verifications")
     monitored_data = relationship("MonitoredData")

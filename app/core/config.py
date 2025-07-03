@@ -7,16 +7,17 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     
     GOOGLE_CLIENT_ID: str
-    GOOGLE_CLIENT_SECRET: str
-    GOOGLE_REDIRECT_URI: str
-    
-    GOOGLE_REFRESH_TOKEN: str
     GOOGLE_PROJECT_ID: str
+    GOOGLE_REDIRECT_URI: str
+    #GOOGLE_CLIENT_SECRET: str
+    #GOOGLE_REFRESH_TOKEN: str
     
+    SECRET_KEY: str
     JWT_ISSUER: str
     JWT_AUDIENCE: str
-    SECRET_KEY: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30
+    
+    TELEGRAM_BOT_TOKEN: str
     
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "News Hook"

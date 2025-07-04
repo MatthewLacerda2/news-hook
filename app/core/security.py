@@ -11,6 +11,7 @@ from app.core.database import get_db
 from app.models.agent_controller import AgentController
 from sqlalchemy import select
 import logging
+from app.utils.env import JWT_ISSUER, JWT_AUDIENCE
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +28,8 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     
     to_encode.update({
         "exp": expire,
-        "iss": settings.JWT_ISSUER,  # Add issuer claim
-        "aud": settings.JWT_AUDIENCE  # Add audience claim
+        "iss": JWT_ISSUER,  # Add issuer claim
+        "aud": JWT_AUDIENCE  # Add audience claim
     })
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
     return encoded_jwt
@@ -94,8 +95,8 @@ def verify_token(token: str) -> dict:
             token, 
             settings.SECRET_KEY, 
             algorithms=["HS256"],
-            issuer=settings.JWT_ISSUER,
-            audience=settings.JWT_AUDIENCE
+            issuer=JWT_ISSUER,
+            audience=JWT_AUDIENCE
         )
         return payload
     except JWTError:

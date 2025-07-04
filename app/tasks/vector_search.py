@@ -1,6 +1,6 @@
 from typing import List
 from datetime import datetime
-from sqlalchemy import select
+from sqlalchemy import select, or_
 import numpy as np
 import logging
 
@@ -56,7 +56,7 @@ async def find_matching_alerts(db: AsyncSession, document_embedding: np.ndarray,
     embedding_list = [float(x) for x in document_embedding.tolist()]
     
     conditions = [
-        AlertPrompt.status == AlertStatus.ACTIVE or AlertPrompt.status == AlertStatus.WARNED,
+        or_(AlertPrompt.status == AlertStatus.ACTIVE, AlertPrompt.status == AlertStatus.WARNED),
         AlertPrompt.expires_at > datetime.now(),
         AlertPrompt.prompt_embedding.cosine_distance(embedding_list) <= DATA_SIMILARITY_THRESHOLD,
     ]

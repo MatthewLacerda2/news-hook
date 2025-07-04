@@ -38,7 +38,8 @@ def get_validation_prompt(alert_prompt: str):
     current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return validation_prompt.format(
         alert_prompt=alert_prompt,
-        current_date_time=current_date_time
+        current_date_time=current_date_time,
+        LLM_VALIDATION_THRESHOLD=LLM_VALIDATION_THRESHOLD
     )
 
 verification_prompt = """
@@ -73,7 +74,8 @@ def get_verification_prompt(alert_prompt: str, document: str):
     return verification_prompt.format(
         alert_prompt=alert_prompt,
         document=document,
-        current_date_time=current_date_time
+        current_date_time=current_date_time,
+        LLM_VERIFICATION_THRESHOLD=LLM_VERIFICATION_THRESHOLD
     )
 
 generation_prompt = """

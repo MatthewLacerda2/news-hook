@@ -113,7 +113,7 @@ async def create_alert_chat(
     expire_date_str = expire_date.strftime("%d/%m/%y")
     keyword_hashtags = " ".join([f"#{keyword}" for keyword in llm_validation_response.keywords])
     
-    message = f"Got it! Alert created. Id: {new_alert_chat.id}, will be active until {expire_date_str} <b>{keyword_hashtags}</b>"
+    message = f"Got it! Alert created!\nWill be active until <b>{expire_date_str}</b>\n\n<b>{keyword_hashtags}</b>"
     
     await send_message(telegram_id, message)
     return message

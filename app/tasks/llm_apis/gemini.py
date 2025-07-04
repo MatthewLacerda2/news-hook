@@ -88,7 +88,7 @@ def get_gemini_alert_generation(document: str, is_json: bool, alert_prompt: str,
     client = get_client()
     full_prompt = get_generation_prompt(document, alert_prompt)
     
-    response_type = 'application/json' if is_json else 'text'
+    response_type = 'application/json' if is_json else 'text/plain'
         
     response = client.models.generate_content(
         model=llm_model, contents=full_prompt, config=GenerateContentConfig(

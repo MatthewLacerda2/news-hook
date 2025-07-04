@@ -25,15 +25,16 @@ async def generate_and_send_alert_chat(alert_chat: AlertChat, sourced_document: 
         llm_model.model_name
     )
     
+    response_status_code = await send_alert_chat(generated_response, alert_chat.telegram_id, db)
+    
     llm_generation_result = ChatEvent(
         id=str(uuid.uuid4()),
         document_id=sourced_document.id,
         alert_chat_id=alert_chat.id,
         triggered_at=datetime.now(),
     )
-
-    response_status_code = await send_alert_chat(llm_generation_result, generated_response, alert_chat.telegram_id, db)
-    await save_alert_event(generated_response, response_status_code, llm_model, db)
+    await save_alert_event(llm_generation_result, generated_response, response_status_code, llm_model, db)
+    
     await db.commit()
 
 async def send_alert_chat(generated_response: str, telegram_id: str, db: AsyncSession) -> int:

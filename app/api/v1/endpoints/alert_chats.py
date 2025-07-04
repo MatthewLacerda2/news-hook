@@ -152,7 +152,7 @@ async def list_alerts_chats(telegram_id: str, db: AsyncSession):
     stmt = select(AlertChat).where(
         AlertChat.telegram_id == telegram_id,
         AlertChat.status == AlertChatStatus.ACTIVE or AlertChat.status == AlertChatStatus.WARNED,
-        AlertChat.created_at >= datetime.now()
+        AlertChat.expires_at >= datetime.now()
     )
     result = await db.execute(stmt)
     alerts = result.scalars().all()

@@ -4,7 +4,7 @@ from fastapi import Depends
 from app.utils.llm_validator import is_alert_chat_duplicated, get_llm_validation
 from app.core.database import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.utils.env import LLM_VERIFICATION_THRESHOLD, FLAGSHIP_MODEL
+from app.utils.env import FLAGSHIP_MODEL, LLM_VALIDATION_THRESHOLD
 from app.utils.llm_validator import get_token_price
 from app.models.llm_models import LLMModel
 from app.models.llm_validation import LLMValidation
@@ -77,7 +77,7 @@ async def create_alert_chat(
     db.add(llm_validation)
     await db.commit()
 
-    if not llm_validation_response.approval or llm_validation_response.chance_score < LLM_VERIFICATION_THRESHOLD:
+    if not llm_validation_response.approval or llm_validation_response.chance_score < LLM_VALIDATION_THRESHOLD:
         message = "I'm sorry, I cannot create an alert on that. Reason: " + llm_validation_response.reason
         await send_message(telegram_id, message)
         return message

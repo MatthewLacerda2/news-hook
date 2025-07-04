@@ -17,6 +17,7 @@ from app.tasks.save_embedding import generate_and_save_alert_chat_embeddings
 from sqlalchemy import select
 from app.core.config import settings
 from app.utils.telegram_message import send_message
+from sqlalchemy import or_
 
 logger = logging.getLogger(__name__)
 
@@ -151,9 +152,10 @@ async def cancel_alert_chat(command_text: str, telegram_id: str, db: AsyncSessio
 async def list_alerts_chats(telegram_id: str, db: AsyncSession):
     stmt = select(AlertChat).where(
         AlertChat.telegram_id == telegram_id,
-        AlertChat.status == AlertChatStatus.ACTIVE or AlertChat.status == AlertChatStatus.WARNED,
-        AlertChat.expires_at >= datetime.now()
+        or_(AlertChat.status == AlertChatStatus.ACTIVE, AlertChat.status == AlertChatStatus.WARNED),
+        AlertChat.expires_at > datetime.now()
     )
+    
     result = await db.execute(stmt)
     alerts = result.scalars().all()
     
@@ -165,7 +167,7 @@ async def list_alerts_chats(telegram_id: str, db: AsyncSession):
     alert_strings = []
     for alert in alerts:
         expires_at_str = alert.expires_at.strftime("%d/%m/%y")
-        alert_string = f"Id: {alert.id}. Expires At: {expires_at_str}. Prompt: {alert.prompt}."
+        alert_string = f"<b>Alert</b>: {alert.prompt}\n<b>Expires At: {expires_at_str}\nId</b>: {alert.id}\n\n"
         alert_strings.append(alert_string)
     
     message = "\n".join(alert_strings)

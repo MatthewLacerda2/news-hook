@@ -2,7 +2,7 @@ import logging
 import numpy as np
 from typing import List 
 from datetime import datetime
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from app.models.llm_models import LLMModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import AsyncSessionLocal
@@ -52,7 +52,7 @@ async def find_matching_alert_chats(db: AsyncSession, document_embedding: np.nda
     Find all active or warned alerts that haven't expired, and log their id, prompt, and cosine similarity to the document.
     """
     conditions = [
-        (AlertChat.status == AlertChatStatus.ACTIVE) | (AlertChat.status == AlertChatStatus.WARNED),
+        or_(AlertChat.status == AlertChatStatus.ACTIVE, AlertChat.status == AlertChatStatus.WARNED),
         AlertChat.expires_at > datetime.now(),
         AlertChat.prompt_embedding != None,
     ]

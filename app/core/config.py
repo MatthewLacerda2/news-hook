@@ -5,9 +5,6 @@ from functools import lru_cache
 class Settings(BaseSettings):
 
     DATABASE_URL: str
-    
-    GOOGLE_CLIENT_ID: str
-    GOOGLE_PROJECT_ID: str
     GOOGLE_REDIRECT_URI: str
     
     SECRET_KEY: str

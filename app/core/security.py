@@ -11,7 +11,7 @@ from app.core.database import get_db
 from app.models.agent_controller import AgentController
 from sqlalchemy import select
 import logging
-from app.utils.env import JWT_ISSUER, JWT_AUDIENCE
+from app.utils.env import JWT_ISSUER, JWT_AUDIENCE, GOOGLE_CLIENT_ID
 
 logger = logging.getLogger(__name__)
 
@@ -51,11 +51,11 @@ def verify_google_token(token: str) -> dict:
         idinfo = id_token.verify_oauth2_token(
             token,
             requests.Request(),
-            settings.GOOGLE_CLIENT_ID
+            GOOGLE_CLIENT_ID
         )
         
         # Check if the token was issued to our client
-        if idinfo['aud'] != settings.GOOGLE_CLIENT_ID:
+        if idinfo['aud'] != GOOGLE_CLIENT_ID:
             raise ValueError("Token was not issued for this client")
             
         return {

@@ -11,3 +11,5 @@ FLAGSHIP_MODEL = "gemini-2.5-flash"
 JWT_ISSUER = "news-hook"
 JWT_AUDIENCE = "agent_controller"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 30
+GOOGLE_PROJECT_ID = "driven-actor-461001-j0"
+GOOGLE_CLIENT_ID = "205743657377-gg1iilbm7fcq4q1o7smi7c10bdhlnco0.apps.googleusercontent.com"

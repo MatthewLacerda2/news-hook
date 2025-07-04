@@ -9,6 +9,7 @@ import logging
 import numpy as np
 from app.utils.env import NUM_EMBEDDING_DIMENSIONS
 from app.core.config import settings
+from app.utils.env import GOOGLE_PROJECT_ID
 
 logger = logging.getLogger(__name__)
 load_dotenv()
@@ -24,7 +25,7 @@ def get_client():
     
     return Client(
         vertexai=True,
-        project=settings.GOOGLE_PROJECT_ID,
+        project=GOOGLE_PROJECT_ID,
         location="global",
         #credentials=credentials    #TODO: uncomment this when you figure the values out. They were fine until they weren't
     )

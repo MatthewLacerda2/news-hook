@@ -15,7 +15,8 @@ async def send_message(telegram_id: str, message: str) -> int:
         telegram_url = f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/sendMessage"
         json = {
             "chat_id": telegram_id,
-            "text": message
+            "text": message,
+            "parse_mode": "HTML"
         }
         response : httpx.Response = client.post(telegram_url, json=json)
         

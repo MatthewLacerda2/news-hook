@@ -34,11 +34,17 @@ async def create_alert_chat(
     prompt = command_text.replace("/create", "").strip()
     
     if not prompt:
-        return "Please provide a prompt after /create"
+        message = "Please provide a prompt after /create"
+        await send_message(telegram_id, message)
+        return message
     
     is_duplicated = await is_alert_chat_duplicated(prompt, telegram_id, db)
     if is_duplicated:
-        return "That Alert is already active"
+        message = "That Alert is already active"
+        await send_message(telegram_id, message)
+        return message
+    
+    await send_message(telegram_id, "Ok, let me see.........")
     
     stmt = select(LLMModel).where(
         LLMModel.model_name == FLAGSHIP_MODEL
@@ -72,17 +78,12 @@ async def create_alert_chat(
     await db.commit()
 
     if not llm_validation_response.approval or llm_validation_response.chance_score < LLM_VERIFICATION_THRESHOLD:
-        return "I'm sorry, I cannot create an alert on that. Reason: " + llm_validation_response.reason
+        message = "I'm sorry, I cannot create an alert on that. Reason: " + llm_validation_response.reason
+        await send_message(telegram_id, message)
+        return message
     
     expire_date = (now + timedelta(days=30)).replace(hour=23, minute=59, second=59)
-    
-    if username:
-        user_display_name = f"@{username}"
-    elif last_name:
-        user_display_name = f"{first_name} {last_name}"
-    else:
-        user_display_name = first_name
-    
+        
     new_alert_chat = AlertChat(
         id=str(uuid.uuid4()),
         telegram_id=telegram_id,
@@ -112,7 +113,7 @@ async def create_alert_chat(
     expire_date_str = expire_date.strftime("%d/%m/%y")
     keyword_hashtags = " ".join([f"#{keyword}" for keyword in llm_validation_response.keywords])
     
-    message = f"Got it, {user_display_name}! Alert created. Id: {new_alert_chat.id}, will be active until {expire_date_str} {keyword_hashtags}"
+    message = f"Got it! Alert created. Id: {new_alert_chat.id}, will be active until {expire_date_str} <b>{keyword_hashtags}</b>"
     
     await send_message(telegram_id, message)
     return message
@@ -122,7 +123,9 @@ async def cancel_alert_chat(command_text: str, telegram_id: str, db: AsyncSessio
     alert_id = command_text.replace("/cancel", "").strip()
     
     if not alert_id:
-        return "Please provide an alert ID after /cancel"
+        message = "Please provide an alert ID after <b>/cancel</b>"
+        await send_message(telegram_id, message)
+        return message
     
     stmt = select(AlertChat).where(
         AlertChat.id == alert_id,
@@ -132,7 +135,9 @@ async def cancel_alert_chat(command_text: str, telegram_id: str, db: AsyncSessio
     alert = result.scalar_one_or_none()
     
     if not alert:
-        return "That alert does not exist"
+        message = "That alert does not exist."
+        await send_message(telegram_id, message)
+        return message
     
     alert.status = AlertChatStatus.CANCELLED
     await db.commit()
@@ -152,8 +157,10 @@ async def list_alerts_chats(telegram_id: str, db: AsyncSession):
     alerts = result.scalars().all()
     
     if not alerts:
-        return "There are no active alerts."
-    
+        message = "There are no active alerts."
+        await send_message(telegram_id, message)
+        return message
+
     alert_strings = []
     for alert in alerts:
         expires_at_str = alert.expires_at.strftime("%d/%m/%y")
@@ -179,16 +186,27 @@ async def handle_telegram_webhook(
     
     message = update.get("message", {})
     if not message:
-        return "No message found in update"
+        message = "No message found in update"
+        await send_message(telegram_id, message)
+        return message
     
     text = message.get("text", "")
     if not text:
-        return "No text found in message"
+        message = "No text found in message"
+        await send_message(telegram_id, message)
+        return message
     
+    if len(text) < 17:
+        message = "Your request is too brief."
+        await send_message(telegram_id, message)
+        return message
+
     from_user = message.get("from", {})
     telegram_id = str(from_user.get("id"))
     if not telegram_id:
-        return "No user ID found in message"
+        message = "No user ID found in message"
+        await send_message(telegram_id, message)
+        return message
     
     username = from_user.get("username")
     language_code = from_user.get("language_code")
@@ -202,5 +220,5 @@ async def handle_telegram_webhook(
     elif text.startswith("/list"):
         return await list_alerts_chats(telegram_id, db)
     else:
-        message = "Unknown command. Use /create, /cancel, or /list"
+        message = "Unknown command. Use <b>/create</b>, <b>/cancel</b>, or <b>/list</b>"
         await send_message(telegram_id, message)

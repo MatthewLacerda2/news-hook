@@ -53,14 +53,14 @@ async def is_alert_duplicated(alert_request: AlertPromptCreateRequestBase, agent
     
     return alert_prompt_db is not None
 
-async def is_alert_chat_duplicated(prompt: str, agent_controller_id: str, db: AsyncSession) -> bool:
+async def is_alert_chat_duplicated(prompt: str, telegram_id: str, db: AsyncSession) -> bool:
     """
     Check if the alert chat is duplicated
     """
     
     stmt = select(AlertChat).where(
         AlertChat.prompt == prompt,
-        AlertChat.telegram_id == agent_controller_id
+        AlertChat.telegram_id == telegram_id
     )
     result = await db.execute(stmt)
     alert_chat_db = result.scalar_one_or_none()

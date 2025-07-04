@@ -23,7 +23,7 @@ from sqlalchemy import select
 from sqlalchemy import func
 from app.tasks.save_embedding import generate_and_save_alert_embeddings
 import uuid
-from app.utils.env import MAX_DATETIME, LLM_VERIFICATION_THRESHOLD, ALERT_CREATION_PRICE, FLAGSHIP_MODEL
+from app.utils.env import MAX_DATETIME, LLM_VALIDATION_THRESHOLD, ALERT_CREATION_PRICE, FLAGSHIP_MODEL
 import logging
 
 logger = logging.getLogger(__name__)
@@ -104,7 +104,7 @@ async def create_alert(
         db.add(llm_validation)
         await db.commit()
 
-        if not llm_validation_response.approval or llm_validation_response.chance_score < LLM_VERIFICATION_THRESHOLD:
+        if not llm_validation_response.approval or llm_validation_response.chance_score < LLM_VALIDATION_THRESHOLD:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail={

@@ -42,7 +42,7 @@ async def is_alert_duplicated(alert_request: AlertPromptCreateRequestBase, agent
     """
     
     stmt = select(AlertPrompt).where(
-        AlertPrompt.prompt == alert_request.prompt,
+        AlertPrompt.prompt.ilike(f"%{alert_request.prompt}%"),
         AlertPrompt.agent_controller_id == agent_controller_id,
         AlertPrompt.http_url == str(alert_request.http_url),
         AlertPrompt.is_recurring == alert_request.is_recurring,
@@ -53,14 +53,14 @@ async def is_alert_duplicated(alert_request: AlertPromptCreateRequestBase, agent
     
     return alert_prompt_db is not None
 
-async def is_alert_chat_duplicated(prompt: str, agent_controller_id: str, db: AsyncSession) -> bool:
+async def is_alert_chat_duplicated(prompt: str, telegram_id: str, db: AsyncSession) -> bool:
     """
-    Check if the alert chat is duplicated
+    Check if the prompt is a substring of any existing alert chat's prompt
     """
     
     stmt = select(AlertChat).where(
-        AlertChat.prompt == prompt,
-        AlertChat.telegram_id == agent_controller_id
+        AlertChat.prompt.ilike(f"%{prompt}%"),
+        AlertChat.telegram_id == telegram_id
     )
     result = await db.execute(stmt)
     alert_chat_db = result.scalar_one_or_none()

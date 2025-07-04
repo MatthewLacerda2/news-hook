@@ -1,4 +1,5 @@
 from datetime import datetime
+from app.utils.env import LLM_VALIDATION_THRESHOLD, LLM_VERIFICATION_THRESHOLD
 
 validation_prompt = """
 You are a helpful assistant that validates whether an alert request is reasonable.
@@ -25,7 +26,7 @@ The alert request is:
 
 Respond using the following structured format:
 - approval: bool — Is the alert request valid?
-- chance_score: float — Estimated quality of the request, from 0.0 to 1.0. Must be ≥ 0.85 to approve.
+- chance_score: float — Estimated quality of the request, from 0.0 to 1.0. Must be ≥ {LLM_VALIDATION_THRESHOLD} to approve.
 - reason: str — Succinct and short justification of the approval or denial.
 - keywords: list[str] — Primitive, single-word keywords that must be present in the triggering document.
 
@@ -37,7 +38,8 @@ def get_validation_prompt(alert_prompt: str):
     current_date_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return validation_prompt.format(
         alert_prompt=alert_prompt,
-        current_date_time=current_date_time
+        current_date_time=current_date_time,
+        LLM_VALIDATION_THRESHOLD=LLM_VALIDATION_THRESHOLD
     )
 
 verification_prompt = """
@@ -60,7 +62,7 @@ The document is:
 
 Respond using the following structured format:
 - approval: bool — Does the document match the alert request?
-- chance_score: float — Estimated quality of the match, from 0.0 to 1.0. Must be ≥ 0.9 to approve.
+- chance_score: float — Estimated quality of the match, from 0.0 to 1.0. Must be ≥ {LLM_VERIFICATION_THRESHOLD} to approve.
 - reason: str — Succinct and short justification of the approval or denial.
 - keywords: list[str] — Primitive, single-word keywords that must be present in the triggering document.
 
@@ -72,7 +74,8 @@ def get_verification_prompt(alert_prompt: str, document: str):
     return verification_prompt.format(
         alert_prompt=alert_prompt,
         document=document,
-        current_date_time=current_date_time
+        current_date_time=current_date_time,
+        LLM_VERIFICATION_THRESHOLD=LLM_VERIFICATION_THRESHOLD
     )
 
 generation_prompt = """

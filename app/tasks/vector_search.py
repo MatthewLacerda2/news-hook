@@ -24,13 +24,17 @@ async def vector_search(sourced_document: SourcedData):
 
     db = AsyncSessionLocal()
     
-    logger.info(f"Performing vector search for document: {sourced_document.name}")
+    logger.info(f"Getting document embedding for document: {sourced_document.name}")
     
     document_embedding = sourced_document.content_embedding
     if document_embedding is None or np.all(document_embedding == 0):
         document_embedding = get_gemini_embeddings(sourced_document.content, "RETRIEVAL_DOCUMENT")
     
+    logger.info(f"Performing vector search for document: {sourced_document.name}")
+    
     agent_controller_id = sourced_document.agent_controller_id if sourced_document.source == DataSource.USER_DOCUMENT else None
+    
+    logger.info(f"Finding matching alerts for document: {sourced_document.name}")
     
     active_alerts = await find_matching_alerts(db, document_embedding, agent_controller_id, sourced_document.content)
     

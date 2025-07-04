@@ -26,15 +26,17 @@ async def vector_search_chat(sourced_document: SourcedData):
     """
     db = AsyncSessionLocal()
     
-    logger.info(f"Performing vector search for document: {sourced_document.name}")
+    logger.info(f"Getting document embedding for document: {sourced_document.name}")
     
     document_embedding = sourced_document.content_embedding
     if document_embedding is None or np.all(document_embedding == 0):
         document_embedding = get_gemini_embeddings(sourced_document.content, "RETRIEVAL_DOCUMENT")
     
-    agent_controller_id = sourced_document.agent_controller_id if sourced_document.source == DataSource.USER_DOCUMENT else None
+    logger.info(f"Performing vector search for document: {sourced_document.name}")
     
-    active_alerts = await find_matching_alert_chats(db, document_embedding, agent_controller_id, sourced_document.content)
+    active_alerts = await find_matching_alert_chats(db, document_embedding, sourced_document.content)
+    
+    logger.info(f"Found {len(active_alerts)} active alerts for document: {sourced_document.name}")
     
     for alert in active_alerts:
         await verify_document_matches_alert_chat(
@@ -47,26 +49,28 @@ async def vector_search_chat(sourced_document: SourcedData):
 
 async def find_matching_alert_chats(db: AsyncSession, document_embedding: np.ndarray, document_content: str) -> List[AlertChat]:
     """
-    Find active alerts where the prompt_embedding is similar to the document_embedding using PostgreSQL vector search.
-    If agent_controller_id is provided, only return alerts belonging to that controller.
+    Find all active or warned alerts that haven't expired, and log their id, prompt, and cosine similarity to the document.
     """
-    # Convert numpy array to list and format for PostgreSQL array
-    embedding_list = [float(x) for x in document_embedding.tolist()]
-    
     conditions = [
-        AlertChat.status == AlertChatStatus.ACTIVE or AlertChat.status == AlertChatStatus.WARNED,
+        (AlertChat.status == AlertChatStatus.ACTIVE) | (AlertChat.status == AlertChatStatus.WARNED),
         AlertChat.expires_at > datetime.now(),
-        AlertChat.prompt_embedding.cosine_distance(embedding_list) <= DATA_SIMILARITY_THRESHOLD,
+        AlertChat.prompt_embedding != None,
     ]
     
     stmt = select(AlertChat).where(*conditions)
     result = await db.execute(stmt)
     alerts = result.scalars().all()
     
-    filtered_alerts = []
+    logger.info(f"Found {len(alerts)} active or warned, non-expired alerts")
     
+    for alert in alerts:
+        chat_emb = np.array(alert.prompt_embedding, dtype=np.float32)
+        sim = float(np.dot(document_embedding, chat_emb) / (np.linalg.norm(document_embedding) * np.linalg.norm(chat_emb)))
+        logger.info(f"AlertChat id={alert.id}, prompt={alert.prompt}, cosine_similarity={sim}")
+    
+    filtered_alerts = []
     for alert in alerts:
         if any(keyword.lower() in document_content.lower() for keyword in alert.keywords):
             filtered_alerts.append(alert)
-            
+    
     return filtered_alerts

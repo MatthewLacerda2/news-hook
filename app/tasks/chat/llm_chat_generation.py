@@ -27,6 +27,8 @@ async def generate_and_send_alert_chat(alert_chat: AlertChat, sourced_document: 
     
     response_status_code = await send_alert_chat(generated_response, alert_chat.telegram_id, db)
     
+    suffix = f"\n\n<b>This is the alert for your request: {alert_chat.prompt}</b>"
+    
     llm_generation_result = ChatEvent(
         id=str(uuid.uuid4()),
         document_id=sourced_document.id,

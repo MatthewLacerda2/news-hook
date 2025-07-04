@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 import uuid
+from app.utils.env import ACCESS_TOKEN_EXPIRE_MINUTES
 
 router = APIRouter()
 
@@ -48,7 +49,7 @@ async def signup(
         await db.commit()
         await db.refresh(user)
         
-        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
             data={"sub": str(user.id)},
             expires_delta=access_token_expires

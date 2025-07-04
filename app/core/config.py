@@ -9,13 +9,8 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str
     GOOGLE_PROJECT_ID: str
     GOOGLE_REDIRECT_URI: str
-    #GOOGLE_CLIENT_SECRET: str
-    #GOOGLE_REFRESH_TOKEN: str
     
     SECRET_KEY: str
-    JWT_ISSUER: str
-    JWT_AUDIENCE: str
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30
     
     TELEGRAM_BOT_TOKEN: str
     

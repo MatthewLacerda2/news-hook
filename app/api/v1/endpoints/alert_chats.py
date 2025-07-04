@@ -78,7 +78,8 @@ async def create_alert_chat(
     await db.commit()
 
     if not llm_validation_response.approval or llm_validation_response.chance_score < LLM_VALIDATION_THRESHOLD:
-        message = "I'm sorry, I cannot create an alert on that. Reason: " + llm_validation_response.reason
+        message = "I'm sorry, I cannot create an alert for that\n\n<b>Reason:</b> " + llm_validation_response.reason
+
         await send_message(telegram_id, message)
         return message
     

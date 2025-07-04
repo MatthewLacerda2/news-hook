@@ -186,27 +186,16 @@ async def handle_telegram_webhook(
     
     message = update.get("message", {})
     if not message:
-        message = "No message found in update"
-        await send_message(telegram_id, message)
-        return message
+        return {"error": "No message found in update"}
     
     text = message.get("text", "")
     if not text:
-        message = "No text found in message"
-        await send_message(telegram_id, message)
-        return message
+        return {"error": "No text found in message"}
     
-    if len(text) < 17:
-        message = "Your request is too brief."
-        await send_message(telegram_id, message)
-        return message
-
     from_user = message.get("from", {})
     telegram_id = str(from_user.get("id"))
     if not telegram_id:
-        message = "No user ID found in message"
-        await send_message(telegram_id, message)
-        return message
+        return {"error": "No user ID found in message"}
     
     username = from_user.get("username")
     language_code = from_user.get("language_code")
@@ -214,6 +203,11 @@ async def handle_telegram_webhook(
     last_name = from_user.get("last_name", "")
     
     if text.startswith("/create"):
+        if len(text) < 17:
+            message = "Your request is too brief."
+            await send_message(telegram_id, message)
+            return message
+        
         return await create_alert_chat(text, telegram_id, db, username, language_code, first_name, last_name)
     elif text.startswith("/cancel"):
         return await cancel_alert_chat(text, telegram_id, db)
@@ -222,3 +216,4 @@ async def handle_telegram_webhook(
     else:
         message = "Unknown command. Use <b>/create</b>, <b>/cancel</b>, or <b>/list</b>"
         await send_message(telegram_id, message)
+        return message

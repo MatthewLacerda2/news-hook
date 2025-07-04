@@ -16,6 +16,7 @@ import asyncio
 from app.tasks.save_embedding import generate_and_save_alert_chat_embeddings
 from sqlalchemy import select
 from app.core.config import settings
+from app.utils.telegram_message import send_message
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +112,11 @@ async def create_alert_chat(
     expire_date_str = expire_date.strftime("%d/%m/%y")
     keyword_hashtags = " ".join([f"#{keyword}" for keyword in llm_validation_response.keywords])
     
-    return f"Got it, {user_display_name}! Alert created. Id: {new_alert_chat.id}, will be active until {expire_date_str} {keyword_hashtags}"
+    message = f"Got it, {user_display_name}! Alert created. Id: {new_alert_chat.id}, will be active until {expire_date_str} {keyword_hashtags}"
+    
+    await send_message(telegram_id, message)
+    return message
+    
 
 async def cancel_alert_chat(command_text: str, telegram_id: str, db: AsyncSession):
     alert_id = command_text.replace("/cancel", "").strip()
@@ -132,7 +137,10 @@ async def cancel_alert_chat(command_text: str, telegram_id: str, db: AsyncSessio
     alert.status = AlertChatStatus.CANCELLED
     await db.commit()
     
-    return "Alert cancelled!"
+    message = "Alert cancelled!"
+    await send_message(telegram_id, message)
+    return message
+
 
 async def list_alerts_chats(telegram_id: str, db: AsyncSession):
     stmt = select(AlertChat).where(
@@ -152,7 +160,10 @@ async def list_alerts_chats(telegram_id: str, db: AsyncSession):
         alert_string = f"Id: {alert.id}. Expires At: {expires_at_str}. Prompt: {alert.prompt}."
         alert_strings.append(alert_string)
     
-    return "\n".join(alert_strings)
+    message = "\n".join(alert_strings)
+    await send_message(telegram_id, message)
+    return message
+
 
 @router.post("/webhook/{token}")
 async def handle_telegram_webhook(
@@ -191,4 +202,5 @@ async def handle_telegram_webhook(
     elif text.startswith("/list"):
         return await list_alerts_chats(telegram_id, db)
     else:
-        return "Unknown command. Use /create, /cancel, or /list"
+        message = "Unknown command. Use /create, /cancel, or /list"
+        await send_message(telegram_id, message)

@@ -55,11 +55,11 @@ async def is_alert_duplicated(alert_request: AlertPromptCreateRequestBase, agent
 
 async def is_alert_chat_duplicated(prompt: str, telegram_id: str, db: AsyncSession) -> bool:
     """
-    Check if the alert chat is duplicated
+    Check if the prompt is a substring of any existing alert chat's prompt
     """
     
     stmt = select(AlertChat).where(
-        AlertChat.prompt == prompt,
+        AlertChat.prompt.ilike(f"%{prompt}%"),
         AlertChat.telegram_id == telegram_id
     )
     result = await db.execute(stmt)

@@ -205,6 +205,14 @@ async def handle_telegram_webhook(
     first_name = from_user.get("first_name", "Unknown")
     last_name = from_user.get("last_name", "")
     
+    help_message = (
+        "Use:\n\n"
+        "<b>/create &lt;prompt&gt;: to create an alert</b>\n"
+        "<b>/cancel &lt;alert_id&gt;: to cancel the alert</b>\n"
+        "<b>/list</b>: To list all active alerts\n\n"
+        "Example: <b>/create</b> Inform me if the price of BTC is below $30,000."
+    )
+    
     if text.startswith("/create"):
         if len(text) < 17:
             message = "Your request is too brief."
@@ -216,7 +224,11 @@ async def handle_telegram_webhook(
         return await cancel_alert_chat(text, telegram_id, db)
     elif text.startswith("/list"):
         return await list_alerts_chats(telegram_id, db)
+    elif text.startswith("/help") or text.startswith("/start"):
+        message = help_message
+        await send_message(telegram_id, message)
+        return message
     else:
-        message = "Unknown command. Use <b>/create</b>, <b>/cancel</b>, or <b>/list</b>"
+        message = "Unknown command. " + help_message
         await send_message(telegram_id, message)
         return message

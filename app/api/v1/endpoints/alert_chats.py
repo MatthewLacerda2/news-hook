@@ -45,7 +45,7 @@ async def create_alert_chat(
         await send_message(telegram_id, message)
         return message
     
-    await send_message(telegram_id, "Ok, let me see.........")
+    await send_message(telegram_id, "Ok, let me see . . . . .")
     
     stmt = select(LLMModel).where(
         LLMModel.model_name == FLAGSHIP_MODEL

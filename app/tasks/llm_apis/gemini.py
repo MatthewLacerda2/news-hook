@@ -7,9 +7,10 @@ from app.utils.prompts import get_validation_prompt, get_verification_prompt, ge
 from app.utils.llm_response_formats import LLMValidationFormat, LLMVerificationFormat
 import logging
 import numpy as np
-from app.utils.env import NUM_EMBEDDING_DIMENSIONS
+from app.utils.env import NUM_EMBEDDING_DIMENSIONS, FLAGSHIP_MODEL
 from app.core.config import settings
 from app.utils.env import GOOGLE_PROJECT_ID
+from google.genai import types
 
 logger = logging.getLogger(__name__)
 load_dotenv()
@@ -48,17 +49,18 @@ def get_gemini_embeddings(text: str, task_type: str) -> np.ndarray:
     embedding_values = response.embeddings[0].values
     return np.array(embedding_values, dtype=np.float32)
 
-def get_gemini_validation(alert_prompt: str, llm_model: str) -> LLMValidationFormat:
+def get_gemini_validation(alert_prompt: str) -> LLMValidationFormat:
     
     client = get_client()
     full_prompt = get_validation_prompt(alert_prompt)
     
     response = client.models.generate_content(
-        model=llm_model, contents=full_prompt, config=GenerateContentConfig(
+        model=FLAGSHIP_MODEL, contents=full_prompt, config=GenerateContentConfig(
         response_mime_type='application/json',
         response_schema=LLMValidationFormat.model_json_schema(),
         temperature=gemini_temperature,
-        automatic_function_calling={"disable": True}
+        automatic_function_calling={"disable": True},
+        thinking_config=types.ThinkingConfig(thinking_budget=0.0)
     ),)
     
     json_response = response.text
@@ -75,7 +77,8 @@ def get_gemini_verification(alert_prompt: str, document: str, llm_model: str) ->
         response_mime_type='application/json',
         response_schema=LLMVerificationFormat.model_json_schema(),
         temperature=gemini_temperature,
-        automatic_function_calling={"disable": True}
+        automatic_function_calling={"disable": True},
+        thinking_config=types.ThinkingConfig(thinking_budget=0.0)
     ),)
 
     json_response = response.text
@@ -95,7 +98,8 @@ def get_gemini_alert_generation(document: str, is_json: bool, alert_prompt: str,
         model=llm_model, contents=full_prompt, config=GenerateContentConfig(
         response_mime_type=response_type,
         temperature=gemini_temperature,
-        automatic_function_calling={"disable": True}
+        automatic_function_calling={"disable": True},
+        thinking_config=types.ThinkingConfig(thinking_budget=0.0)
     ),)
     
     return response.text

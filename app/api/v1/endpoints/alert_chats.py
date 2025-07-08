@@ -53,7 +53,7 @@ async def create_alert_chat(
     result = await db.execute(stmt)
     llm_model = result.scalar_one_or_none()
     
-    llm_validation_response = get_llm_validation(prompt, llm_model.model_name)
+    llm_validation_response = get_llm_validation(prompt)
     llm_validation_str = llm_validation_response.model_dump_json()
                 
     input_price, output_price = get_token_price(prompt, llm_validation_str, llm_model)

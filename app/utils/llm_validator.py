@@ -9,14 +9,12 @@ from sqlalchemy import select
 from app.models.alert_prompt import AlertPrompt, AlertStatus
 from app.models.alert_chat import AlertChat
 
-def get_llm_validation(prompt: str, llm_model: str) -> LLMValidationFormat:
+def get_llm_validation(prompt: str) -> LLMValidationFormat:
     """
     Validate the alert request using LLM
     """
 
-    validation_result = get_gemini_validation(
-        prompt, llm_model
-    )
+    validation_result = get_gemini_validation(prompt)
     
     if isinstance(validation_result, str):
         validation_result = LLMValidationFormat(**json.loads(validation_result))    

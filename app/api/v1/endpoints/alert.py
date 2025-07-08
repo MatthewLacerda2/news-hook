@@ -72,7 +72,7 @@ async def create_alert(
                 detail="Alert already exists"
             )
 
-        llm_validation_response = get_llm_validation(alert_data.prompt, llm_model.model_name)
+        llm_validation_response = get_llm_validation(alert_data.prompt)
         llm_validation_str = llm_validation_response.model_dump_json()
                 
         input_price, output_price = get_token_price(alert_data.prompt, llm_validation_str, llm_model)

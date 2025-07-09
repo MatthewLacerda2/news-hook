@@ -1,0 +1,22 @@
+{
+    "alert.create.prompt_required": "Please provide a prompt after /create",
+    "alert.create.already_exists": "That Alert is already active",
+    "alert.create.processing": "Ok, let me see . . . . .",
+    "alert.create.validation_failed": "I'm sorry, I cannot create an alert for that\n\n<b>Reason:</b> {reason}",
+    "alert.create.success": "Got it! Alert created!\nWill be active until <b>{expire_date}</b>\n\n<b>{keywords}</b>",
+    
+    "alert.cancel.id_required": "Please provide an alert ID after <b>/cancel</b>",
+    "alert.cancel.not_found": "That alert does not exist.",
+    "alert.cancel.success": "Alert cancelled!",
+    
+    "alert.list.no_alerts": "There are no active alerts.",
+    "alert.list.item": "<b>Alert</b>: {prompt}\n<b>Expires At: {expire_date}</b>\n<b>Id</b>: {alert_id}\n\n",
+    
+    "help.message": "Use:\n\n<b>/create &lt;prompt&gt;: to create an alert</b>\n<b>/cancel &lt;alert_id&gt;: to cancel the alert</b>\n<b>/list</b>: To list all active alerts\n\nExample: <b>/create</b> Inform me if the price of BTC is below $30,000.",
+    "help.unknown_command": "Unknown command. {help_message}",
+    
+    "error.request_too_brief": "Your request is too brief.",
+    "error.no_message": "No message found in update",
+    "error.no_text": "No text found in message",
+    "error.no_user_id": "No user ID found in message"
+  }

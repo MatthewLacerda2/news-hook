@@ -59,8 +59,7 @@ def get_gemini_validation(alert_prompt: str) -> LLMValidationFormat:
         response_mime_type='application/json',
         response_schema=LLMValidationFormat.model_json_schema(),
         temperature=gemini_temperature,
-        automatic_function_calling={"disable": True},
-        thinking_config=types.ThinkingConfig(thinking_budget=0.0)
+        automatic_function_calling={"disable": True}
     ),)
     
     json_response = response.text
@@ -77,8 +76,7 @@ def get_gemini_verification(alert_prompt: str, document: str, llm_model: str) ->
         response_mime_type='application/json',
         response_schema=LLMVerificationFormat.model_json_schema(),
         temperature=gemini_temperature,
-        automatic_function_calling={"disable": True},
-        thinking_config=types.ThinkingConfig(thinking_budget=0.0)
+        automatic_function_calling={"disable": True}
     ),)
 
     json_response = response.text
@@ -98,8 +96,7 @@ def get_gemini_alert_generation(document: str, is_json: bool, alert_prompt: str,
         model=llm_model, contents=full_prompt, config=GenerateContentConfig(
         response_mime_type=response_type,
         temperature=gemini_temperature,
-        automatic_function_calling={"disable": True},
-        thinking_config=types.ThinkingConfig(thinking_budget=0.0)
+        automatic_function_calling={"disable": True}
     ),)
     
     return response.text

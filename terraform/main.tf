@@ -15,13 +15,7 @@ resource "google_cloudbuild_trigger" "news_hook" {
     }
   }
 
-  build {
-    step {
-      name = "gcr.io/cloud-builders/docker"
-      args = ["build", "-t", "gcr.io/${var.project_id}/${var.service_name}:latest", "."]
-    }
-    images = ["gcr.io/${var.project_id}/${var.service_name}:latest"]
-  }
+  filename = "cloudbuild.yaml"
 }
 
 resource "google_cloud_run_service" "news_hook" {

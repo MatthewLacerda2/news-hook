@@ -54,6 +54,7 @@ resource "google_cloud_run_service" "news_hook" {
     percent         = 100
     latest_revision = true
   }
+  depends_on = [google_cloudbuild_trigger.news_hook]
 }
 
 resource "google_cloud_run_service_iam_member" "noauth" {

@@ -41,12 +41,6 @@ async def create_alert(
     db: AsyncSession = Depends(get_db),
     user: AgentController = Depends(get_user_by_api_key)
 ):
-
-    if user.credit_balance <= 0:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient credits"
-        )
     
     try:
         
@@ -78,12 +72,6 @@ async def create_alert(
         input_price, output_price = get_token_price(alert_data.prompt, llm_validation_str, llm_model)
         
         tokens_price = input_price + output_price
-        
-        if user.credit_balance < tokens_price:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Insufficient credits"
-            )
             
         now = datetime.now()
             
